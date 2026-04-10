@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Store Audit - Execution Checklist</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#e2e2e2",
+                        "primary-container": "#0176d3",
+                        "on-secondary-fixed-variant": "#2d486b",
+                        "on-error-container": "#93000a",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#b9d3fe",
+                        "on-primary-container": "#fefcff",
+                        "on-tertiary-fixed": "#321200",
+                        "surface-container-high": "#e8e8e8",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed": "#d4e3ff",
+                        "primary": "#005da9",
+                        "inverse-on-surface": "#f1f1f1",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "on-secondary": "#ffffff",
+                        "outline-variant": "#c0c7d4",
+                        "surface": "#f9f9f9",
+                        "on-secondary-fixed": "#001c39",
+                        "tertiary-fixed-dim": "#ffb68b",
+                        "on-primary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed-variant": "#004884",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#753400",
+                        "primary-fixed": "#d4e3ff",
+                        "on-surface-variant": "#414752",
+                        "on-secondary-container": "#415b7f",
+                        "secondary": "#466084",
+                        "surface-tint": "#005fac",
+                        "secondary-fixed-dim": "#adc8f2",
+                        "tertiary-container": "#bc5800",
+                        "on-tertiary": "#ffffff",
+                        "outline": "#717784",
+                        "inverse-primary": "#a4c9ff",
+                        "surface-dim": "#dadada",
+                        "on-primary-fixed": "#001c39",
+                        "on-background": "#1a1c1c",
+                        "inverse-surface": "#2f3131",
+                        "surface-container-low": "#f3f3f3",
+                        "background": "#f9f9f9",
+                        "tertiary-fixed": "#ffdbc8",
+                        "surface-container-highest": "#e2e2e2",
+                        "surface-container": "#eeeeee",
+                        "tertiary": "#964500",
+                        "surface-bright": "#f9f9f9",
+                        "on-tertiary-container": "#fffcff",
+                        "on-surface": "#1a1c1c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .bg-primary-gradient {
+            background: linear-gradient(to bottom, #005da9, #0176d3);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-background min-h-screen pb-32">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm flex items-center justify-between px-4 h-16">
+<div class="flex items-center gap-3">
+<button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined text-blue-700">menu</span>
+</button>
+<h1 class="font-['Inter'] font-bold tracking-tight text-blue-700 text-lg">Store Audit</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="bg-secondary-container/30 px-3 py-1 rounded-full flex items-center gap-1.5">
+<span class="text-[10px] uppercase font-bold text-on-secondary-container tracking-wider">Score</span>
+<span class="text-sm font-extrabold text-primary">84%</span>
+</div>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant/30">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Professional portrait of a male business executive in a clean studio setting with soft lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJNXLOT1TYqq0hiXxS5T0iXZoroENo-a2ODGHdyJG_nyW1GbhBd7I37No2QMTNFr5iCFCvuBYaWNKGaay6FoqfblavlCeCy23AvSrelscSDAAfdR9EoYl33ExicVxbIpKP53D-8FD4bnvEQdHfQCxGjjoIoxpP8azjT5iWkg6WfRkrye0RrKO5GeY835bPCgfagjX8ObmukzpOBwPtijqc9-POnZxdWtozGS2UVvOmapS_Yfs1Osw72bGkauaiizyeOZFB4gvT2XQ"/>
+</div>
+</div>
+</header>
+<main class="pt-20 px-4 max-w-2xl mx-auto">
+<!-- Progress Header -->
+<section class="mb-6">
+<div class="flex justify-between items-end mb-2">
+<div>
+<span class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Scotts Miracle-Gro</span>
+<h2 class="text-2xl font-extrabold text-on-surface tracking-tight">Execution Checklist</h2>
+</div>
+<span class="text-sm font-semibold text-primary">4 / 8 Items</span>
+</div>
+<div class="w-full h-2 bg-surface-container-high rounded-full overflow-hidden">
+<div class="w-1/2 h-full bg-primary-gradient rounded-full"></div>
+</div>
+<p class="mt-3 text-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-base">info</span>
+                Capture base plan and setup compliance
+            </p>
+</section>
+<!-- Checklist Grid -->
+<div class="space-y-4">
+<!-- Checklist Card Template -->
+<!-- Plant Food POG -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-outline-variant/10">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+<span class="material-symbols-outlined text-green-700">potted_plant</span>
+</div>
+<div>
+<h3 class="font-bold text-on-surface">Plant Food POG</h3>
+<p class="text-xs text-on-surface-variant">Miracle-Gro Performance Organics</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">more_vert</span>
+</div>
+<!-- Segmented Control -->
+<div class="grid grid-cols-3 gap-1 p-1 bg-surface-container-low rounded-xl">
+<button class="py-2.5 px-4 rounded-lg text-sm font-bold bg-white shadow-sm text-primary transition-all active:scale-95">Yes</button>
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant hover:bg-white/50 transition-all active:scale-95">No</button>
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant hover:bg-white/50 transition-all active:scale-95">N/A</button>
+</div>
+</div>
+<!-- Chemical POG -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-outline-variant/10">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+<span class="material-symbols-outlined text-blue-700">science</span>
+</div>
+<div>
+<h3 class="font-bold text-on-surface">Chemical POG</h3>
+<p class="text-xs text-on-surface-variant">Ortho Home Defense &amp; WeedClear</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">more_vert</span>
+</div>
+<div class="grid grid-cols-3 gap-1 p-1 bg-surface-container-low rounded-xl">
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant hover:bg-white/50 transition-all">Yes</button>
+<button class="py-2.5 px-4 rounded-lg text-sm font-bold bg-white shadow-sm text-error transition-all">No</button>
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant hover:bg-white/50 transition-all">N/A</button>
+</div>
+</div>
+<!-- Indoor Soil POG -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-outline-variant/10">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
+<span class="material-symbols-outlined text-orange-700">mountain_flag</span>
+</div>
+<div>
+<h3 class="font-bold text-on-surface">Indoor Soil POG</h3>
+<p class="text-xs text-on-surface-variant">Potting Mix &amp; Specialty Soils</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">more_vert</span>
+</div>
+<div class="grid grid-cols-3 gap-1 p-1 bg-surface-container-low rounded-xl">
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant hover:bg-white/50">Yes</button>
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant hover:bg-white/50">No</button>
+<button class="py-2.5 px-4 rounded-lg text-sm font-bold bg-white shadow-sm text-primary">N/A</button>
+</div>
+</div>
+<!-- Grass Seed POG -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-outline-variant/10">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+<span class="material-symbols-outlined text-green-700">grass</span>
+</div>
+<div>
+<h3 class="font-bold text-on-surface">Grass Seed POG</h3>
+<p class="text-xs text-on-surface-variant">Scotts Turf Builder Sun &amp; Shade</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">more_vert</span>
+</div>
+<div class="grid grid-cols-3 gap-1 p-1 bg-surface-container-low rounded-xl">
+<button class="py-2.5 px-4 rounded-lg text-sm font-bold bg-white shadow-sm text-primary">Yes</button>
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant">No</button>
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant">N/A</button>
+</div>
+</div>
+<!-- Display / Secondary Items -->
+<div class="pt-4 pb-2">
+<h4 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Merchandising &amp; Displays</h4>
+</div>
+<!-- Endcap -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-outline-variant/10">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-700">view_column</span>
+</div>
+<h3 class="font-bold text-on-surface">Endcap</h3>
+</div>
+<div class="grid grid-cols-3 gap-1 p-1 bg-surface-container-low rounded-xl">
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant">Yes</button>
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant">No</button>
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant">N/A</button>
+</div>
+</div>
+<!-- Garden Doors -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-outline-variant/10">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-700">door_front</span>
+</div>
+<h3 class="font-bold text-on-surface">Garden Doors</h3>
+</div>
+<div class="grid grid-cols-3 gap-1 p-1 bg-surface-container-low rounded-xl">
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant">Yes</button>
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant">No</button>
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant">N/A</button>
+</div>
+</div>
+<!-- Fenceline -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-outline-variant/10">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-700">fence</span>
+</div>
+<h3 class="font-bold text-on-surface">Fenceline</h3>
+</div>
+<div class="grid grid-cols-3 gap-1 p-1 bg-surface-container-low rounded-xl">
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant">Yes</button>
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant">No</button>
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant">N/A</button>
+</div>
+</div>
+<!-- Racetrack -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-outline-variant/10">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-700">conversion_path</span>
+</div>
+<h3 class="font-bold text-on-surface">Racetrack</h3>
+</div>
+<div class="grid grid-cols-3 gap-1 p-1 bg-surface-container-low rounded-xl">
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant">Yes</button>
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant">No</button>
+<button class="py-2.5 px-4 rounded-lg text-sm font-semibold text-on-surface-variant">N/A</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Sticky Bottom CTA -->
+<div class="fixed bottom-0 left-0 w-full p-4 bg-white/90 backdrop-blur-lg border-t border-outline-variant/10 z-50">
+<div class="max-w-2xl mx-auto flex items-center gap-4">
+<button class="flex-1 bg-primary-gradient text-on-primary-container h-14 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-transform duration-200">
+                Next
+            </button>
+</div>
+</div>
+<!-- Bottom Navigation Bar (Hidden on focuses task but present for global shell) -->
+<nav class="fixed bottom-0 left-0 w-full hidden md:flex justify-around items-center px-2 py-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-50 rounded-t-xl shadow-[0_-4px_12px_rgba(1,118,211,0.06)]">
+<a class="flex flex-col items-center justify-center bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-xl px-3 py-1 active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">fact_check</span>
+<span class="font-['Inter'] text-[11px] font-medium">Audits</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-3 py-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-['Inter'] text-[11px] font-medium">Inventory</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-3 py-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="font-['Inter'] text-[11px] font-medium">Tasks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-3 py-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-['Inter'] text-[11px] font-medium">Settings</span>
+</a>
+</nav>
+</body></html>

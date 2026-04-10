@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Retail Audit - Proof &amp; Comments</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ba1a1a",
+                        "on-surface": "#1a1c1c",
+                        "primary-container": "#0176d3",
+                        "on-primary-fixed-variant": "#004884",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-container": "#415b7f",
+                        "on-secondary-fixed": "#001c39",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#fefcff",
+                        "inverse-primary": "#a4c9ff",
+                        "secondary-fixed": "#d4e3ff",
+                        "primary": "#005da9",
+                        "surface-container-low": "#f3f3f3",
+                        "surface-bright": "#f9f9f9",
+                        "surface-variant": "#e2e2e2",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#dadada",
+                        "secondary": "#466084",
+                        "surface-container-high": "#e8e8e8",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "on-secondary-fixed-variant": "#2d486b",
+                        "error-container": "#ffdad6",
+                        "surface-container-highest": "#e2e2e2",
+                        "tertiary-fixed-dim": "#ffb68b",
+                        "on-tertiary-fixed-variant": "#753400",
+                        "on-surface-variant": "#414752",
+                        "on-primary-fixed": "#001c39",
+                        "tertiary-fixed": "#ffdbc8",
+                        "tertiary": "#964500",
+                        "on-tertiary-container": "#fffcff",
+                        "secondary-fixed-dim": "#adc8f2",
+                        "outline-variant": "#c0c7d4",
+                        "outline": "#717784",
+                        "surface-tint": "#005fac",
+                        "surface-container": "#eeeeee",
+                        "on-error-container": "#93000a",
+                        "surface": "#f9f9f9",
+                        "tertiary-container": "#bc5800",
+                        "primary-fixed": "#d4e3ff",
+                        "inverse-on-surface": "#f1f1f1",
+                        "on-background": "#1a1c1c",
+                        "on-tertiary-fixed": "#321200",
+                        "background": "#f9f9f9",
+                        "inverse-surface": "#2f3131",
+                        "secondary-container": "#b9d3fe"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .glass-effect { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface selection:bg-primary-container/20 overflow-x-hidden">
+<!-- Top Navigation Shell -->
+<header class="fixed top-0 w-full z-50 glass-effect shadow-[0_8px_24px_rgba(0,93,169,0.06)] h-16 flex items-center justify-between px-4 max-w-full">
+<div class="flex items-center gap-3">
+<button class="p-2 rounded-lg hover:bg-slate-100 transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-[#005DA9]">arrow_back</span>
+</button>
+<h1 class="text-[#1a1c1c] font-['Inter'] text-lg font-bold tracking-tight">Retail Audit</h1>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[#005DA9] font-['Inter'] text-sm font-semibold tracking-tight">Step 3 of 4</span>
+</div>
+</header>
+<main class="pt-20 pb-28 px-4 max-w-lg mx-auto space-y-6">
+<!-- Section Header: Evidence Library -->
+<section class="space-y-4">
+<div class="flex items-center justify-between px-1">
+<h2 class="text-on-surface font-headline font-bold text-xl tracking-tight">Evidence Library</h2>
+<button class="flex items-center gap-1 text-primary font-label text-sm font-semibold">
+<span class="material-symbols-outlined text-sm">add_a_photo</span>
+                    Add More
+                </button>
+</div>
+<!-- Bento-style Photo Grid -->
+<div class="grid grid-cols-2 gap-3">
+<!-- Large Featured Image -->
+<div class="col-span-2 relative group rounded-xl overflow-hidden shadow-sm bg-surface-container-lowest">
+<img class="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-105" data-alt="Modern retail store interior with clean white shelves and organized electronics merchandise under bright architectural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAb41B7RW2he5c_IeGuVdVVVMDxeKhWlLvxNnZ3gqSC7221u9drjgWfqHeZfPkXHc4VUalOw8j1HfXW79fqlwt-wKAY0UwTh6-gvsNwxI9gEKTrob_YxNd_ZRSV-MGHsbdJgqvnrYB6oZPHTlq1LjyMaRaxk20AEP-3Ly_HFhpAfdoC3iewJ3hkEGTVLh4TYI2qGwbAnLISHJZesEjkgjZ3XO1OlLv2ND2vtjI8syfEIg-H8tsPvaBwAL8cc0yfvMEFG1RoPK_Ce9o"/>
+<div class="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
+<p class="text-white text-xs font-medium opacity-90">Storefront Overview - Aisle 4</p>
+</div>
+<button class="absolute top-2 right-2 bg-white/20 backdrop-blur-md p-1.5 rounded-full text-white">
+<span class="material-symbols-outlined text-sm">edit</span>
+</button>
+</div>
+<!-- Secondary Proof Card -->
+<div class="relative group rounded-xl overflow-hidden shadow-sm bg-surface-container-lowest">
+<img class="w-full h-40 object-cover" data-alt="Close-up of retail product labels and pricing tags on a clean metal shelf edge in a grocery store" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCezuQG5i_m8UlNf_2rF3y2XMtjtvr3N5B7uyCA7-ZZyI8jXo3ezXsU14DkKdephy1EM4HgV-yzjItrlsvoW2045paDm-tyHmiZ00Xm-L9dn6YuiAM3_WKX4Ab_8mry4OiYDzN19PyFL3kjq1KlCv6wFlZjv65LS6v7K8WWkEKecOH2CDIqisPw-D3wmCOdQJjZjpZeDFH6EyMbVtZQY9hwkdqmwu-C7U99N7ZeIOXlHfMsKrk0ee9XADmIHRlMSxQpiYXSPAppV7k"/>
+<div class="p-3">
+<input class="w-full bg-transparent border-none p-0 text-xs font-label text-on-surface-variant focus:ring-0 placeholder:text-outline italic" placeholder="Add caption..." type="text" value="Price tag compliance check"/>
+</div>
+</div>
+<!-- Secondary Proof Card -->
+<div class="relative group rounded-xl overflow-hidden shadow-sm bg-surface-container-lowest">
+<img class="w-full h-40 object-cover" data-alt="High-end grocery produce section with vibrant fresh fruits and vegetables artistically arranged in wooden crates" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0aK-pvzom95dK_m1mjhPQNVLjvCmBzVe3u0SgbppJYl-gJw0PYOvg0cG5rUjLEVxdgjb8HrD_4-hlCPiynLU_DknMefJueAz92cyGAURPX-XzCBdDk5BDz086AY7fOx---wlhsYlSiDxn4cO3iHS2C3LV0M2JpUwZkNqjSyxaP7HMzSQ5HS6lpBxM7OKJSCxkFvLsajziyorlsMdswCPmpTHqreyoU8dN7nWe0UUFO3-gyjcTgI-8ii0-Vi_MYHT57Jv06WRnNPs"/>
+<div class="p-3">
+<input class="w-full bg-transparent border-none p-0 text-xs font-label text-on-surface-variant focus:ring-0 placeholder:text-outline" placeholder="Add caption..." type="text" value=""/>
+</div>
+</div>
+</div>
+</section>
+<!-- Comments & Field Notes -->
+<section class="space-y-3">
+<h2 class="px-1 text-on-surface-variant font-headline font-semibold text-xs uppercase tracking-widest">General Audit Notes</h2>
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-sm">
+<textarea class="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm font-body text-on-surface focus:ring-2 focus:ring-primary-container/30 transition-all placeholder:text-outline" placeholder="Enter observations, team feedback, or visual discrepancies identified during the audit..." rows="4"></textarea>
+<!-- Quick Tags -->
+<div class="mt-4 flex flex-wrap gap-2">
+<span class="bg-surface-container px-3 py-1 rounded-full text-[10px] font-bold text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">sell</span>
+                        DISPLAY_ERR
+                    </span>
+<span class="bg-surface-container px-3 py-1 rounded-full text-[10px] font-bold text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">sell</span>
+                        STOCK_OUT
+                    </span>
+<button class="text-primary text-[10px] font-bold px-2 py-1">+ TAG</button>
+</div>
+</div>
+</section>
+<!-- Compliance Switches -->
+<section class="space-y-3">
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm">
+<!-- Revisit Toggle -->
+<div class="flex items-center justify-between p-4 border-b border-surface-container">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-tertiary-fixed flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined">event_repeat</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Revisit Required</p>
+<p class="text-[11px] text-on-surface-variant font-medium">Flag for follow-up within 7 days</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<!-- Significant Changes Toggle -->
+<div class="flex items-center justify-between p-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed-variant">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Significant Changes</p>
+<p class="text-[11px] text-on-surface-variant font-medium">Layout differs from master planogram</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+</div>
+</section>
+<!-- Main Action CTA -->
+<section class="pt-4">
+<button class="w-full bg-gradient-to-b from-primary to-primary-container py-4 rounded-xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform duration-200">
+<span class="text-on-primary font-bold text-md tracking-wide">Save &amp; Continue</span>
+</button>
+</section>
+</main>
+<!-- Bottom Navigation Shell -->
+<nav class="fixed bottom-0 left-0 w-full glass-effect shadow-[0_-4px_12px_rgba(0,0,0,0.03)] border-t border-slate-100 flex justify-around items-center px-2 py-3 pb-safe z-50">
+<button class="flex flex-col items-center justify-center text-[#414752] px-3 py-1 hover:text-[#005DA9] active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-[22px]">dashboard</span>
+<span class="font-['Inter'] text-[11px] font-medium mt-1">Overview</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#414752] px-3 py-1 hover:text-[#005DA9] active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-[22px]">fact_check</span>
+<span class="font-['Inter'] text-[11px] font-medium mt-1">Checklist</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-[#0176D3]/10 text-[#005DA9] rounded-xl px-4 py-1 active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">photo_camera</span>
+<span class="font-['Inter'] text-[11px] font-bold mt-1">Evidence</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#414752] px-3 py-1 hover:text-[#005DA9] active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-[22px]">task_alt</span>
+<span class="font-['Inter'] text-[11px] font-medium mt-1">Finish</span>
+</button>
+</nav>
+<!-- Contextual FAB (Hidden on this transactional screen as per instruction) -->
+<!-- Suppression Logic: Suppressed to prioritize the Evidence task flow -->
+</body></html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Photo Capture - Scotts Miracle-Gro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ba1a1a",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed-variant": "#004884",
+                        "on-background": "#1b1c1c",
+                        "on-tertiary-container": "#fffcff",
+                        "primary-container": "#0176d3",
+                        "on-tertiary-fixed": "#321200",
+                        "secondary": "#2d5fa2",
+                        "inverse-on-surface": "#f2f0f0",
+                        "surface-container": "#efeded",
+                        "on-tertiary-fixed-variant": "#753400",
+                        "surface-variant": "#e3e2e2",
+                        "primary": "#005da9",
+                        "on-secondary-fixed-variant": "#064688",
+                        "outline": "#717784",
+                        "on-secondary-fixed": "#001b3c",
+                        "surface-container-highest": "#e3e2e2",
+                        "tertiary-fixed": "#ffdbc8",
+                        "on-error": "#ffffff",
+                        "surface-bright": "#fbf9f9",
+                        "on-surface": "#1b1c1c",
+                        "secondary-fixed": "#d6e3ff",
+                        "outline-variant": "#c0c7d4",
+                        "on-tertiary": "#ffffff",
+                        "background": "#fbf9f9",
+                        "tertiary-container": "#bc5800",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb68b",
+                        "surface-container-low": "#f5f3f3",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "on-surface-variant": "#414752",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#fefcff",
+                        "surface-tint": "#005fac",
+                        "surface-container-high": "#e9e8e7",
+                        "inverse-primary": "#a4c9ff",
+                        "primary-fixed": "#d4e3ff",
+                        "on-primary-fixed": "#001c39",
+                        "surface-dim": "#dbdad9",
+                        "on-error-container": "#93000a",
+                        "surface": "#fbf9f9",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#a8c8ff",
+                        "tertiary": "#964500",
+                        "on-secondary-container": "#034587",
+                        "inverse-surface": "#303031",
+                        "secondary-container": "#88b4fe"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        .glass-nav { backdrop-filter: blur(16px); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background selection:bg-primary-container/20">
+<!-- TopAppBar -->
+<header class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg shadow-[0_0_24px_rgba(27,28,28,0.06)] fixed top-0 w-full z-50 flex items-center px-4 h-16 w-full">
+<button class="text-[#0176D3] hover:opacity-80 transition-opacity active:scale-95 transition-transform mr-3">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="text-[#0176D3] font-['Inter'] font-bold text-lg tracking-tight">Photo Capture</h1>
+<div class="ml-auto">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]" data-icon="cloud_done">cloud_done</span>
+</div>
+</div>
+</header>
+<main class="pt-20 pb-32 px-4 space-y-6">
+<!-- Selection Summary Block (Kinetic Utility) -->
+<section class="bg-surface-container-low p-5 rounded-xl">
+<div class="flex justify-between items-end mb-4">
+<div>
+<p class="text-on-surface-variant font-medium text-xs uppercase tracking-wider mb-1">Current Session</p>
+<h2 class="text-2xl font-black text-on-surface tracking-tight">Selection Summary</h2>
+</div>
+<span class="bg-primary text-white text-[10px] font-bold px-2 py-1 rounded-full mb-1">LIVE UPDATE</span>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div class="bg-surface-container-lowest p-3 rounded-xl shadow-sm">
+<p class="text-on-surface-variant text-xs font-medium mb-1">Endcap</p>
+<div class="flex items-center gap-2">
+<span class="text-lg font-bold text-on-surface">1 Item</span>
+<span class="material-symbols-outlined text-primary text-sm" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-3 rounded-xl shadow-sm">
+<p class="text-on-surface-variant text-xs font-medium mb-1">Garden Doors</p>
+<div class="flex items-center gap-2">
+<span class="text-lg font-bold text-on-surface">2 Items</span>
+<span class="material-symbols-outlined text-primary text-sm" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Photo Evidence Section -->
+<section>
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-on-surface font-extrabold text-lg tracking-tight">Photo Evidence</h3>
+<span class="text-on-surface-variant text-sm font-medium">3 of 5 Required</span>
+</div>
+<!-- Salesforce Style Upload Card -->
+<div class="bg-surface-container-lowest rounded-xl p-8 flex flex-col items-center justify-center border-2 border-dashed border-outline-variant/30 text-center mb-6 active:scale-[0.98] transition-transform">
+<div class="w-16 h-16 bg-primary-fixed-dim/30 rounded-full flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="add_a_photo">add_a_photo</span>
+</div>
+<p class="text-on-surface font-bold">Upload New Capture</p>
+<p class="text-on-surface-variant text-xs mt-1">Tap to open camera or browse files</p>
+</div>
+<!-- Horizontal Thumbnails Bento -->
+<div class="grid grid-cols-2 gap-4">
+<!-- Item 1 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm">
+<div class="relative h-40">
+<img alt="Fertilizer Shelf Display" class="w-full h-full object-cover" data-alt="Professional retail shelf display featuring neatly arranged bags of Scotts Miracle-Gro fertilizer in a bright home improvement store environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9ORgp2Ke1P5ENfMNJ5vvqrCC1-DTkhB7cZ-CN6RHmOO2HvHRgLDfAeB5wtzQGBVGwFwfL04X9xkcXYwBXmROKqd8JhvshHGNXur95jfGFtw0SAyHDhpYe_iyB8IGD6ctp0-gLI7Ifuw1DNcO3cya50iI9yO8ALmmbONz3Zigl_FaOqjIm60cdMfHer9-qd27m2QmumpYOX9HN2eDWcqcnW3vUPvQE8iFb3gW6LtHuc24VBMw22JcqmwihFeE9ub4t5xQBeWtI0Ts"/>
+<button class="absolute top-2 right-2 w-8 h-8 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-sm" data-icon="close">close</span>
+</button>
+</div>
+<div class="p-3">
+<p class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Shelf View</p>
+<p class="text-sm font-semibold text-on-surface line-clamp-1">Fertilizer shelf A12</p>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm">
+<div class="relative h-40">
+<img alt="Garden Center Display" class="w-full h-full object-cover" data-alt="Wide angle shot of a garden center entrance with seasonal plants and Scotts branding visible under bright natural sunlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBq3mXgLuiOSY5GIjVrdHhGEkAa2drHPvH_8vNG417VUm4j4BOQeLUoSE_u1xxtbrb54q9X8VOKiYHL9u8D079YPfAVFahh2QFCbgA3GScMBhd55BDqSiyws8V8fkoblt-ITukd79T8ZDIE4uuomZRPuOhBffSAD79mt4WD6u83NCG6-nyk9BlOZXxVoVV90imWhrDqeW8fqxWIhIcTm4344-HvHQGTJmR7jy2fBJktubKtyPlHgnkKani0SB3jXwPgYlKl7m-dn3c"/>
+<button class="absolute top-2 right-2 w-8 h-8 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-sm" data-icon="close">close</span>
+</button>
+</div>
+<div class="p-3">
+<p class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Entrance</p>
+<p class="text-sm font-semibold text-on-surface line-clamp-1">Garden center entrance</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Auditor Notes Section -->
+<section class="space-y-3">
+<h3 class="text-on-surface font-extrabold text-lg tracking-tight">Auditor Notes</h3>
+<div class="relative">
+<textarea class="w-full h-32 bg-surface-container-highest border-none rounded-xl p-4 text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary-container focus:ring-offset-2 transition-all outline-none text-md leading-relaxed" placeholder="Enter audit observations here..."></textarea>
+<div class="absolute bottom-3 right-3">
+<span class="material-symbols-outlined text-on-surface-variant/40" data-icon="edit">edit</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Action Bar (Glassmorphism Sticky) -->
+<footer class="fixed bottom-0 left-0 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg shadow-[0_-4px_24px_rgba(27,28,28,0.06)] px-4 py-4 pb-safe z-50">
+<div class="flex items-center gap-3">
+<button class="flex-1 bg-surface-container-high text-on-primary-fixed-variant font-bold py-4 rounded-xl active:scale-[0.97] transition-all">
+                Save Draft
+            </button>
+<button class="flex-[2] bg-gradient-to-br from-[#005da9] to-[#0176D3] text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-[0.97] transition-all">
+                Review Score
+                <span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</footer>
+<!-- BottomNavBar Anchor -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-2 py-3 pb-safe bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg rounded-t-[0.75rem] shadow-[0_0_24px_rgba(27,28,28,0.06)] hidden md:hidden">
+<div class="flex flex-col items-center justify-center text-[#414752] px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 active:scale-95">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Inventory</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-gradient-to-br from-[#005da9] to-[#0176D3] text-white rounded-[0.75rem] px-3 py-1.5 active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="photo_camera" style="font-variation-settings: 'FILL' 1;">photo_camera</span>
+<span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Capture</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#414752] px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 active:scale-95">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+<span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Notes</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#414752] px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 active:scale-95">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span>
+<span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Review Score</span>
+</div>
+</nav>
+</body></html>

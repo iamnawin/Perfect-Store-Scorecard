@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#f9f9f9",
+                        "surface-tint": "#005fac",
+                        "surface-container": "#eeeeee",
+                        "tertiary": "#964500",
+                        "on-tertiary-fixed-variant": "#753400",
+                        "on-secondary-fixed-variant": "#2d486b",
+                        "tertiary-fixed-dim": "#ffb68b",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#fffcff",
+                        "on-primary-fixed-variant": "#004884",
+                        "surface-dim": "#dadada",
+                        "on-error-container": "#93000a",
+                        "on-surface-variant": "#414752",
+                        "tertiary-container": "#bc5800",
+                        "on-primary-container": "#fefcff",
+                        "inverse-primary": "#a4c9ff",
+                        "surface-container-highest": "#e2e2e2",
+                        "inverse-on-surface": "#f1f1f1",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed-dim": "#adc8f2",
+                        "on-secondary-container": "#415b7f",
+                        "surface-container-lowest": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#321200",
+                        "surface-variant": "#e2e2e2",
+                        "primary-container": "#0176d3",
+                        "outline-variant": "#c0c7d4",
+                        "on-background": "#1a1c1c",
+                        "primary": "#005da9",
+                        "secondary-fixed": "#d4e3ff",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "secondary-container": "#b9d3fe",
+                        "secondary": "#466084",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed": "#ffdbc8",
+                        "on-error": "#ffffff",
+                        "surface-container-high": "#e8e8e8",
+                        "surface-container-low": "#f3f3f3",
+                        "surface-bright": "#f9f9f9",
+                        "on-primary-fixed": "#001c39",
+                        "primary-fixed": "#d4e3ff",
+                        "background": "#f9f9f9",
+                        "on-secondary-fixed": "#001c39",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#2f3131",
+                        "on-surface": "#1a1c1c",
+                        "outline": "#717784"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-nav-pill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm dark:shadow-none h-14 flex items-center justify-between px-4">
+<div class="flex items-center gap-3">
+<button class="transition-all active:scale-95 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 p-2 rounded-lg">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">menu</span>
+</button>
+<h1 class="font-headline font-bold text-slate-900 dark:text-white tracking-tight">Store Scorecard</h1>
+</div>
+<div class="h-8 w-8 rounded-full bg-primary-container flex items-center justify-center text-[10px] font-bold text-white uppercase ring-2 ring-white shadow-sm overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="professional portrait of a corporate field auditor in a blue shirt with soft studio lighting and neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6JJMqNLBai0Ol_7eH8fW_I92pPfj4VANztTMf9M3VirSIp6U4Tn-f2Jxmm_iFq8Tqx3Q-T0eoJij4-GmBwWncEaCvtE7XaG2dcLypP0_lMJXLRoEDU_oe5JBd8YoZcIOoBm5MZ5hG1wGYoWrBlCktRlfS9elaUBWd6-he6FtWBK1OPSF1rYXGEasLcbKlcw-9zWLbh4lJLRWCBLWaTCx-FIDtiA_5TmY8u2y-6baZNqYgxcRZOVyhljp9j412agozFz9m-_rqSJ4"/>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-20 px-4 space-y-6 max-w-lg mx-auto">
+<!-- Contextual Header Image (Bento-style card) -->
+<div class="relative h-44 rounded-xl overflow-hidden shadow-sm bg-surface-container-low group">
+<img alt="Retail Environment" class="w-full h-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105" data-alt="wide shot of a clean modern home improvement store garden center with bright natural daylight and organized product displays" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD3QMgr5u3zi6VgbgXUc8TE7TnEq8XI8MY0zGr1o9BUveum-wd2KQfcDp6BZGpT-sqfZyYu9SHaj0a8sPCNpgUgrIbK4iTxdNfFKct1JDWsGN1wzryLbGqu03jHDFzF9io0gofbesV1w6tDBpbwd8ZIYFZsCspdyJGdUSemBtRAnATiVBelYXgXFbAAqy6PYd2LzMDdHWYlcIZLYJZ0_DBgZyQUK6CPtja9kdDnShZSzB-e25ms1nYSVc2gq0dgJyUt9MzkzYQsQlg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-on-surface/60 via-transparent to-transparent"></div>
+<div class="absolute bottom-4 left-4">
+<div class="flex items-center gap-2 bg-primary-container/90 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">location_on</span>
+                    Live Visit
+                </div>
+</div>
+</div>
+<!-- Record Summary Card -->
+<section class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_8px_24px_rgba(0,93,169,0.06)] space-y-5">
+<div class="flex justify-between items-start">
+<div class="space-y-1">
+<p class="text-label-sm font-medium text-on-surface-variant uppercase tracking-wider text-[10px]">Active Destination</p>
+<h2 class="text-headline-lg font-extrabold text-primary tracking-tight leading-tight">Home Depot #1234</h2>
+</div>
+<div class="bg-primary-container/10 px-3 py-1 rounded-full flex items-center gap-1.5">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<span class="text-[11px] font-bold text-primary">Active</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1">
+<p class="text-on-surface-variant text-[11px] font-medium">Banner</p>
+<p class="font-semibold text-on-surface">The Home Depot</p>
+</div>
+<div class="space-y-1">
+<p class="text-on-surface-variant text-[11px] font-medium">Version</p>
+<p class="font-semibold text-on-surface">Q1 2026</p>
+</div>
+</div>
+<div class="pt-4 border-t border-surface-container-high">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">assessment</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Q1 2026 Store Scorecard</p>
+<p class="text-xs text-on-surface-variant">Standard Placement Audit</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Progress Indicator (Minimal) -->
+<div class="px-2 space-y-2">
+<div class="flex justify-between items-center text-[11px] font-bold text-on-surface-variant">
+<span>PRE-FLIGHT CHECK</span>
+<span class="text-primary">0% COMPLETE</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-[5%] rounded-full shadow-sm"></div>
+</div>
+<p class="text-center text-[11px] text-on-surface-variant italic pt-2">Data sync active • Last verified 2m ago</p>
+</div>
+</main>
+<!-- Sticky Bottom Primary Action -->
+<div class="fixed bottom-16 left-0 w-full p-4 z-40 bg-gradient-to-t from-surface via-surface/90 to-transparent">
+<button class="w-full h-14 bg-gradient-to-b from-primary-container to-primary text-white rounded-xl font-bold shadow-[0_4px_16px_rgba(1,118,211,0.3)] flex items-center justify-center gap-3 active:scale-95 transition-all">
+<span>Start Scorecard</span>
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] rounded-t-xl h-16 flex justify-around items-center px-2">
+<div class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-3 py-1 transition-transform active:scale-90">
+<span class="material-symbols-outlined text-[22px]">calendar_today</span>
+<span class="font-['Inter'] text-[10px] font-medium">Today</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-xl px-3 py-1 transition-transform active:scale-90">
+<span class="material-symbols-outlined text-[22px] active-nav-pill">assessment</span>
+<span class="font-['Inter'] text-[10px] font-medium">Scorecards</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-3 py-1 transition-transform active:scale-90">
+<span class="material-symbols-outlined text-[22px]">store</span>
+<span class="font-['Inter'] text-[10px] font-medium">Stores</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-3 py-1 transition-transform active:scale-90">
+<span class="material-symbols-outlined text-[22px]">more_horiz</span>
+<span class="font-['Inter'] text-[10px] font-medium">More</span>
+</div>
+</nav>
+</body></html>

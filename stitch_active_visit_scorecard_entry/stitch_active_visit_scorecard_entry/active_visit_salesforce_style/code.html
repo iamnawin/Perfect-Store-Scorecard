@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Active Visit Entry - Retail Audit</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-container": "#fefcff",
+                        "on-surface-variant": "#414752",
+                        "on-tertiary": "#ffffff",
+                        "tertiary": "#964500",
+                        "secondary": "#2d5fa2",
+                        "tertiary-fixed": "#ffdbc8",
+                        "primary-container": "#0176d3",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-container": "#fffcff",
+                        "secondary-fixed-dim": "#a8c8ff",
+                        "secondary-container": "#88b4fe",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#004884",
+                        "background": "#f9f9f8",
+                        "surface-container": "#eeeeed",
+                        "on-secondary-fixed-variant": "#064688",
+                        "primary": "#005da9",
+                        "surface-variant": "#e2e2e1",
+                        "surface-container-highest": "#e2e2e1",
+                        "inverse-primary": "#a4c9ff",
+                        "on-primary-fixed": "#001c39",
+                        "on-secondary": "#ffffff",
+                        "surface-tint": "#005fac",
+                        "surface-container-high": "#e8e8e7",
+                        "secondary-fixed": "#d6e3ff",
+                        "inverse-on-surface": "#f1f1f0",
+                        "on-secondary-container": "#034587",
+                        "on-secondary-fixed": "#001b3c",
+                        "on-surface": "#1a1c1c",
+                        "on-tertiary-fixed": "#321200",
+                        "primary-fixed": "#d4e3ff",
+                        "tertiary-container": "#bc5800",
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "surface-container-low": "#f4f4f3",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#753400",
+                        "inverse-surface": "#2f3130",
+                        "outline": "#717784",
+                        "tertiary-fixed-dim": "#ffb68b",
+                        "outline-variant": "#c0c7d4",
+                        "surface": "#f9f9f8",
+                        "on-background": "#1a1c1c",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#dadad9",
+                        "surface-bright": "#f9f9f8",
+                        "primary-fixed-dim": "#a4c9ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-4 h-16 w-full bg-[#f9f9f8] dark:bg-slate-950">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="professional male auditor headshot with a friendly expression wearing business casual attire" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqo20gwlE983IuPwiMeH8kcAJyYvX97XWKvGuzu5wiJaLycDK4OXvF7Bpqf9P_xnNEKuMxfZSDk04LMTgiGdol4h3cC4IDhcxYr0xr8XzY5LpaNMzv3mKng_1fGx-lrlqyOI_8PrszlnGUSLzvjTLiCfMSlXVa9-iZah2_DF0_VyYRqa9HcfVoisyGJ288C7iv2d0DB9Qcc-KVjSYh0bjPo80pNZ-OhhX-v6qXKqvet9qXcujUYwSDzUAucxJHFqC_pSaMnXkYfbE"/>
+</div>
+<h1 class="font-['Inter'] font-semibold text-lg tracking-tight text-[#1a1c1c] dark:text-slate-100">Retail Audit</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-[#444746] dark:text-slate-400 hover:bg-[#eeeeed] transition-colors p-2 rounded-full">search</button>
+</div>
+</header>
+<main class="pt-16 pb-24">
+<!-- Hero Banner Section -->
+<section class="relative h-56 w-full overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="wide shot of a clean modern commercial retail storefront with large orange signage and professional landscaping" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwB9SU2UXSwhsNpI37f6vhr0Ky18_jEvHzDRSui4hyzywcpZhjx2OrFG1F4X5mnHY-y0D9MhiDGMr0td_lwTbaVZD0_7OAJTXkyw5t_XsatGuUFQSn9gEqU5OGitGMRuBAF51NyHgMf9zzjOsyygfEL9qxLKJFGAH2OjCKWc8nH4psVG47cBlASWbP3CsQy0qTI5Dg_moHeldAHHyAYmPkn-F3RMPd3tR8X7vtD_XanlP68fCepO_mkqmlrAtyQZsyH2yp4Yvz2Po"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+<div class="absolute bottom-4 left-4 right-4">
+<div class="flex items-center gap-2 mb-1">
+<span class="bg-[#2e844a] text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Active Visit</span>
+</div>
+<h2 class="text-white text-2xl font-extrabold tracking-tight">Home Depot #1234</h2>
+<div class="flex items-center text-white/90 text-sm mt-0.5">
+<span class="material-symbols-outlined text-sm mr-1">location_on</span>
+                    Industrial District, Sector 7G
+                </div>
+</div>
+</section>
+<!-- Dynamic Information Grid (Bento Style) -->
+<section class="px-4 -mt-4 relative z-10 grid grid-cols-1 md:grid-cols-3 gap-3">
+<!-- Main Details Card -->
+<div class="md:col-span-2 bg-surface-container-lowest rounded-xl p-5 shadow-[0_-4px_12px_rgba(0,0,0,0.03)] border-b border-surface-container">
+<h3 class="text-[10px] font-bold text-outline uppercase tracking-widest mb-4">Visit Parameters</h3>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+<div class="flex flex-col gap-1">
+<span class="text-xs text-on-surface-variant font-medium">Compliance Cycle</span>
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-primary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-xl">event_repeat</span>
+</div>
+<span class="text-sm font-semibold text-on-surface">Quarter 3, FY 2024</span>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-xs text-on-surface-variant font-medium">Protocol Version</span>
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-tertiary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-xl">verified</span>
+</div>
+<span class="text-sm font-semibold text-on-surface">Scorecard v2.1</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Auditor Card -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-[0_-4px_12px_rgba(0,0,0,0.03)] border-b border-surface-container">
+<h3 class="text-[10px] font-bold text-outline uppercase tracking-widest mb-4">Assigned Auditor</h3>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-secondary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary">badge</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Lead: 99284-A</p>
+<p class="text-xs text-on-surface-variant">Field Operations Team</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Primary Action -->
+<section class="px-4 mt-6">
+<button class="w-full bg-primary-container hover:bg-primary transition-all active:scale-[0.98] py-4 rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">play_circle</span>
+<span class="text-white font-bold text-lg">Start Scorecard</span>
+</button>
+</section>
+<!-- Pre-audit Checklist -->
+<section class="px-4 mt-8">
+<div class="flex justify-between items-end mb-4">
+<h3 class="text-lg font-bold text-on-surface tracking-tight">Pre-audit Checklist</h3>
+<span class="text-xs font-semibold text-primary">4 items total</span>
+</div>
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden">
+<!-- Checklist Row 1 -->
+<div class="flex items-center gap-4 p-4 hover:bg-surface-container-low transition-colors group cursor-pointer border-b border-surface-container-low">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant group-hover:bg-primary-fixed group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined">description</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-semibold text-on-surface">Review Previous Discrepancies</p>
+<p class="text-xs text-on-surface-variant">Check Q2 unresolved action items</p>
+</div>
+<span class="material-symbols-outlined text-outline-variant">chevron_right</span>
+</div>
+<!-- Checklist Row 2 -->
+<div class="flex items-center gap-4 p-4 hover:bg-surface-container-low transition-colors group cursor-pointer border-b border-surface-container-low">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant group-hover:bg-primary-fixed group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined">photo_camera</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-semibold text-on-surface">Storefront Capture</p>
+<p class="text-xs text-on-surface-variant">Required wide-angle entry photo</p>
+</div>
+<span class="material-symbols-outlined text-outline-variant">chevron_right</span>
+</div>
+<!-- Checklist Row 3 -->
+<div class="flex items-center gap-4 p-4 hover:bg-surface-container-low transition-colors group cursor-pointer border-b border-surface-container-low">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant group-hover:bg-primary-fixed group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined">person_pin_circle</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-semibold text-on-surface">Manager Check-in</p>
+<p class="text-xs text-on-surface-variant">Digital signature for arrival timestamp</p>
+</div>
+<span class="material-symbols-outlined text-outline-variant">chevron_right</span>
+</div>
+<!-- Checklist Row 4 -->
+<div class="flex items-center gap-4 p-4 hover:bg-surface-container-low transition-colors group cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant group-hover:bg-primary-fixed group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined">inventory_2</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-semibold text-on-surface">Planogram Sync</p>
+<p class="text-xs text-on-surface-variant">Download latest aisle layouts</p>
+</div>
+<span class="material-symbols-outlined text-outline-variant">chevron_right</span>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center h-20 px-2 pb-safe bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl z-50 shadow-[0_-4px_12px_rgba(0,28,57,0.05)] border-t border-slate-200 dark:border-slate-800">
+<a class="flex flex-col items-center justify-center text-[#444746] dark:text-slate-400 px-3 py-1 hover:text-[#0176D3] dark:hover:text-blue-300 transition-transform duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[11px] font-['Inter'] font-medium uppercase tracking-wider mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#0176D3] dark:text-blue-400 bg-[#e0f0ff] dark:bg-blue-900/30 rounded-xl px-3 py-1 scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined active-icon">assignment</span>
+<span class="text-[11px] font-['Inter'] font-medium uppercase tracking-wider mt-1">Tasks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#444746] dark:text-slate-400 px-3 py-1 hover:text-[#0176D3] dark:hover:text-blue-300 transition-transform duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[11px] font-['Inter'] font-medium uppercase tracking-wider mt-1">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#444746] dark:text-slate-400 px-3 py-1 hover:text-[#0176D3] dark:hover:text-blue-300 transition-transform duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined">more_horiz</span>
+<span class="text-[11px] font-['Inter'] font-medium uppercase tracking-wider mt-1">More</span>
+</a>
+</nav>
+</body></html>

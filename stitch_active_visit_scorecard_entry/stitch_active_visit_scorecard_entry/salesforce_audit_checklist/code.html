@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "slds-blue": "#0176D3",
+                        "slds-blue-dark": "#014486",
+                        "slds-gray-bg": "#F3F2F1",
+                        "slds-border": "#DDDBDA",
+                        "slds-text-main": "#181818",
+                        "slds-text-weak": "#444444",
+                        "slds-success": "#2E844A",
+                        "slds-error": "#BA0517",
+                        "outline": "#747474",
+                        "surface": "#FFFFFF"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "4px",
+                        "lg": "4px",
+                        "xl": "8px",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            font-size: 20px;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        .slds-card {
+            background: #FFFFFF;
+            border: 1px solid #DDDBDA;
+            border-radius: 0.25rem;
+            box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-slds-gray-bg text-slds-text-main min-h-screen pb-48">
+<!-- Salesforce Header (TopAppBar) -->
+<header class="sticky top-0 z-50 bg-slds-blue text-white flex justify-between items-center px-4 h-14 w-full shadow-md">
+<div class="flex items-center gap-3">
+<button class="active:opacity-70">
+<span class="material-symbols-outlined text-white" data-icon="arrow_back">arrow_back</span>
+</button>
+<div class="flex flex-col leading-tight">
+<h1 class="font-bold text-sm tracking-tight">Dairy Audit</h1>
+<span class="text-[10px] opacity-80 uppercase font-medium">Store #4492</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-[10px] font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded">Active</span>
+<button class="active:opacity-70">
+<span class="material-symbols-outlined text-white" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</header>
+<!-- SLDS Progress Bar -->
+<div class="w-full bg-white border-b border-slds-border p-4">
+<div class="flex justify-between items-end mb-2">
+<span class="text-xs font-bold text-slds-text-weak uppercase tracking-widest">Audit Progress</span>
+<span class="text-sm font-bold text-slds-blue">45%</span>
+</div>
+<div class="w-full bg-[#EAEAEA] rounded-full h-2 overflow-hidden">
+<div class="bg-slds-blue h-full transition-all duration-500" style="width: 45%;"></div>
+</div>
+</div>
+<!-- Main Content Canvas -->
+<main class="p-4 space-y-4 max-w-lg mx-auto">
+<!-- Category Header -->
+<div class="flex items-center justify-between mt-2">
+<h2 class="text-base font-bold text-slds-text-main">Planogram Compliance</h2>
+<span class="text-[10px] font-semibold text-slds-text-weak uppercase">8 Remaining</span>
+</div>
+<!-- Salesforce Style Cards -->
+<div class="space-y-3">
+<!-- Tile: Plant Food POG -->
+<div class="slds-card p-4">
+<div class="mb-3">
+<span class="text-[10px] font-bold text-slds-text-weak uppercase tracking-wider block">SKU: 8820-P</span>
+<h3 class="text-sm font-bold">Plant Food POG</h3>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 py-2 px-3 border border-slds-border text-slds-blue font-bold text-xs uppercase rounded hover:bg-gray-50 active:bg-gray-100 transition-colors">Yes</button>
+<button class="flex-1 py-2 px-3 border border-slds-border text-slds-blue font-bold text-xs uppercase rounded hover:bg-gray-50 active:bg-gray-100 transition-colors">No</button>
+<button class="flex-1 py-2 px-3 border border-slds-border text-slds-blue font-bold text-xs uppercase rounded hover:bg-gray-50 active:bg-gray-100 transition-colors">N/A</button>
+</div>
+</div>
+<!-- Tile: Chemical POG -->
+<div class="slds-card p-4">
+<div class="mb-3">
+<span class="text-[10px] font-bold text-slds-text-weak uppercase tracking-wider block">SKU: 4410-C</span>
+<h3 class="text-sm font-bold">Chemical POG</h3>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 py-2 px-3 border border-slds-border text-slds-blue font-bold text-xs uppercase rounded">Yes</button>
+<button class="flex-1 py-2 px-3 border border-slds-border text-slds-blue font-bold text-xs uppercase rounded">No</button>
+<button class="flex-1 py-2 px-3 border border-slds-border text-slds-blue font-bold text-xs uppercase rounded">N/A</button>
+</div>
+</div>
+<!-- Tile: Indoor Soil POG (Compliant State) -->
+<div class="slds-card p-4 border-l-4 border-l-slds-success">
+<div class="flex justify-between items-start mb-3">
+<div>
+<span class="text-[10px] font-bold text-slds-success uppercase tracking-wider block">SKU: 1102-S</span>
+<h3 class="text-sm font-bold">Indoor Soil POG</h3>
+</div>
+<span class="material-symbols-outlined text-slds-success" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="flex gap-2">
+<button class="flex-[3] py-2 px-3 bg-slds-success text-white font-bold text-xs uppercase rounded shadow-sm">Compliant</button>
+<button class="flex-1 py-2 px-3 border border-slds-border text-slds-text-weak font-bold text-xs uppercase rounded">Undo</button>
+</div>
+</div>
+<!-- Tile: Grass Seed POG (Non-Compliant State) -->
+<div class="slds-card p-4 border-l-4 border-l-slds-error bg-red-50/30">
+<div class="flex justify-between items-start mb-3">
+<div>
+<span class="text-[10px] font-bold text-slds-error uppercase tracking-wider block">SKU: 9942-G</span>
+<h3 class="text-sm font-bold">Grass Seed POG</h3>
+</div>
+<span class="material-symbols-outlined text-slds-error" data-icon="report" style="font-variation-settings: 'FILL' 1;">report</span>
+</div>
+<div class="flex gap-2">
+<button class="flex-[3] py-2 px-3 bg-slds-error text-white font-bold text-xs uppercase rounded shadow-sm">Non-Compliant</button>
+<button class="flex-1 py-2 px-3 border border-slds-border text-slds-text-weak font-bold text-xs uppercase rounded">Undo</button>
+</div>
+</div>
+<!-- Tile: Fenceline (N/A State) -->
+<div class="slds-card p-4 border-l-4 border-l-gray-400 bg-gray-50/50">
+<div class="flex justify-between items-start mb-3">
+<div>
+<span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">ZONE: EXT-01</span>
+<h3 class="text-sm font-bold text-gray-500">Fenceline</h3>
+</div>
+<span class="material-symbols-outlined text-gray-400" data-icon="do_not_disturb_on">do_not_disturb_on</span>
+</div>
+<div class="flex gap-2">
+<button class="flex-[3] py-2 px-3 bg-gray-500 text-white font-bold text-xs uppercase rounded">Not Applicable</button>
+<button class="flex-1 py-2 px-3 border border-slds-border text-slds-text-weak font-bold text-xs uppercase rounded">Undo</button>
+</div>
+</div>
+</div>
+<!-- Documentation Card -->
+<div class="slds-card p-4 mt-6 border-dashed border-2">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 bg-slds-gray-bg rounded flex items-center justify-center border border-slds-border">
+<span class="material-symbols-outlined text-slds-blue" data-icon="photo_camera">photo_camera</span>
+</div>
+<div>
+<h4 class="font-bold text-sm">Documentation</h4>
+<p class="text-[10px] text-slds-text-weak">Required for non-compliant items.</p>
+</div>
+</div>
+<div class="flex gap-2 overflow-x-auto pb-2">
+<div class="w-20 h-20 bg-gray-200 rounded relative shrink-0">
+<img alt="Audit photo" class="object-cover w-full h-full rounded" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtUGk-41Mq57wgYQpb-CVRflMRFtR8NIJubSNl5aHVpwc8r28B3MA2XgxJZhMBKZwGyYSW13OqFCTbXs7Ux-FvwRap5NC_VTXLC7kYgNgTFaCohQ-0q253u7D7CMzoAhYZX-lUAj3iOoTOyUYBFaMG0RNLQP4M-bBOGK_E5gx8ShSlN_qzQM1WqmefhLYUioUtV4-mGiEtkWlYPYSuBYImOxWFuOGNTK56Dx40muLbwFHRnfdWft7vLJMommqeej3F8uOp6yzi2WA"/>
+</div>
+<button class="w-20 h-20 border-2 border-dashed border-slds-border rounded flex items-center justify-center text-slds-blue shrink-0">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Sticky Mobile Summary & Nav -->
+<footer class="fixed bottom-0 left-0 w-full z-50">
+<!-- Score Summary Bar -->
+<div class="bg-slds-blue-dark text-white px-4 py-3 flex justify-between items-center">
+<div class="flex flex-col">
+<span class="text-[9px] font-bold uppercase tracking-wider text-white/70">Current Audit Score</span>
+<span class="text-xl font-black">88<span class="text-sm font-normal text-white/60">/100</span></span>
+</div>
+<div class="flex gap-4">
+<div class="text-center">
+<span class="text-[9px] font-bold uppercase tracking-wider text-white/70 block">Compliant</span>
+<span class="text-sm font-bold">14</span>
+</div>
+<div class="text-center">
+<span class="text-[9px] font-bold uppercase tracking-wider text-white/70 block">Fails</span>
+<span class="text-sm font-bold text-red-300">2</span>
+</div>
+</div>
+</div>
+<!-- Bottom Navigation Bar -->
+<div class="bg-white border-t border-slds-border flex justify-between items-center px-2 py-1 h-16 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+<div class="flex flex-1 justify-around">
+<a class="flex flex-col items-center justify-center text-slds-blue px-2" href="#">
+<span class="material-symbols-outlined" data-icon="assignment" style="font-variation-settings: 'FILL' 1;">assignment</span>
+<span class="text-[10px] font-semibold mt-0.5">Audits</span>
+</a>
+<a class="flex flex-col items-center justify-center text-gray-500 px-2" href="#">
+<span class="material-symbols-outlined" data-icon="check_circle">check_circle</span>
+<span class="text-[10px] font-semibold mt-0.5">Tasks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-gray-500 px-2" href="#">
+<span class="material-symbols-outlined" data-icon="sync">sync</span>
+<span class="text-[10px] font-semibold mt-0.5">Sync</span>
+</a>
+</div>
+<button class="bg-slds-blue text-white px-6 h-12 rounded font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg active:scale-95 transition-transform">
+            Complete
+            <span class="material-symbols-outlined text-sm" data-icon="task_alt">task_alt</span>
+</button>
+</div>
+</footer>
+</body></html>

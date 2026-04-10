@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>Retail Audit - Active Visit Entry</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "error": "#ba1a1a",
+                    "on-surface": "#1a1c1c",
+                    "primary-container": "#0176d3",
+                    "on-primary-fixed-variant": "#004884",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-container": "#415b7f",
+                    "on-secondary-fixed": "#001c39",
+                    "surface-container-lowest": "#ffffff",
+                    "on-error": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "on-primary-container": "#fefcff",
+                    "inverse-primary": "#a4c9ff",
+                    "secondary-fixed": "#d4e3ff",
+                    "primary": "#005da9",
+                    "surface-container-low": "#f3f3f3",
+                    "surface-bright": "#f9f9f9",
+                    "surface-variant": "#e2e2e2",
+                    "on-primary": "#ffffff",
+                    "surface-dim": "#dadada",
+                    "secondary": "#466084",
+                    "surface-container-high": "#e8e8e8",
+                    "primary-fixed-dim": "#a4c9ff",
+                    "on-secondary-fixed-variant": "#2d486b",
+                    "error-container": "#ffdad6",
+                    "surface-container-highest": "#e2e2e2",
+                    "tertiary-fixed-dim": "#ffb68b",
+                    "on-tertiary-fixed-variant": "#753400",
+                    "on-surface-variant": "#414752",
+                    "on-primary-fixed": "#001c39",
+                    "tertiary-fixed": "#ffdbc8",
+                    "tertiary": "#964500",
+                    "on-tertiary-container": "#fffcff",
+                    "secondary-fixed-dim": "#adc8f2",
+                    "outline-variant": "#c0c7d4",
+                    "outline": "#717784",
+                    "surface-tint": "#005fac",
+                    "surface-container": "#eeeeee",
+                    "on-error-container": "#93000a",
+                    "surface": "#f9f9f9",
+                    "tertiary-container": "#bc5800",
+                    "primary-fixed": "#d4e3ff",
+                    "inverse-on-surface": "#f1f1f1",
+                    "on-background": "#1a1c1c",
+                    "on-tertiary-fixed": "#321200",
+                    "background": "#f9f9f9",
+                    "inverse-surface": "#2f3131",
+                    "secondary-container": "#b9d3fe"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Inter"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface">
+<!-- TopAppBar Shell -->
+<header class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md shadow-[0_8px_24px_rgba(0,93,169,0.06)]">
+<div class="flex items-center justify-between px-4 h-16 w-full max-w-full">
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-100 transition-colors active:scale-95 duration-200 text-[#005DA9]">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold text-[#1a1c1c] tracking-tight">Retail Audit</h1>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#414752]">more_vert</span>
+</div>
+</div>
+</header>
+<main class="pt-20 pb-24 px-4 space-y-6">
+<!-- Store Identity & Banner Section -->
+<section class="space-y-4">
+<div class="relative w-full h-48 rounded-xl overflow-hidden shadow-sm group">
+<img alt="Storefront" class="w-full h-full object-cover" data-alt="Modern wide-angle view of a large clean home improvement retail storefront with signature orange branding elements and glass windows in bright daylight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQLx9IxPCCqgEMPEa7djey8gwaGBHxf6JTR0mOk2nJuVUqE5wsJgZilosNzPoQkj1rfVuZUj1svOw-iLNM9TFkWMV64yHQ5saeNd7-XQvMfZYXVDMbN0idb__PDKCN0S-p_KfqS6Ngg7-9u0C7HjZqbkREGAm_go9XE8CsgcObEhiprTkOTtqY6m29Gss9dFOA6L2kLjyaHAzLry-Agsjglb8jBidZpeiOURr00kQH7t6hRXxBz17sw-nGysdWCyWNgk_Livloeh4"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+<div class="absolute bottom-4 left-4 right-4">
+<div class="flex items-center gap-2 mb-1">
+<span class="bg-primary text-on-primary text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Active</span>
+<span class="text-white/90 text-xs font-medium">Visit ID: 772-DXP</span>
+</div>
+<h2 class="text-white text-xl font-bold tracking-tight">Home Depot #1234</h2>
+</div>
+</div>
+</section>
+<!-- Audit Context Card -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-[0_8px_24px_rgba(0,93,169,0.04)] border border-outline-variant/10">
+<div class="flex items-start justify-between mb-6">
+<div>
+<p class="text-on-surface-variant text-xs font-semibold uppercase tracking-widest mb-1">Audit Protocol</p>
+<h3 class="text-on-surface text-lg font-bold">Quarter 3 / Scorecard v2.1</h3>
+</div>
+<div class="bg-secondary-container/30 p-2 rounded-lg">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">fact_check</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-6">
+<div class="space-y-1">
+<span class="text-on-surface-variant text-[11px] font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span> Scheduled
+                    </span>
+<p class="text-on-surface text-sm font-semibold">Today, Oct 24</p>
+</div>
+<div class="space-y-1">
+<span class="text-on-surface-variant text-[11px] font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">timer</span> Est. Duration
+                    </span>
+<p class="text-on-surface text-sm font-semibold">45 Minutes</p>
+</div>
+</div>
+<!-- Primary Action -->
+<button class="w-full bg-gradient-to-b from-primary to-primary-container text-on-primary font-bold py-4 rounded-xl shadow-lg active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+<span>Start Scorecard</span>
+<span class="material-symbols-outlined text-[20px]">play_arrow</span>
+</button>
+</div>
+<!-- Details Grid (Bento Style) -->
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-low p-4 rounded-xl space-y-2 border border-outline-variant/5">
+<span class="material-symbols-outlined text-primary text-[20px]">location_on</span>
+<p class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-tighter">Location</p>
+<p class="text-xs font-bold text-on-surface leading-tight">2455 Paces Ferry Rd SE, Atlanta, GA</p>
+</div>
+<div class="bg-surface-container-low p-4 rounded-xl space-y-2 border border-outline-variant/5">
+<span class="material-symbols-outlined text-primary text-[20px]">person</span>
+<p class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-tighter">Store Manager</p>
+<p class="text-xs font-bold text-on-surface leading-tight">Sarah Thompson</p>
+</div>
+</div>
+<!-- Recent Activity Header -->
+<div class="pt-2">
+<h4 class="text-on-surface font-bold text-sm px-1 mb-3">Previous Performance</h4>
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/10">
+<div class="flex items-center gap-4 p-4 hover:bg-surface-container transition-colors">
+<div class="w-12 h-12 rounded-full bg-tertiary-container/10 flex items-center justify-center text-tertiary font-bold text-sm">
+                        88%
+                    </div>
+<div class="flex-1">
+<p class="text-xs font-bold text-on-surface">Q2 Regional Audit</p>
+<p class="text-[10px] text-on-surface-variant">Completed Aug 12, 2023</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar Shell -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-2 py-3 pb-safe bg-white/80 backdrop-blur-md shadow-[0_-4px_12px_rgba(0,0,0,0.03)] border-t border-slate-100 z-50">
+<!-- Overview (Active) -->
+<a class="flex flex-col items-center justify-center bg-[#0176D3]/10 text-[#005DA9] rounded-xl px-3 py-1 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-['Inter'] text-[11px] font-medium">Overview</span>
+</a>
+<!-- Checklist -->
+<a class="flex flex-col items-center justify-center text-[#414752] px-3 py-1 hover:text-[#005DA9] active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">fact_check</span>
+<span class="font-['Inter'] text-[11px] font-medium">Checklist</span>
+</a>
+<!-- Evidence -->
+<a class="flex flex-col items-center justify-center text-[#414752] px-3 py-1 hover:text-[#005DA9] active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">photo_camera</span>
+<span class="font-['Inter'] text-[11px] font-medium">Evidence</span>
+</a>
+<!-- Finish -->
+<a class="flex flex-col items-center justify-center text-[#414752] px-3 py-1 hover:text-[#005DA9] active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined">task_alt</span>
+<span class="font-['Inter'] text-[11px] font-medium">Finish</span>
+</a>
+</nav>
+<!-- FAB for Contextual Help (Suppressed per logic but kept placeholder for SLDS feel if needed) -->
+<!-- Suppression Logic: Suppressed on Details screen, but this is a Dashboard/Entry screen -->
+<button class="fixed right-6 bottom-24 w-14 h-14 bg-primary-container text-on-primary-container rounded-full shadow-2xl flex items-center justify-center active:scale-90 transition-transform z-40">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">chat_bubble</span>
+</button>
+</body></html>

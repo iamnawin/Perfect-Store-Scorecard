@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#727783",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed": "#ffdbcb",
+                        "inverse-on-surface": "#f2f0f0",
+                        "inverse-surface": "#303031",
+                        "inverse-primary": "#a9c7ff",
+                        "surface-container-high": "#e9e8e7",
+                        "on-secondary-fixed": "#071e27",
+                        "tertiary": "#793100",
+                        "surface-container-low": "#f5f3f3",
+                        "surface-bright": "#fbf9f9",
+                        "on-primary-fixed-variant": "#00468c",
+                        "surface-variant": "#e3e2e2",
+                        "primary-container": "#005eb8",
+                        "surface-container": "#efeded",
+                        "primary": "#00478d",
+                        "on-secondary-fixed-variant": "#354a53",
+                        "on-tertiary-fixed": "#341100",
+                        "on-surface-variant": "#424752",
+                        "on-tertiary-container": "#ffcfb9",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#dbdad9",
+                        "secondary": "#4c616c",
+                        "on-primary-fixed": "#001b3d",
+                        "surface": "#fbf9f9",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed": "#d6e3ff",
+                        "outline-variant": "#c2c6d4",
+                        "surface-container-highest": "#e3e2e2",
+                        "secondary-fixed-dim": "#b4cad6",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#cfe6f2",
+                        "secondary-fixed": "#cfe6f2",
+                        "on-primary": "#ffffff",
+                        "on-surface": "#1b1c1c",
+                        "on-secondary-container": "#526772",
+                        "on-error-container": "#93000a",
+                        "primary-fixed-dim": "#a9c7ff",
+                        "surface-tint": "#005db6",
+                        "error": "#ba1a1a",
+                        "on-background": "#1b1c1c",
+                        "on-tertiary-fixed-variant": "#793100",
+                        "background": "#fbf9f9",
+                        "tertiary-fixed-dim": "#ffb691",
+                        "on-primary-container": "#c8daff",
+                        "tertiary-container": "#9f4300",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-40">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-50 bg-[#fbf9f9] dark:bg-[#1b1c1c] flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-4">
+<button class="transition-colors duration-200 active:opacity-80 text-[#00478D] dark:text-[#005eb8]">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-['Inter'] font-bold tracking-tight text-on-surface text-lg">Store #4492 - Dairy Audit</h1>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider text-on-surface-variant">Session Active</span>
+<button class="transition-colors duration-200 active:opacity-80 text-[#00478D] dark:text-[#005eb8]">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</header>
+<!-- Progress Indicator - "The Industrial Bar" -->
+<div class="w-full h-12 bg-surface-container flex items-center px-6 relative overflow-hidden">
+<div class="absolute left-0 top-0 h-full bg-gradient-to-r from-primary to-primary-container" style="width: 45%;"></div>
+<div class="relative z-10 w-full flex justify-between items-center">
+<span class="text-[32px] font-black leading-none tracking-tighter text-on-surface">45%</span>
+<span class="font-['Inter'] text-[11px] font-bold uppercase tracking-[0.1em] text-on-surface mix-blend-difference">Audit Progress</span>
+</div>
+</div>
+<!-- Main Content Canvas -->
+<main class="p-6 space-y-6 max-w-5xl mx-auto">
+<!-- Category Header -->
+<div class="flex items-center justify-between">
+<h2 class="text-xl font-bold tracking-tight text-on-surface">Planogram Compliance</h2>
+<span class="font-['Inter'] text-[10px] font-bold tracking-widest uppercase py-1 px-2 bg-surface-container-highest text-on-surface-variant rounded-sm">8 Sections Remaining</span>
+</div>
+<!-- Bento Grid of Audit Tiles -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+<!-- Tile: Plant Food POG (Neutral/Unselected) -->
+<div class="group flex flex-col bg-surface-container-low rounded-xl p-6 transition-all duration-200 border-l-4 border-transparent hover:bg-surface-container h-[160px] justify-between relative overflow-hidden">
+<div>
+<span class="font-['Inter'] text-[10px] font-bold tracking-widest uppercase text-on-surface-variant block mb-1">SKU: 8820-P</span>
+<h3 class="text-lg font-bold leading-tight">Plant Food POG</h3>
+</div>
+<div class="flex gap-2 mt-4">
+<button class="flex-1 py-3 px-4 bg-surface-container-highest text-on-surface font-bold text-xs uppercase tracking-wider rounded-lg transition-colors hover:bg-primary-fixed hover:text-primary">Yes</button>
+<button class="flex-1 py-3 px-4 bg-surface-container-highest text-on-surface font-bold text-xs uppercase tracking-wider rounded-lg transition-colors hover:bg-error-container hover:text-error">No</button>
+<button class="flex-1 py-3 px-4 bg-surface-container-highest text-on-surface font-bold text-xs uppercase tracking-wider rounded-lg transition-colors hover:bg-surface-dim">N/A</button>
+</div>
+</div>
+<!-- Tile: Chemical POG (Neutral/Unselected) -->
+<div class="group flex flex-col bg-surface-container-low rounded-xl p-6 transition-all duration-200 border-l-4 border-transparent hover:bg-surface-container h-[160px] justify-between">
+<div>
+<span class="font-['Inter'] text-[10px] font-bold tracking-widest uppercase text-on-surface-variant block mb-1">SKU: 4410-C</span>
+<h3 class="text-lg font-bold leading-tight">Chemical POG</h3>
+</div>
+<div class="flex gap-2 mt-4">
+<button class="flex-1 py-3 px-4 bg-surface-container-highest text-on-surface font-bold text-xs uppercase tracking-wider rounded-lg transition-colors hover:bg-primary-fixed hover:text-primary">Yes</button>
+<button class="flex-1 py-3 px-4 bg-surface-container-highest text-on-surface font-bold text-xs uppercase tracking-wider rounded-lg transition-colors hover:bg-error-container hover:text-error">No</button>
+<button class="flex-1 py-3 px-4 bg-surface-container-highest text-on-surface font-bold text-xs uppercase tracking-wider rounded-lg transition-colors hover:bg-surface-dim">N/A</button>
+</div>
+</div>
+<!-- Tile: Indoor Soil POG (Selected: YES) -->
+<div class="group flex flex-col bg-primary-container text-white rounded-xl p-6 transition-all duration-200 border-l-4 border-primary h-[160px] justify-between shadow-lg">
+<div class="flex justify-between items-start">
+<div>
+<span class="font-['Inter'] text-[10px] font-bold tracking-widest uppercase text-on-primary-container block mb-1">SKU: 1102-S</span>
+<h3 class="text-lg font-bold leading-tight">Indoor Soil POG</h3>
+</div>
+<span class="material-symbols-outlined" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="flex gap-2 mt-4">
+<button class="flex-1 py-3 px-4 bg-white text-primary font-black text-xs uppercase tracking-wider rounded-lg">Compliant</button>
+<button class="flex-[0.3] py-3 px-4 bg-primary/20 text-white/50 font-bold text-xs uppercase tracking-wider rounded-lg">Undo</button>
+</div>
+</div>
+<!-- Tile: Grass Seed POG (Selected: NO) -->
+<div class="group flex flex-col bg-error-container text-on-error-container rounded-xl p-6 transition-all duration-200 border-l-4 border-error h-[160px] justify-between shadow-sm">
+<div class="flex justify-between items-start">
+<div>
+<span class="font-['Inter'] text-[10px] font-bold tracking-widest uppercase text-on-error-container/60 block mb-1">SKU: 9942-G</span>
+<h3 class="text-lg font-bold leading-tight">Grass Seed POG</h3>
+</div>
+<span class="material-symbols-outlined text-error" data-icon="error" style="font-variation-settings: 'FILL' 1;">error</span>
+</div>
+<div class="flex gap-2 mt-4">
+<button class="flex-1 py-3 px-4 bg-error text-white font-black text-xs uppercase tracking-wider rounded-lg">Non-Compliant</button>
+<button class="flex-[0.3] py-3 px-4 bg-white/50 text-on-error-container font-bold text-xs uppercase tracking-wider rounded-lg">Undo</button>
+</div>
+</div>
+<!-- Tile: Fenceline (Selected: N/A) -->
+<div class="group flex flex-col bg-surface-dim rounded-xl p-6 transition-all duration-200 border-l-4 border-outline h-[160px] justify-between grayscale opacity-80">
+<div class="flex justify-between items-start">
+<div>
+<span class="font-['Inter'] text-[10px] font-bold tracking-widest uppercase text-on-surface-variant block mb-1">ZONE: EXT-01</span>
+<h3 class="text-lg font-bold leading-tight">Fenceline</h3>
+</div>
+<span class="material-symbols-outlined" data-icon="block" style="font-variation-settings: 'FILL' 0;">block</span>
+</div>
+<div class="flex gap-2 mt-4">
+<button class="flex-1 py-3 px-4 bg-outline text-white font-black text-xs uppercase tracking-wider rounded-lg">Not Applicable</button>
+<button class="flex-[0.3] py-3 px-4 bg-white/20 text-on-surface font-bold text-xs uppercase tracking-wider rounded-lg">Undo</button>
+</div>
+</div>
+<!-- Tile: Racetrack / Drive Aisle (Neutral) -->
+<div class="group flex flex-col bg-surface-container-low rounded-xl p-6 transition-all duration-200 border-l-4 border-transparent hover:bg-surface-container h-[160px] justify-between">
+<div>
+<span class="font-['Inter'] text-[10px] font-bold tracking-widest uppercase text-on-surface-variant block mb-1">ZONE: MAIN-A</span>
+<h3 class="text-lg font-bold leading-tight">Racetrack / Drive Aisle</h3>
+</div>
+<div class="flex gap-2 mt-4">
+<button class="flex-1 py-3 px-4 bg-surface-container-highest text-on-surface font-bold text-xs uppercase tracking-wider rounded-lg transition-colors hover:bg-primary-fixed hover:text-primary">Yes</button>
+<button class="flex-1 py-3 px-4 bg-surface-container-highest text-on-surface font-bold text-xs uppercase tracking-wider rounded-lg transition-colors hover:bg-error-container hover:text-error">No</button>
+<button class="flex-1 py-3 px-4 bg-surface-container-highest text-on-surface font-bold text-xs uppercase tracking-wider rounded-lg transition-colors hover:bg-surface-dim">N/A</button>
+</div>
+</div>
+<!-- Tile: Endcap (Neutral) -->
+<div class="group flex flex-col bg-surface-container-low rounded-xl p-6 transition-all duration-200 border-l-4 border-transparent hover:bg-surface-container h-[160px] justify-between">
+<div>
+<span class="font-['Inter'] text-[10px] font-bold tracking-widest uppercase text-on-surface-variant block mb-1">ZONE: DIS-04</span>
+<h3 class="text-lg font-bold leading-tight">Endcap</h3>
+</div>
+<div class="flex gap-2 mt-4">
+<button class="flex-1 py-3 px-4 bg-surface-container-highest text-on-surface font-bold text-xs uppercase tracking-wider rounded-lg transition-colors hover:bg-primary-fixed hover:text-primary">Yes</button>
+<button class="flex-1 py-3 px-4 bg-surface-container-highest text-on-surface font-bold text-xs uppercase tracking-wider rounded-lg transition-colors hover:bg-error-container hover:text-error">No</button>
+<button class="flex-1 py-3 px-4 bg-surface-container-highest text-on-surface font-bold text-xs uppercase tracking-wider rounded-lg transition-colors hover:bg-surface-dim">N/A</button>
+</div>
+</div>
+<!-- Tile: Garden Doors (Neutral) -->
+<div class="group flex flex-col bg-surface-container-low rounded-xl p-6 transition-all duration-200 border-l-4 border-transparent hover:bg-surface-container h-[160px] justify-between">
+<div>
+<span class="font-['Inter'] text-[10px] font-bold tracking-widest uppercase text-on-surface-variant block mb-1">ZONE: EXT-ENT</span>
+<h3 class="text-lg font-bold leading-tight">Garden Doors</h3>
+</div>
+<div class="flex gap-2 mt-4">
+<button class="flex-1 py-3 px-4 bg-surface-container-highest text-on-surface font-bold text-xs uppercase tracking-wider rounded-lg transition-colors hover:bg-primary-fixed hover:text-primary">Yes</button>
+<button class="flex-1 py-3 px-4 bg-surface-container-highest text-on-surface font-bold text-xs uppercase tracking-wider rounded-lg transition-colors hover:bg-error-container hover:text-error">No</button>
+<button class="flex-1 py-3 px-4 bg-surface-container-highest text-on-surface font-bold text-xs uppercase tracking-wider rounded-lg transition-colors hover:bg-surface-dim">N/A</button>
+</div>
+</div>
+</div>
+<!-- Documentation Card -->
+<div class="bg-surface-container rounded-xl p-6 border-2 border-dashed border-outline-variant/30 mt-8">
+<div class="flex items-center gap-4 mb-4">
+<div class="w-12 h-12 bg-surface-container-highest rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="photo_camera">photo_camera</span>
+</div>
+<div>
+<h4 class="font-bold">Audit Documentation</h4>
+<p class="text-xs text-on-surface-variant">Attach photos for non-compliant areas (Grass Seed POG).</p>
+</div>
+</div>
+<div class="grid grid-cols-4 gap-2">
+<div class="aspect-square bg-surface-container-highest rounded-lg relative overflow-hidden group cursor-pointer">
+<img class="object-cover w-full h-full opacity-60" data-alt="shelves in a supermarket with organized products under professional lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtUGk-41Mq57wgYQpb-CVRflMRFtR8NIJubSNl5aHVpwc8r28B3MA2XgxJZhMBKZwGyYSW13OqFCTbXs7Ux-FvwRap5NC_VTXLC7kYgNgTFaCohQ-0q253u7D7CMzoAhYZX-lUAj3iOoTOyUYBFaMG0RNLQP4M-bBOGK_E5gx8ShSlN_qzQM1WqmefhLYUioUtV4-mGiEtkWlYPYSuBYImOxWFuOGNTK56Dx40muLbwFHRnfdWft7vLJMommqeej3F8uOp6yzi2WA"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-sm" data-icon="add">add</span>
+</div>
+</div>
+<div class="aspect-square bg-surface-container-highest rounded-lg border-2 border-dashed border-outline-variant/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-outline-variant" data-icon="add">add</span>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar + Primary Footer -->
+<footer class="fixed bottom-0 left-0 w-full z-50">
+<!-- Score Bar -->
+<div class="bg-[#00478D] text-white py-3 px-6 flex justify-between items-center shadow-[0_-4px_12px_rgba(0,71,141,0.06)]">
+<div class="flex flex-col">
+<span class="font-['Inter'] text-[10px] font-black uppercase tracking-widest text-on-primary-container">Current Score</span>
+<span class="text-xl font-black">88<span class="text-sm font-normal opacity-60">/100</span></span>
+</div>
+<div class="flex gap-4">
+<div class="text-right">
+<span class="font-['Inter'] text-[10px] font-black uppercase tracking-widest text-on-primary-container block">Compliant</span>
+<span class="font-bold">14</span>
+</div>
+<div class="text-right">
+<span class="font-['Inter'] text-[10px] font-black uppercase tracking-widest text-on-primary-container block">Fails</span>
+<span class="font-bold text-tertiary-fixed">2</span>
+</div>
+</div>
+</div>
+<!-- Sticky Navigation & Complete CTA -->
+<div class="bg-[#fbf9f9]/70 dark:bg-[#1b1c1c]/70 backdrop-blur-xl flex justify-between items-stretch h-20 border-t border-[#c2c6d4]/15">
+<nav class="flex-1 flex justify-start items-stretch">
+<a class="flex flex-col items-center justify-center bg-[#00478D] text-white rounded-none p-4 h-full min-w-[80px] transition-transform scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="fact_check" style="font-variation-settings: 'FILL' 1;">fact_check</span>
+<span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider mt-1">Checklist</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#44474e] dark:text-[#c2c6d4] p-4 min-w-[80px] hover:bg-[#efeded] dark:hover:bg-[#2a2b2b] transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider mt-1">Inventory</span>
+</a>
+</nav>
+<button class="flex items-center gap-3 bg-primary px-8 h-full text-white font-black uppercase tracking-tighter transition-all active:opacity-90">
+<span>Complete Audit</span>
+<span class="material-symbols-outlined" data-icon="assignment_turned_in">assignment_turned_in</span>
+</button>
+</div>
+</footer>
+</body></html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Off-Shelf Capture | Retail Audit</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .tonal-shift { background-color: #f5f3f3; }
+        .glass-effect { backdrop-filter: blur(16px); }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#ffdbc8",
+                        "surface-container-highest": "#e3e2e2",
+                        "surface-bright": "#fbf9f9",
+                        "tertiary-container": "#bc5800",
+                        "on-tertiary-fixed": "#321200",
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#414752",
+                        "surface-container-high": "#e9e8e7",
+                        "surface-container": "#efeded",
+                        "surface-variant": "#e3e2e2",
+                        "secondary": "#2d5fa2",
+                        "outline-variant": "#c0c7d4",
+                        "inverse-surface": "#303031",
+                        "primary-container": "#0176d3",
+                        "secondary-fixed": "#d6e3ff",
+                        "tertiary-fixed-dim": "#ffb68b",
+                        "on-secondary-container": "#034587",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed-variant": "#004884",
+                        "surface": "#fbf9f9",
+                        "surface-container-low": "#f5f3f3",
+                        "on-secondary-fixed-variant": "#064688",
+                        "on-primary-container": "#fefcff",
+                        "on-background": "#1b1c1c",
+                        "error-container": "#ffdad6",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-container": "#fffcff",
+                        "on-primary-fixed": "#001c39",
+                        "on-tertiary-fixed-variant": "#753400",
+                        "secondary-fixed-dim": "#a8c8ff",
+                        "on-secondary-fixed": "#001b3c",
+                        "on-primary": "#ffffff",
+                        "outline": "#717784",
+                        "inverse-on-surface": "#f2f0f0",
+                        "error": "#ba1a1a",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "surface-tint": "#005fac",
+                        "secondary-container": "#88b4fe",
+                        "inverse-primary": "#a4c9ff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "surface-dim": "#dbdad9",
+                        "on-surface": "#1b1c1c",
+                        "primary": "#005da9",
+                        "tertiary": "#964500",
+                        "primary-fixed": "#d4e3ff",
+                        "background": "#fbf9f9"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen pb-40">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-[0_8px_24px_rgba(0,93,169,0.06)]">
+<div class="flex items-center justify-between px-6 h-16 w-full">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 duration-200 text-[#005DA9]">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-['Inter'] font-semibold text-lg tracking-tight text-[#005DA9]">Off-Shelf Capture</h1>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#414752]">account_circle</span>
+</div>
+</div>
+</header>
+<main class="pt-20 px-4 space-y-6 max-w-md mx-auto">
+<!-- Brand Header Section -->
+<section class="mt-4">
+<div class="flex items-center gap-3 px-1">
+<div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">eco</span>
+</div>
+<div>
+<h2 class="text-on-surface font-bold text-xl tracking-tight">Scotts Miracle-Gro</h2>
+<p class="text-on-surface-variant text-xs font-medium uppercase tracking-widest">Incremental Execution</p>
+</div>
+</div>
+</section>
+<!-- Location Selector -->
+<section class="space-y-3">
+<label class="text-on-surface-variant font-bold text-xs uppercase tracking-widest px-1">Display Location</label>
+<div class="flex flex-wrap gap-2">
+<button class="px-4 py-2 rounded-full bg-primary-container text-white text-sm font-semibold shadow-md active:scale-95 transition-transform">Endcap</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">Garden Doors</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">Fenceline</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">Racetrack</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">Other</button>
+</div>
+</section>
+<!-- Category Selector -->
+<section class="space-y-3">
+<label class="text-on-surface-variant font-bold text-xs uppercase tracking-widest px-1">Product Category</label>
+<div class="grid grid-cols-3 gap-2">
+<button class="flex flex-col items-center justify-center p-3 rounded-xl bg-surface-container-lowest shadow-sm border-2 border-primary/10">
+<span class="material-symbols-outlined text-primary mb-1">grass</span>
+<span class="text-[10px] font-bold text-on-surface text-center">Fertilizer</span>
+</button>
+<button class="flex flex-col items-center justify-center p-3 rounded-xl bg-surface-container-low border border-transparent">
+<span class="material-symbols-outlined text-on-surface-variant mb-1">layers</span>
+<span class="text-[10px] font-bold text-on-surface-variant text-center">Soils</span>
+</button>
+<button class="flex flex-col items-center justify-center p-3 rounded-xl bg-surface-container-low border border-transparent">
+<span class="material-symbols-outlined text-on-surface-variant mb-1">grain</span>
+<span class="text-[10px] font-bold text-on-surface-variant text-center">Grass Seed</span>
+</button>
+</div>
+</section>
+<!-- Item List Card -->
+<section class="space-y-3">
+<label class="text-on-surface-variant font-bold text-xs uppercase tracking-widest px-1">Active Products</label>
+<div class="space-y-3">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex gap-4 items-start">
+<div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="close up of a bag of Scotts Miracle-Gro garden soil with a green sprout growing out of dark fertile earth" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZLsV-3iFarSBouKbPu4cVxcp2ijKZIep_KjpVi7wf7lrqdD1Arypu_k2kQ7dLLV7cGneajmz7fU71PDsOac0g4ML-jgG7f6z9c8MUYDrJe_2Jrvpd2v_6jkPAN7MaagIYubZhY8f106lmX0RVmTPT3av642iGHR2zlrQ5XxsfSO8Ln3U_N3LTje98g7Yuznv42hVG1wfAsVFZtp6jDYuF1jb8aACjr7ouUEOfNZEe2ieUNtViO9gi484gV9SmtPj8CE_RqYPcjn0"/>
+</div>
+<div class="flex-grow">
+<h3 class="text-on-surface font-bold text-sm leading-tight">Miracle-Gro® Shake 'n Feed®</h3>
+<p class="text-on-surface-variant text-[11px] mb-2">Continuous Release Plant Food</p>
+<div class="flex flex-col gap-2">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase">Est. Quantity</span>
+<div class="flex gap-2">
+<button class="px-3 py-1 rounded-full bg-surface-container-high text-xs font-bold text-on-surface-variant">1-5</button>
+<button class="px-3 py-1 rounded-full bg-primary text-xs font-bold text-white shadow-sm shadow-primary/20">5-10</button>
+<button class="px-3 py-1 rounded-full bg-surface-container-high text-xs font-bold text-on-surface-variant">10+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex gap-4 items-start opacity-70">
+<div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="lush green backyard lawn with vibrant grass seed growth under morning sunlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAoE_pa-_SivX4wAcg6i1mMw_hhkc1U26gByoGc5c75MLn5cWfB7limCHBP8c7bajghhbcySA5KXjjB5BPFWSGh0lFRWu2IdRuwNGSk3d54cTforgzwGtdAkMYy35ncvRzBsqX8XN8chpOWQDWAC6O0nqt3XROY_wqtQIR5dL_h0pL04sFD8MpDR2K-AcNWSE1g_k2gkjcR2wyfVlTf-vghlk_QmK07-YoiAWDBwybkpI9HnwL4AyK8ONepvpI85ty7jqHjqg1wr8"/>
+</div>
+<div class="flex-grow">
+<h3 class="text-on-surface font-bold text-sm leading-tight">Scotts® Turf Builder®</h3>
+<p class="text-on-surface-variant text-[11px] mb-2">Thick'R Lawn™ Sun &amp; Shade</p>
+<div class="flex flex-col gap-2">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase">Est. Quantity</span>
+<div class="flex gap-2">
+<button class="px-3 py-1 rounded-full bg-surface-container-high text-xs font-bold text-on-surface-variant">1-5</button>
+<button class="px-3 py-1 rounded-full bg-surface-container-high text-xs font-bold text-on-surface-variant">5-10</button>
+<button class="px-3 py-1 rounded-full bg-surface-container-high text-xs font-bold text-on-surface-variant">10+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<button class="w-full py-3 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-outline-variant text-primary font-bold text-sm active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-lg">add_circle</span>
+                Add another item / location
+            </button>
+</section>
+</main>
+<!-- Bottom Action Shell -->
+<div class="fixed bottom-0 w-full z-50">
+<!-- Summary Block -->
+<div class="bg-surface-container-lowest/90 backdrop-blur-md px-6 py-3 border-t border-surface-container-high flex justify-between items-center">
+<div>
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Current Selection</p>
+<p class="text-sm font-extrabold text-on-surface">Endcap • 1 Item Captured</p>
+</div>
+<div class="flex -space-x-2">
+<div class="w-8 h-8 rounded-full border-2 border-white bg-primary-fixed flex items-center justify-center text-[10px] font-black text-primary">SMG</div>
+</div>
+</div>
+<!-- Primary Actions -->
+<div class="bg-white px-6 pt-2 pb-8 flex gap-3">
+<button class="flex-1 py-4 rounded-xl bg-surface-container-high text-on-primary-fixed-variant font-bold text-sm active:scale-95 transition-transform">
+                Save Draft
+            </button>
+<button class="flex-[2] py-4 rounded-xl bg-gradient-to-br from-primary to-primary-container text-white font-bold text-sm shadow-xl shadow-primary/20 active:scale-95 transition-transform flex items-center justify-center gap-2">
+                Next Step
+                <span class="material-symbols-outlined text-lg">chevron_right</span>
+</button>
+</div>
+<!-- Bottom Navigation -->
+<nav class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-slate-100 dark:border-slate-800 flex justify-around items-center h-20 pb-safe px-2 w-full">
+<button class="flex flex-col items-center justify-center text-[#414752] dark:text-slate-400 px-4 py-1 hover:opacity-80 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Today</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-[#0176D3]/10 text-[#005DA9] dark:text-[#0176D3] rounded-xl px-4 py-1 hover:opacity-80 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="assessment" style="font-variation-settings: 'FILL' 1;">assessment</span>
+<span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Scorecards</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#414752] dark:text-slate-400 px-4 py-1 hover:opacity-80 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Inventory</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#414752] dark:text-slate-400 px-4 py-1 hover:opacity-80 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-['Inter'] text-[11px] font-medium uppercase tracking-wider">Settings</span>
+</button>
+</nav>
+</div>
+</body></html>

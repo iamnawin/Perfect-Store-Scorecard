@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Store Audit Checklist</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ba1a1a",
+                        "on-surface": "#1a1c1c",
+                        "on-primary-fixed-variant": "#004788",
+                        "secondary": "#475f86",
+                        "primary": "#0058a7",
+                        "surface-container-low": "#f4f3f3",
+                        "background": "#faf9f9",
+                        "secondary-fixed-dim": "#afc8f4",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#f1f0f0",
+                        "on-tertiary-container": "#fff3ee",
+                        "tertiary-fixed": "#ffdbca",
+                        "outline": "#717784",
+                        "on-surface-variant": "#414753",
+                        "surface-dim": "#dadada",
+                        "outline-variant": "#c1c6d5",
+                        "on-secondary-container": "#425a81",
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#e3e2e2",
+                        "inverse-primary": "#a7c8ff",
+                        "secondary-container": "#bad3ff",
+                        "on-primary": "#ffffff",
+                        "surface-container": "#eeeeee",
+                        "on-error-container": "#93000a",
+                        "on-primary-container": "#f3f5ff",
+                        "secondary-fixed": "#d5e3ff",
+                        "surface-tint": "#005eb2",
+                        "surface-container-high": "#e9e8e8",
+                        "on-primary-fixed": "#001b3b",
+                        "on-secondary-fixed-variant": "#2e476c",
+                        "primary-fixed": "#d5e3ff",
+                        "surface-variant": "#e3e2e2",
+                        "tertiary": "#923f00",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "tertiary-fixed-dim": "#ffb68f",
+                        "on-background": "#1a1c1c",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#773200",
+                        "on-secondary-fixed": "#001b3b",
+                        "tertiary-container": "#b85203",
+                        "surface": "#faf9f9",
+                        "primary-container": "#0070d2",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#331100",
+                        "surface-bright": "#faf9f9",
+                        "inverse-surface": "#2f3131"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface antialiased">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#faf9f9] dark:bg-gray-900/85 backdrop-blur-md">
+<div class="flex justify-between items-center px-4 py-3 w-full">
+<div class="flex items-center gap-3">
+<button class="text-[#0058a7] dark:text-[#0070d2] active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-['Inter'] text-lg font-bold tracking-tight text-[#1a1c1c] dark:text-white">Store Audit: San Francisco</h1>
+</div>
+<button class="text-[#0058a7] dark:text-[#0070d2] active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<!-- Progress Bar (Salesforce Style) -->
+<div class="px-4 pb-2">
+<div class="flex justify-between items-center mb-1">
+<span class="text-[0.6875rem] font-semibold text-on-surface-variant uppercase tracking-wider">Audit Progress</span>
+<span class="text-[0.6875rem] font-bold text-primary">64%</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full transition-all duration-500" style="width: 64%"></div>
+</div>
+</div>
+<div class="bg-[#eeeeee] dark:bg-gray-800 h-[1px] w-full absolute bottom-0"></div>
+</header>
+<main class="pt-28 pb-32 px-4 space-y-4 max-w-2xl mx-auto">
+<!-- Dashboard Score Overview (Bento Style) -->
+<div class="grid grid-cols-2 gap-4 mb-6">
+<div class="bg-surface-container-lowest p-4 rounded-xl border-b-2 border-primary/10">
+<span class="text-on-surface-variant text-[0.75rem] font-medium block mb-1">Current Score</span>
+<div class="flex items-baseline gap-1">
+<span class="text-2xl font-bold text-primary">82</span>
+<span class="text-on-surface-variant text-sm">/ 100</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-xl border-b-2 border-primary/10">
+<span class="text-on-surface-variant text-[0.75rem] font-medium block mb-1">Remaining</span>
+<div class="flex items-baseline gap-1">
+<span class="text-2xl font-bold text-on-surface">36</span>
+<span class="text-on-surface-variant text-sm">Items</span>
+</div>
+</div>
+</div>
+<!-- Checklist Section Header -->
+<div class="flex justify-between items-end mb-2">
+<h2 class="text-on-surface font-bold text-lg">Inventory &amp; POG Compliance</h2>
+<span class="text-primary text-xs font-semibold hover:underline">View Guidelines</span>
+</div>
+<!-- Audit Item Cards -->
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 transition-all duration-200 hover:shadow-sm">
+<div class="flex items-start justify-between mb-4">
+<div class="flex gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="potted_plant">potted_plant</span>
+</div>
+<div>
+<h3 class="font-bold text-on-surface">Plant Food POG</h3>
+<p class="text-on-surface-variant text-xs mt-0.5 leading-relaxed">Check for vertical alignment and brand priority facing.</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant" data-icon="info">info</span>
+</div>
+<div class="grid grid-cols-3 gap-2">
+<button class="flex flex-col items-center justify-center py-3 rounded-xl border-b-2 border-transparent bg-green-50 text-green-700 active:bg-green-100 transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="check_circle">check_circle</span>
+<span class="text-[0.6875rem] font-bold mt-1 uppercase">Yes</span>
+</button>
+<button class="flex flex-col items-center justify-center py-3 rounded-xl border-b-2 border-transparent bg-surface-container-low text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="cancel">cancel</span>
+<span class="text-[0.6875rem] font-bold mt-1 uppercase">No</span>
+</button>
+<button class="flex flex-col items-center justify-center py-3 rounded-xl border-b-2 border-transparent bg-surface-container-low text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="block">block</span>
+<span class="text-[0.6875rem] font-bold mt-1 uppercase">N/A</span>
+</button>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 transition-all duration-200 hover:shadow-sm">
+<div class="flex items-start justify-between mb-4">
+<div class="flex gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="science">science</span>
+</div>
+<div>
+<h3 class="font-bold text-on-surface">Chemical POG Compliance</h3>
+<p class="text-on-surface-variant text-xs mt-0.5 leading-relaxed">Ensure hazardous materials are stored on bottom shelves.</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant" data-icon="info">info</span>
+</div>
+<div class="grid grid-cols-3 gap-2">
+<button class="flex flex-col items-center justify-center py-3 rounded-xl border-b-2 border-transparent bg-surface-container-low text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="check_circle">check_circle</span>
+<span class="text-[0.6875rem] font-bold mt-1 uppercase">Yes</span>
+</button>
+<button class="flex flex-col items-center justify-center py-3 rounded-xl border-b-2 border-transparent bg-red-50 text-red-700 active:bg-red-100 transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="cancel">cancel</span>
+<span class="text-[0.6875rem] font-bold mt-1 uppercase">No</span>
+</button>
+<button class="flex flex-col items-center justify-center py-3 rounded-xl border-b-2 border-transparent bg-surface-container-low text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="block">block</span>
+<span class="text-[0.6875rem] font-bold mt-1 uppercase">N/A</span>
+</button>
+</div>
+<div class="mt-4 flex items-center gap-2 text-xs text-error font-medium">
+<span class="material-symbols-outlined text-sm" data-icon="error">error</span>
+                Requires Photo Documentation
+            </div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 transition-all duration-200 hover:shadow-sm">
+<div class="flex items-start justify-between mb-4">
+<div class="flex gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="inventory">inventory</span>
+</div>
+<div>
+<h3 class="font-bold text-on-surface">End-Cap Promotion</h3>
+<p class="text-on-surface-variant text-xs mt-0.5 leading-relaxed">Seasonal end-cap is fully stocked and labeled correctly.</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant" data-icon="info">info</span>
+</div>
+<div class="grid grid-cols-3 gap-2">
+<button class="flex flex-col items-center justify-center py-3 rounded-xl border-b-2 border-transparent bg-surface-container-low text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="check_circle">check_circle</span>
+<span class="text-[0.6875rem] font-bold mt-1 uppercase">Yes</span>
+</button>
+<button class="flex flex-col items-center justify-center py-3 rounded-xl border-b-2 border-transparent bg-surface-container-low text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="cancel">cancel</span>
+<span class="text-[0.6875rem] font-bold mt-1 uppercase">No</span>
+</button>
+<button class="flex flex-col items-center justify-center py-3 rounded-xl border-b-2 border-transparent bg-on-surface/5 text-on-surface-variant border-b-primary font-bold">
+<span class="material-symbols-outlined text-lg" data-icon="block" style="font-variation-settings: 'FILL' 1;">block</span>
+<span class="text-[0.6875rem] font-bold mt-1 uppercase">N/A</span>
+</button>
+</div>
+</div>
+<!-- Card 4 (Placeholder Image for Visual Break) -->
+<div class="relative w-full h-40 rounded-xl overflow-hidden shadow-lg group">
+<img class="w-full h-full object-cover" data-alt="Modern retail store interior with clean shelving and organizational layout, bright professional lighting, high-end commercial aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1qQ8F_BegZo8wS49-zCKt_ioMKyMuabGwq33hmsgNtMQ6z4QtQ3-3pvGLZLxt50a2dV-63dyQ8LLXn3ZPVmofTqjEYSO6yjogHDz4vUSjuTv-lm41QsTw05u-ePNiGoyS9a6ZN7p1dgw6cO_evzLC8645rTMwWhd4gC4iuNAdZuBCupMrIgGyyxUJIhMwVF40g1agnPvonVUyt7UASVbVDAQIbBpuKVbaoypVqEcXRq9pRtbnGuVQDANiOA8iOHhcialT4QaU8xA"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4">
+<span class="text-white/80 text-[0.6875rem] font-bold uppercase tracking-widest">Store Visual Standards</span>
+<h4 class="text-white font-bold">San Francisco Flagship</h4>
+</div>
+</div>
+<!-- Card 5 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 transition-all duration-200 hover:shadow-sm">
+<div class="flex items-start justify-between mb-4">
+<div class="flex gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="qr_code_2">qr_code_2</span>
+</div>
+<div>
+<h3 class="font-bold text-on-surface">Shelf Label Integrity</h3>
+<p class="text-on-surface-variant text-xs mt-0.5 leading-relaxed">Check that all labels match current promotional pricing.</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant" data-icon="info">info</span>
+</div>
+<div class="grid grid-cols-3 gap-2">
+<button class="flex flex-col items-center justify-center py-3 rounded-xl border-b-2 border-transparent bg-surface-container-low text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="check_circle">check_circle</span>
+<span class="text-[0.6875rem] font-bold mt-1 uppercase">Yes</span>
+</button>
+<button class="flex flex-col items-center justify-center py-3 rounded-xl border-b-2 border-transparent bg-surface-container-low text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="cancel">cancel</span>
+<span class="text-[0.6875rem] font-bold mt-1 uppercase">No</span>
+</button>
+<button class="flex flex-col items-center justify-center py-3 rounded-xl border-b-2 border-transparent bg-surface-container-low text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="block">block</span>
+<span class="text-[0.6875rem] font-bold mt-1 uppercase">N/A</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Sticky Submission Bar (Unique Contextual FAB/Bar) -->
+<div class="fixed bottom-16 left-0 w-full px-4 py-4 bg-surface-container-lowest/80 backdrop-blur-xl border-t border-outline-variant/20 z-40">
+<div class="max-w-2xl mx-auto flex items-center justify-between gap-4">
+<div class="flex flex-col">
+<span class="text-[0.625rem] text-on-surface-variant font-bold uppercase tracking-tighter">Current Score</span>
+<span class="text-xl font-black text-primary">82%</span>
+</div>
+<button class="flex-1 bg-gradient-to-r from-primary to-primary-container text-white py-4 rounded-full font-bold text-sm shadow-lg shadow-primary/20 active:scale-95 transition-transform flex items-center justify-center gap-2">
+                Review &amp; Submit Audit
+                <span class="material-symbols-outlined text-lg" data-icon="send">send</span>
+</button>
+</div>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full h-16 flex justify-around items-center px-2 pb-safe bg-[#ffffff] dark:bg-gray-950 border-t border-[#eeeeee] dark:border-gray-800 shadow-[0_-4px_6px_-1px_rgba(26,28,28,0.06)] z-50">
+<div class="flex flex-col items-center justify-center text-[#0058a7] dark:text-[#0070d2] bg-[#bad3ff]/30 rounded-2xl px-3 py-1">
+<span class="material-symbols-outlined" data-icon="fact_check" style="font-variation-settings: 'FILL' 1;">fact_check</span>
+<span class="font-['Inter'] text-[0.6875rem] font-semibold leading-none mt-0.5">Checklist</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#414753] dark:text-gray-400 active:opacity-70 transition-opacity hover:text-[#0070d2]">
+<span class="material-symbols-outlined" data-icon="photo_camera">photo_camera</span>
+<span class="font-['Inter'] text-[0.6875rem] font-semibold leading-none mt-0.5">Photos</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#414753] dark:text-gray-400 active:opacity-70 transition-opacity hover:text-[#0070d2]">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-['Inter'] text-[0.6875rem] font-semibold leading-none mt-0.5">Inventory</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#414753] dark:text-gray-400 active:opacity-70 transition-opacity hover:text-[#0070d2]">
+<span class="material-symbols-outlined" data-icon="assessment">assessment</span>
+<span class="font-['Inter'] text-[0.6875rem] font-semibold leading-none mt-0.5">Summary</span>
+</div>
+</nav>
+</body></html>
