@@ -1,22 +1,6 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { AppState, ChecklistAnswer, OffShelfEntry } from '../types'
-
-interface AppContextValue extends AppState {
-  setChecklistAnswer: (itemId: string, answer: ChecklistAnswer) => void
-  addOffShelfEntry: (entry: OffShelfEntry) => void
-  removeOffShelfEntry: (id: string) => void
-  setPhotoCaption: (v: string) => void
-  setNotes: (v: string) => void
-  setRevisitRequired: (v: boolean) => void
-  setShelfResetNeeded: (v: boolean) => void
-  toggleTrellis: () => void
-  executionScore: number
-  totalScore: number
-  lgorPct: number
-  riskDelta: number
-}
-
-const AppContext = createContext<AppContextValue | null>(null)
+import { AppContext } from './app-context'
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [checklist, setChecklist] = useState<AppState['checklist']>({})
@@ -67,10 +51,4 @@ export function AppProvider({ children }: { children: ReactNode }) {
       {children}
     </AppContext.Provider>
   )
-}
-
-export function useApp() {
-  const ctx = useContext(AppContext)
-  if (!ctx) throw new Error('useApp must be used within AppProvider')
-  return ctx
 }

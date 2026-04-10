@@ -4,7 +4,7 @@ import { TrendingUp, TrendingDown, CheckCircle, Send, Mail, MessageSquare, Rotat
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
 import { TrellisBot } from '../components/TrellisBot'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { checklistItems, previousSnapshot, store, trellisBotInsights } from '../data/mock'
 
 export function SummaryScreen() {

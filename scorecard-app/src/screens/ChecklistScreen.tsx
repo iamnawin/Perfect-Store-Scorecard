@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
 import { TrellisBot } from '../components/TrellisBot'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { checklistItems, trellisBotInsights } from '../data/mock'
 import type { ChecklistAnswer } from '../types'
 

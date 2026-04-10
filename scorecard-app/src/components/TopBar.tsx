@@ -1,6 +1,6 @@
 import { ChevronLeft, Sparkles } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import clsx from 'clsx'
 
 interface TopBarProps {

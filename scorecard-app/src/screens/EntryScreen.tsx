@@ -3,7 +3,7 @@ import { MapPin, Calendar, TrendingUp, AlertTriangle, Lightbulb, ChevronRight } 
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
 import { TrellisBot } from '../components/TrellisBot'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { store, previousSnapshot, trellisBotInsights } from '../data/mock'
 
 export function EntryScreen() {

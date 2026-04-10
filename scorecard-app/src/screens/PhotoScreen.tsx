@@ -4,7 +4,7 @@ import { Camera, FileText, RotateCcw, Flag } from 'lucide-react'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
 import { TrellisBot } from '../components/TrellisBot'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { trellisBotInsights } from '../data/mock'
 
 export function PhotoScreen() {

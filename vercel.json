@@ -1,9 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm install",
   "framework": null,
+  "installCommand": "cd scorecard-app && npm install",
+  "buildCommand": "cd scorecard-app && npm run build",
+  "outputDirectory": "scorecard-app/dist",
   "rewrites": [
     {
       "source": "/(.*)",
