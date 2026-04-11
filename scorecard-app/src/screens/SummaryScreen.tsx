@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, CheckCircle2, ClipboardCheck, Flag, RotateCcw, Send, TrendingDown, TrendingUp } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ClipboardCheck, Flag, Mail, RotateCcw, Send, Share2, TrendingDown, TrendingUp } from 'lucide-react'
 import { BottomActionBar } from '../components/BottomActionBar'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
@@ -81,17 +81,42 @@ export function SummaryScreen() {
     return (
       <PhoneShell>
         <div className="flex-1 overflow-y-auto bg-[#f4f6f9] px-4 py-4 space-y-3">
-          <TopBar title="Post-Submission Outcomes" subtitle={`${store.name} | ${store.visitStatus} Visit`} showBack />
+          <TopBar title="Scorecard Completed" subtitle={`${store.name} | ${store.visitStatus} Visit`} showBack />
 
-          <div className="border border-[#cde8d3] bg-surface-lowest rounded-lg px-4 py-4">
-            <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-md border border-[#cde8d3] bg-[#edf7ee] text-[#2e844a] flex items-center justify-center">
-                <CheckCircle2 size={20} />
+          <div className="border border-[#cde8d3] bg-surface-lowest rounded-lg overflow-hidden">
+            <div className="px-4 py-4 border-b border-[#cde8d3]">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-md border border-[#cde8d3] bg-[#edf7ee] text-[#2e844a] flex items-center justify-center">
+                  <CheckCircle2 size={20} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#1f5f33]">Completed</p>
+                  <p className="text-[18px] font-semibold text-on-surface mt-1">Perfect Store Scorecard completed</p>
+                  <p className="text-[12px] text-on-surface-variant mt-1">The visit now includes the final score, evidence set, and follow-up actions for store accountability.</p>
+                </div>
               </div>
+            </div>
+            <div className="px-4 py-4 grid grid-cols-[minmax(0,1fr)_auto] gap-3 items-end">
               <div>
-                <p className="text-[16px] font-semibold text-on-surface">Scorecard submitted</p>
-                <p className="text-[12px] text-on-surface-variant mt-1">The active visit now contains the final score, evidence set, and follow-up flags.</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Overall Score</p>
+                <p className="text-[32px] font-semibold text-on-surface mt-1">{totalScore}</p>
+                <p className="text-[12px] text-on-surface-variant mt-1">{store.scorecard}</p>
               </div>
+              <div className="rounded-lg border border-[#cde8d3] bg-[#edf7ee] px-3 py-2 text-right">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#1f5f33]">Status</p>
+                <p className="text-[14px] font-semibold text-[#1f5f33] mt-1">Submitted</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="border border-outline bg-surface-lowest rounded-lg overflow-hidden">
+            <div className="px-4 py-3 border-b border-outline">
+              <p className="text-[12px] font-semibold text-on-surface">Share scorecard results</p>
+              <p className="text-[11px] text-on-surface-variant mt-1">Send the final snapshot to stakeholders or post it into Chatter from the visit outcome.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 px-4 py-4">
+              <ActionButton label="Email Snapshot" icon={<Mail size={14} />} onClick={openEmailSnapshot} />
+              <ActionButton label="Post to Chatter" icon={<Share2 size={14} />} onClick={() => { void postToChatter() }} />
             </div>
           </div>
 
@@ -109,11 +134,12 @@ export function SummaryScreen() {
 
           <div className="border border-outline bg-surface-lowest rounded-lg overflow-hidden">
             <div className="px-4 py-3 border-b border-outline">
-              <p className="text-[12px] font-semibold text-on-surface">Post-submission actions</p>
+              <p className="text-[12px] font-semibold text-on-surface">Outcome summary</p>
             </div>
-            <div className="grid grid-cols-2 gap-2 px-4 py-4">
-              <ActionButton label="Email Snapshot" onClick={openEmailSnapshot} />
-              <ActionButton label="Post to Chatter" onClick={() => { void postToChatter() }} />
+            <div className="px-4 py-3 space-y-2">
+              <ListRow icon={<CheckCircle2 size={13} className="text-[#2e844a]" />} text={`Scorecard completed for ${store.name} with an overall score of ${totalScore}.`} />
+              <ListRow icon={<TrendingUp size={13} className="text-[#2e844a]" />} text={`Execution delivered ${executionScore}% standards compliance with ${offShelf.length} off-shelf captures logged.`} />
+              <ListRow icon={<ClipboardCheck size={13} className="text-primary" />} text="Use the actions above to email the snapshot or post the final outcome to Chatter." />
             </div>
           </div>
         </div>
@@ -295,13 +321,22 @@ function ListRow({ icon, text }: { icon: ReactNode; text: string }) {
   )
 }
 
-function ActionButton({ label, onClick }: { label: string; onClick: () => void }) {
+function ActionButton({
+  label,
+  icon,
+  onClick,
+}: {
+  label: string
+  icon?: ReactNode
+  onClick: () => void
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="min-h-11 rounded-lg border border-outline bg-[#f7f9fb] px-3 text-[12px] font-semibold text-on-surface"
+      className="min-h-11 rounded-lg border border-outline bg-[#f7f9fb] px-3 text-[12px] font-semibold text-on-surface flex items-center justify-center gap-2"
     >
+      {icon}
       {label}
     </button>
   )
