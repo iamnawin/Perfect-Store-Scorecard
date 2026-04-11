@@ -340,6 +340,13 @@ export function OffShelfScreen() {
             </div>
           </SectionCard>
 
+          <SectionCard title="Incremental Summary" subtitle="Displays are counted automatically as you add them.">
+            <div className="grid grid-cols-2 gap-2">
+              <ScoreCell label="Total Displays Added" value={String(offShelf.length)} tone="neutral" />
+              <ScoreCell label="Total Incremental Contribution" value={`+${currentIncremental.toFixed(1)} pts`} tone="positive" />
+            </div>
+          </SectionCard>
+
           {trellisEnabled && (
             <TrellisBot
               title={trellisContent.offShelf.title}
@@ -604,10 +611,11 @@ export function OffShelfScreen() {
             onToggle={() => setShowCaptured(prev => !prev)}
           >
             <div className="space-y-2">
-              {offShelf.map(entry => (
+              {offShelf.map((entry, index) => (
                 <div key={entry.id} className="rounded-lg border border-outline bg-surface-lowest px-3 py-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Display {index + 1}</p>
                       <p className="text-[13px] font-semibold text-on-surface">{entry.location} • {entry.product} • {getOffShelfQuantityLabel(entry.quantity)}</p>
                       <p className="mt-1 text-[12px] text-on-surface">{entry.product}</p>
                       <p className="mt-1 text-[11px] text-on-surface-variant">
@@ -670,7 +678,7 @@ export function OffShelfScreen() {
               canSaveEntry ? 'bg-[#014486] text-white' : 'bg-[#c9d8ea] text-white'
             )}
           >
-            Add Another
+            Add Another Display
           </button>
           <button
             type="button"

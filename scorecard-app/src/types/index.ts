@@ -11,6 +11,7 @@ export interface ChecklistState {
 export interface ChecklistQuestion {
   id: string
   sectionId: string
+  group: 'map' | 'pog' | 'display'
   category: string
   title: string
   guidance: string

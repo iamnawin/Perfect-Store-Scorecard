@@ -21,7 +21,7 @@ import {
   getOffShelfIncrementalScore,
   getStepState,
 } from '../lib/scorecard'
-import type { ChecklistAnswer } from '../types'
+import type { ChecklistAnswer, ChecklistQuestion } from '../types'
 
 const OPTIONS: { value: ChecklistAnswer; label: string }[] = [
   { value: 'yes', label: 'Yes' },
@@ -58,6 +58,9 @@ export function ChecklistScreen() {
     checklistSections.find(section => !getChecklistSectionProgress(section.id, checklist).complete) ??
     checklistSections[checklistSections.length - 1]
   const activeQuestions = getChecklistQuestionsForSection(activeSection.id)
+  const mapQuestions = activeQuestions.filter(question => question.group === 'map')
+  const pogQuestions = activeQuestions.filter(question => question.group === 'pog')
+  const displayedQuestions = activeSection.id === 'base-plan' ? [] : activeQuestions
   const currentSectionNumber = getCurrentSectionNumber(app)
   const sectionProgress = getChecklistSectionProgress(activeSection.id, checklist)
   const currentSectionValue = getChecklistSectionValue(activeSection.id)
@@ -177,7 +180,42 @@ export function ChecklistScreen() {
             />
           )}
 
-          {activeQuestions.map(question => {
+          {activeSection.id === 'base-plan' && (
+            <div className="border border-outline bg-surface-lowest rounded-lg overflow-hidden">
+              <div className="px-4 py-3 border-b border-outline">
+                <p className="text-[12px] font-semibold text-on-surface">Base Plan Setup</p>
+                <p className="text-[12px] text-on-surface-variant mt-1">Base plan must be set before evaluating incremental performance.</p>
+              </div>
+              <div className="px-4 py-3 border-b border-outline">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">MAP Locations Set?</p>
+                <div className="mt-3 space-y-3">
+                  {mapQuestions.map(question => (
+                    <BasePlanSetupRow
+                      key={question.id}
+                      question={question}
+                      answer={checklist[question.id] ?? null}
+                      onAnswer={(value) => setChecklistAnswer(question.id, value)}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="px-4 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">POG Compliance</p>
+                <div className="mt-3 space-y-3">
+                  {pogQuestions.map(question => (
+                    <BasePlanSetupRow
+                      key={question.id}
+                      question={question}
+                      answer={checklist[question.id] ?? null}
+                      onAnswer={(value) => setChecklistAnswer(question.id, value)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {displayedQuestions.map(question => {
             const answer = checklist[question.id] ?? null
             const status = getQuestionStatus(answer)
             const evidenceLabel = getQuestionEvidenceLabel(question, evidence, offShelf)
@@ -422,6 +460,71 @@ function questionIcon(icon: string) {
   if (icon === 'display') return <Layers3 size={16} />
   if (icon === 'camera') return <Camera size={16} />
   return <ClipboardCheck size={16} />
+}
+
+function BasePlanSetupRow({
+  question,
+  answer,
+  onAnswer,
+}: {
+  question: ChecklistQuestion
+  answer: ChecklistAnswer
+  onAnswer: (value: ChecklistAnswer) => void
+}) {
+  const impactValue = getChecklistImpactValue(question.weight, answer)
+  const tone = answer === 'yes' ? 'positive' : answer === 'no' ? 'negative' : 'neutral'
+
+  return (
+    <div className="rounded-lg border border-outline bg-[#f7f9fb] p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[13px] font-semibold text-on-surface">{question.title}</p>
+          <p className="text-[12px] text-on-surface-variant mt-1">{question.businessWhy}</p>
+        </div>
+        <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${priorityTone(question.weight)}`}>
+          {question.weight} pts
+        </span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 mt-3">
+        {OPTIONS.map(({ value, label }) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => onAnswer(value)}
+            className={clsx(
+              'min-h-10 rounded-md border text-[12px] font-semibold transition-colors',
+              answer === value
+                ? value === 'yes'
+                  ? 'border-[#2e844a] bg-[#edf7ee] text-[#1f5f33]'
+                  : value === 'no'
+                    ? 'border-[#ba0517] bg-[#fef1ee] text-[#8e030f]'
+                    : 'border-[#8b939d] bg-[#f4f6f9] text-[#39414a]'
+                : 'border-outline bg-white text-on-surface-variant'
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {answer !== null && (
+        <div className={`mt-3 rounded-lg border px-3 py-2 ${impactPanelTone(tone)}`}>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[12px] font-semibold">Impact</p>
+            <p className="text-[12px] font-semibold">{impactValue > 0 ? `+${impactValue} pts` : impactValue < 0 ? `${impactValue} pts` : '0 pts'}</p>
+          </div>
+          <p className="text-[12px] mt-1">
+            {answer === 'yes'
+              ? 'Validated and contributing to base plan score.'
+              : answer === 'no'
+                ? 'Validation failed. Base plan setup is missing and needs correction.'
+                : 'Marked N/A for this visit.'}
+          </p>
+        </div>
+      )}
+    </div>
+  )
 }
 
 function ScoreBandMetric({

@@ -65,8 +65,53 @@ export const scorecardSections: ScorecardSection[] = [
 
 export const checklistQuestions: ChecklistQuestion[] = [
   {
+    id: 'map-fence-line',
+    sectionId: 'base-plan',
+    group: 'map',
+    category: 'MAP Location',
+    title: 'Fence Line set',
+    guidance: 'Confirm Fence Line base plan location is set before evaluating incremental performance.',
+    businessWhy: 'Base plan must be set first so incremental gains are measured against a stable execution baseline.',
+    weight: 10,
+    icon: 'display',
+  },
+  {
+    id: 'map-drive-aisle',
+    sectionId: 'base-plan',
+    group: 'map',
+    category: 'MAP Location',
+    title: 'Drive Aisle set',
+    guidance: 'Confirm Drive Aisle base plan location is set before evaluating incremental performance.',
+    businessWhy: 'Missing drive aisle base setup suppresses seasonal visibility and distorts incremental score credit.',
+    weight: 10,
+    icon: 'display',
+  },
+  {
+    id: 'map-endcap',
+    sectionId: 'base-plan',
+    group: 'map',
+    category: 'MAP Location',
+    title: 'Endcap set',
+    guidance: 'Confirm Endcap base plan location is set before evaluating incremental performance.',
+    businessWhy: 'Endcap base setup anchors promotional conversion and protects high-value display ranking.',
+    weight: 10,
+    icon: 'display',
+  },
+  {
+    id: 'map-garden-doors',
+    sectionId: 'base-plan',
+    group: 'map',
+    category: 'MAP Location',
+    title: 'Garden Doors set',
+    guidance: 'Confirm Garden Doors base plan location is set before evaluating incremental performance.',
+    businessWhy: 'Garden Doors readiness influences seasonal traffic capture and outdoor conversion.',
+    weight: 10,
+    icon: 'display',
+  },
+  {
     id: 'plant-food-pog',
     sectionId: 'base-plan',
+    group: 'pog',
     category: 'Lawn and Garden',
     title: 'Plant Food POG compliance',
     guidance: 'Verify Scotts core plant food facings match the approved shelf set.',
@@ -77,6 +122,7 @@ export const checklistQuestions: ChecklistQuestion[] = [
   {
     id: 'chemical-pog',
     sectionId: 'base-plan',
+    group: 'pog',
     category: 'Controls',
     title: 'Chemical POG safety labels',
     guidance: 'Confirm approved labels are visible and product placement follows local safety rules.',
@@ -87,6 +133,7 @@ export const checklistQuestions: ChecklistQuestion[] = [
   {
     id: 'grass-seed-pog',
     sectionId: 'base-plan',
+    group: 'pog',
     category: 'Seed',
     title: 'Grass Seed POG visibility',
     guidance: 'Check key Scotts grass seed SKUs are fronted and easy to shop from the aisle.',
@@ -97,6 +144,7 @@ export const checklistQuestions: ChecklistQuestion[] = [
   {
     id: 'indoor-soil-pog',
     sectionId: 'base-plan',
+    group: 'pog',
     category: 'Soils',
     title: 'Indoor Soil POG arrangement',
     guidance: 'Confirm indoor soils are blocked correctly and shelf gaps are called out immediately.',
@@ -107,6 +155,7 @@ export const checklistQuestions: ChecklistQuestion[] = [
   {
     id: 'endcap',
     sectionId: 'secondary-displays',
+    group: 'display',
     category: 'Feature Space',
     title: 'Endcap display execution',
     guidance: 'Validate endcap presence, brand blocking, and promotional readiness.',
@@ -117,6 +166,7 @@ export const checklistQuestions: ChecklistQuestion[] = [
   {
     id: 'garden-doors',
     sectionId: 'secondary-displays',
+    group: 'display',
     category: 'Seasonal',
     title: 'Garden Doors display execution',
     guidance: 'Check outdoor transition placement and note if the feature was missed or undersized.',
@@ -127,6 +177,7 @@ export const checklistQuestions: ChecklistQuestion[] = [
   {
     id: 'fenceline',
     sectionId: 'secondary-displays',
+    group: 'display',
     category: 'Outdoor Care',
     title: 'Fenceline feature compliance',
     guidance: 'Confirm signage, packout, and the expected Scotts mix at the fenceline.',
@@ -137,6 +188,7 @@ export const checklistQuestions: ChecklistQuestion[] = [
   {
     id: 'racetrack',
     sectionId: 'secondary-displays',
+    group: 'display',
     category: 'Outdoor Care',
     title: 'Racetrack placement quality',
     guidance: 'Verify the racetrack placement is shoppable, filled, and aligned to this visit objective.',
