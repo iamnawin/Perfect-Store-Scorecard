@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Calendar, CheckCircle2, ChevronRight, CircleDot, ClipboardCheck, LockKeyhole, MapPin } from 'lucide-react'
+import { CheckCircle2, ChevronRight, CircleDot, ClipboardCheck, LockKeyhole, MapPin } from 'lucide-react'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
 import { TrellisBot } from '../components/TrellisBot'
@@ -61,124 +61,117 @@ export function EntryScreen() {
   return (
     <PhoneShell>
       <TopBar
-        title={store.name}
-        subtitle={`${store.visitStatus} Visit | ${store.banner} | ${store.city}`}
+        title="Perfect Store Scorecard"
+        subtitle={`${store.name} • ${store.visitStatus} Visit`}
         showTrellisToggle
       />
 
-      <div className="flex-1 overflow-y-auto bg-[#f4f6f9]">
-        <div className="px-4 py-3 border-b border-outline bg-surface-lowest">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Visit Context</p>
-              <p className="text-[14px] font-semibold text-on-surface mt-1">{store.scorecard}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Rep</p>
-              <p className="text-[12px] text-on-surface mt-1">{store.rep}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4 text-[12px] text-on-surface-variant mt-2">
-            <span className="flex items-center gap-1.5">
-              <MapPin size={12} className="text-primary" />
-              {store.city}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Calendar size={12} className="text-primary" />
-              Apr 11, 2026
-            </span>
-          </div>
-        </div>
-
-        <div className="mx-4 mt-4 border border-outline bg-surface-lowest rounded-lg overflow-hidden">
-          <div className="px-4 py-3 border-b border-outline">
+      <div className="flex-1 overflow-y-auto bg-[#f4f6f9] px-4 py-4">
+        <div className="rounded-xl border border-outline bg-surface-lowest px-4 py-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Store Context</p>
+          <div className="mt-3 space-y-2">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Scorecard Status</p>
-                <p className="text-[16px] font-semibold text-on-surface mt-1">{store.scorecard}</p>
+                <p className="text-[16px] font-semibold text-on-surface">{store.name}</p>
+                <p className="mt-1 text-[12px] text-on-surface-variant">{store.banner} • {store.city}</p>
               </div>
-              <span className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${statusMeta.tone}`}>
-                {statusMeta.label}
+              <span className="rounded-md border border-[#cde8d3] bg-[#edf7ee] px-2 py-1 text-[11px] font-semibold text-[#1f5f33]">
+                {store.visitStatus} Visit
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3 rounded-lg bg-[#f7f9fb] px-3 py-2.5">
+              <div>
+                <p className="text-[11px] font-semibold text-on-surface">{store.scorecard}</p>
+                <p className="mt-1 text-[11px] text-on-surface-variant">Visit context only. Launch directly into scorecard execution.</p>
+              </div>
+              <span className="inline-flex items-center gap-1 text-[11px] text-on-surface-variant">
+                <MapPin size={12} className="text-primary" />
+                {store.city}
               </span>
             </div>
           </div>
-          <div className="px-4 py-4">
-            <p className="text-[13px] text-on-surface-variant">{statusMeta.detail}</p>
-            <p className="text-[12px] text-on-surface-variant mt-2">{store.motto}</p>
+        </div>
 
-            {scorecardStatus !== 'not-started' && (
-              <div className="mt-4">
-                <div className="flex items-center justify-between text-[12px] text-on-surface-variant mb-2">
-                  <span>Scorecard completion</span>
-                  <span>{completionPercent}%</span>
-                </div>
-                <div className="h-2 rounded-full bg-[#e6ebf1] overflow-hidden">
-                  <div className="h-full bg-primary rounded-full" style={{ width: `${completionPercent}%` }} />
-                </div>
+        <button
+          type="button"
+          onClick={() => navigate(ctaRoute)}
+          className="mt-4 w-full min-h-11 rounded-lg bg-primary text-white text-[14px] font-semibold flex items-center justify-center gap-2"
+        >
+          {ctaLabel}
+          <ChevronRight size={16} />
+        </button>
+
+        {scorecardStatus !== 'not-started' && (
+          <div className="mt-3 rounded-xl border border-outline bg-surface-lowest overflow-hidden">
+            <div className="px-4 py-3 border-b border-outline flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Scorecard Progress</p>
+                <p className="text-[14px] font-semibold text-on-surface mt-1">{statusMeta.label}</p>
+                <p className="text-[12px] text-on-surface-variant mt-1">{statusMeta.detail}</p>
               </div>
-            )}
-
-            <div className="grid grid-cols-3 gap-2 mt-4">
-              <MetricCell label="Sections" value={String(totalSections)} />
-              <MetricCell label="Checks" value={String(totalChecks)} />
-              <MetricCell label="Required Photos" value={String(requiredPhotos)} />
+              <span className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${statusMeta.tone}`}>
+                {completionPercent}%
+              </span>
             </div>
+            <div className="px-4 py-4">
+              <div className="h-2 rounded-full bg-[#e6ebf1] overflow-hidden">
+                <div className="h-full rounded-full bg-primary" style={{ width: `${completionPercent}%` }} />
+              </div>
+              <div className="grid grid-cols-3 gap-2 mt-4">
+                <MetricCell label="Sections" value={String(totalSections)} />
+                <MetricCell label="Checks" value={String(totalChecks)} />
+                <MetricCell label="Required Photos" value={String(requiredPhotos)} />
+              </div>
+            </div>
+          </div>
+        )}
 
-            <button
-              type="button"
-              onClick={() => navigate(ctaRoute)}
-              className="mt-4 w-full min-h-11 rounded-lg bg-primary text-white text-[14px] font-semibold flex items-center justify-center gap-2"
-            >
-              {ctaLabel}
-              <ChevronRight size={16} />
-            </button>
+        {scorecardStatus === 'not-started' ? (
+          <div className="mt-4 rounded-xl border border-outline bg-surface-lowest overflow-hidden">
+            <div className="px-4 py-3 border-b border-outline">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Previous Snapshot</p>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-4 py-3">
+              <SnapshotRow label="Last Score" value={String(previousSnapshot.score)} />
+              <SnapshotRow label="Last Submitted" value={previousSnapshot.date} />
+              <SnapshotRow label="Repeated Gap" value="Garden Doors" />
+              <SnapshotRow label="Top Opportunity" value="Weed and Feed Endcap" />
+            </div>
+            <div className="px-4 pb-4">
+              <p className="text-[12px] text-on-surface-variant leading-snug">{previousSnapshot.gap}</p>
+              <p className="text-[12px] text-on-surface-variant leading-snug mt-1">{previousSnapshot.opportunity}</p>
+            </div>
           </div>
-        </div>
-
-        <div className="mx-4 mt-3 border border-outline bg-surface-lowest rounded-lg overflow-hidden">
-          <div className="px-4 py-3 border-b border-outline">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Previous Snapshot</p>
-          </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-4 py-3">
-            <SnapshotRow label="Last Score" value={String(previousSnapshot.score)} />
-            <SnapshotRow label="Last Submitted" value={previousSnapshot.date} />
-            <SnapshotRow label="Repeated Gap" value="Garden Doors" />
-            <SnapshotRow label="Top Opportunity" value="Weed and Feed Endcap" />
-          </div>
-          <div className="px-4 pb-3">
-            <p className="text-[12px] text-on-surface-variant leading-snug">{previousSnapshot.gap}</p>
-            <p className="text-[12px] text-on-surface-variant leading-snug mt-1">{previousSnapshot.opportunity}</p>
-          </div>
-        </div>
-
-        <div className="mx-4 mt-3 border border-outline bg-surface-lowest rounded-lg overflow-hidden">
-          <div className="px-4 py-3 border-b border-outline">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Scorecard Flow</p>
-          </div>
-          <div className="divide-y divide-outline">
-            {scorecardSections.map((section, index) => {
-              const state = getStepState(section.id, app)
-              return (
-                <div key={section.id} className="flex items-start gap-3 px-4 py-3">
-                  <div className={`mt-0.5 h-7 w-7 rounded-md border flex items-center justify-center ${iconTone(state)}`}>
-                    {stepIcon(state)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-[13px] font-semibold text-on-surface">
-                        {index + 1}. {section.title}
-                      </p>
-                      <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${stepTone(state)}`}>
-                        {stepLabel(state)}
-                      </span>
+        ) : (
+          <div className="mt-4 rounded-xl border border-outline bg-surface-lowest overflow-hidden">
+            <div className="px-4 py-3 border-b border-outline">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Scorecard Flow</p>
+            </div>
+            <div className="divide-y divide-outline">
+              {scorecardSections.map((section, index) => {
+                const state = getStepState(section.id, app)
+                return (
+                  <div key={section.id} className="flex items-start gap-3 px-4 py-3">
+                    <div className={`mt-0.5 h-7 w-7 rounded-md border flex items-center justify-center ${iconTone(state)}`}>
+                      {stepIcon(state)}
                     </div>
-                    <p className="text-[12px] text-on-surface-variant mt-1">{section.description}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-[13px] font-semibold text-on-surface">
+                          {index + 1}. {section.title}
+                        </p>
+                        <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${stepTone(state)}`}>
+                          {stepLabel(state)}
+                        </span>
+                      </div>
+                      <p className="text-[12px] text-on-surface-variant mt-1">{section.description}</p>
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {trellisEnabled && (
           <div className="mt-3">
@@ -191,7 +184,7 @@ export function EntryScreen() {
         )}
 
         {submitted && (
-          <div className="mx-4 mt-3 mb-4 border border-[#cde8d3] bg-[#edf7ee] rounded-lg px-4 py-3">
+          <div className="mt-3 mb-4 border border-[#cde8d3] bg-[#edf7ee] rounded-lg px-4 py-3">
             <p className="text-[12px] font-semibold text-[#1f5f33]">Scorecard submitted from active visit.</p>
             <p className="text-[12px] text-[#25523b] mt-1">Use View Summary to review score impact and manager-facing next actions.</p>
           </div>

@@ -9,6 +9,7 @@ export interface AppContextValue extends AppState {
   removeOffShelfEntry: (id: string) => void
   confirmOffShelfReview: () => void
   setEvidenceCaptured: (itemId: string, captured: boolean) => void
+  setEvidencePhoto: (itemId: string, file: File | null) => void
   setEvidenceNote: (itemId: string, note: string) => void
   setNotes: (v: string) => void
   setRevisitRequired: (v: boolean) => void

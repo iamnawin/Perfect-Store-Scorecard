@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react'
+import type { ChangeEvent, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, CheckCircle2, FileText, Flag, Image, RotateCcw } from 'lucide-react'
+import { AlertTriangle, Camera, CheckCircle2, FileText, Flag, Image, RotateCcw } from 'lucide-react'
 import { BottomActionBar } from '../components/BottomActionBar'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
@@ -19,7 +19,7 @@ export function PhotoScreen() {
     setRevisitRequired,
     shelfResetNeeded,
     setShelfResetNeeded,
-    setEvidenceCaptured,
+    setEvidencePhoto,
     setEvidenceNote,
     completionPercent,
     totalSections,
@@ -34,14 +34,14 @@ export function PhotoScreen() {
 
   return (
     <PhoneShell>
-      <TopBar title={store.name} subtitle={`${store.visitStatus} Visit | ${store.scorecard}`} showBack showTrellisToggle />
+      <TopBar title="Photo Evidence" subtitle={`${store.name} | ${store.visitStatus} Visit`} showBack showTrellisToggle />
 
       <div className="flex-1 overflow-y-auto bg-[#f4f6f9]">
         <div className="sticky top-0 z-10 border-b border-outline bg-surface-lowest px-4 py-3">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Current Section</p>
-              <p className="text-[15px] font-semibold text-on-surface mt-1">Photo and Notes</p>
+              <p className="text-[15px] font-semibold text-on-surface mt-1">Photo Evidence</p>
               <p className="text-[12px] text-on-surface-variant mt-1">Section {sectionNumber} of {totalSections} | {completionPercent}% overall complete</p>
             </div>
             <span className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${missingEvidence.length === 0 ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'}`}>
@@ -75,6 +75,8 @@ export function PhotoScreen() {
             const evidenceItem = evidence[requirement.id]
             const linkedQuestions = getLinkedQuestionTitles(requirement.linkedQuestionIds)
             const captured = evidenceItem?.captured
+            const previewUrl = evidenceItem?.photoPreviewUrl
+            const photoName = evidenceItem?.photoName
 
             return (
               <div key={requirement.id} className="border border-outline bg-surface-lowest rounded-lg overflow-hidden">
@@ -90,20 +92,44 @@ export function PhotoScreen() {
                 </div>
                 <div className="px-4 py-4">
                   <div className="flex gap-3">
-                    <div className={`h-20 w-20 rounded-lg border flex items-center justify-center ${captured ? 'border-[#cde8d3] bg-[#edf7ee]' : 'border-outline bg-[#f7f9fb]'}`}>
-                      {captured ? <CheckCircle2 size={22} className="text-[#2e844a]" /> : <Image size={20} className="text-on-surface-variant" />}
+                    <div className={`h-20 w-20 overflow-hidden rounded-lg border flex items-center justify-center ${captured ? 'border-[#cde8d3] bg-[#edf7ee]' : 'border-outline bg-[#f7f9fb]'}`}>
+                      {previewUrl ? (
+                        <img src={previewUrl} alt={`${requirement.title} evidence`} className="h-full w-full object-cover" />
+                      ) : captured ? (
+                        <CheckCircle2 size={22} className="text-[#2e844a]" />
+                      ) : (
+                        <Image size={20} className="text-on-surface-variant" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[12px] font-semibold text-on-surface">Linked checklist relevance</p>
                       <p className="text-[12px] text-on-surface-variant mt-1">{linkedQuestions.join(' | ')}</p>
-                      <div className="flex gap-2 mt-3">
-                        <button
-                          type="button"
-                          onClick={() => setEvidenceCaptured(requirement.id, !captured)}
-                          className={`rounded-md px-3 py-2 text-[12px] font-semibold ${captured ? 'border border-outline bg-surface-low text-on-surface-variant' : 'bg-primary text-white'}`}
-                        >
+                      {photoName && <p className="mt-1 text-[11px] text-on-surface-variant">{photoName}</p>}
+                      <div className="flex gap-2 mt-3 flex-wrap">
+                        <label className={`inline-flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-[12px] font-semibold ${captured ? 'border border-outline bg-surface-low text-on-surface-variant' : 'bg-primary text-white'}`}>
+                          <Camera size={14} />
                           {captured ? 'Retake Photo' : 'Capture Photo'}
-                        </button>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="hidden"
+                            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                              const file = event.target.files?.[0] ?? null
+                              setEvidencePhoto(requirement.id, file)
+                              event.target.value = ''
+                            }}
+                          />
+                        </label>
+                        {captured && (
+                          <button
+                            type="button"
+                            onClick={() => setEvidencePhoto(requirement.id, null)}
+                            className="rounded-md border border-[#f9d6d0] bg-[#fef1ee] px-3 py-2 text-[12px] font-semibold text-[#8e030f]"
+                          >
+                            Remove
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

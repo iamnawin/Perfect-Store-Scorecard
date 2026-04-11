@@ -73,8 +73,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ...prev[itemId],
         captured,
         note: captured && !prev[itemId]?.note ? 'Captured during active visit.' : prev[itemId]?.note ?? '',
+        photoName: captured ? prev[itemId]?.photoName ?? '' : '',
+        photoPreviewUrl: captured ? prev[itemId]?.photoPreviewUrl ?? '' : '',
       },
     }))
+  }
+
+  function setEvidencePhoto(itemId: string, file: File | null) {
+    setEvidence(prev => {
+      const current = prev[itemId]
+
+      if (current?.photoPreviewUrl) {
+        URL.revokeObjectURL(current.photoPreviewUrl)
+      }
+
+      if (!file) {
+        return {
+          ...prev,
+          [itemId]: {
+            ...current,
+            captured: false,
+            note: current?.note ?? '',
+            photoName: '',
+            photoPreviewUrl: '',
+          },
+        }
+      }
+
+      return {
+        ...prev,
+        [itemId]: {
+          ...current,
+          captured: true,
+          note: current?.note || `Captured during active visit: ${file.name}`,
+          photoName: file.name,
+          photoPreviewUrl: URL.createObjectURL(file),
+        },
+      }
+    })
   }
 
   function setEvidenceNote(itemId: string, note: string) {
@@ -144,6 +180,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       removeOffShelfEntry,
       confirmOffShelfReview,
       setEvidenceCaptured,
+      setEvidencePhoto,
       setEvidenceNote,
       setNotes,
       setRevisitRequired,

@@ -51,11 +51,36 @@ export function SummaryScreen() {
     : lastSavedAt
       ? `Draft saved at ${lastSavedAt}`
       : 'Review score impact and submit from the active visit when ready.'
+  const shareText = `Perfect Store Scorecard submitted for ${store.name}. Final Score: ${totalScore}. Execution: ${executionScore}%. LGOR: ${lgorPct.toFixed(1)}%.`
+
+  function openEmailSnapshot() {
+    const subject = encodeURIComponent(`Perfect Store Scorecard Snapshot - ${store.name}`)
+    const body = encodeURIComponent(`${shareText}\n\nRepeated Gap: ${previousSnapshot.gap}\nTop Opportunity: ${previousSnapshot.opportunity}`)
+    window.location.href = `mailto:?subject=${subject}&body=${body}`
+  }
+
+  async function postToChatter() {
+    if (navigator.share) {
+      await navigator.share({
+        title: 'Perfect Store Scorecard Snapshot',
+        text: shareText,
+      })
+      return
+    }
+
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(shareText)
+      window.alert('Score snapshot copied. Paste it into Chatter.')
+      return
+    }
+
+    window.alert(shareText)
+  }
 
   if (submitted) {
     return (
       <PhoneShell>
-        <TopBar title={store.name} subtitle={`${store.visitStatus} Visit | ${store.scorecard}`} showBack />
+        <TopBar title="Post-Submission Outcomes" subtitle={`${store.name} | ${store.visitStatus} Visit`} showBack />
 
         <div className="flex-1 overflow-y-auto bg-[#f4f6f9] px-4 py-4 space-y-3">
           <div className="border border-[#cde8d3] bg-surface-lowest rounded-lg px-4 py-4">
@@ -81,6 +106,16 @@ export function SummaryScreen() {
               <ReportMetric label="Risk Delta" value={`${riskDelta}%`} />
             </div>
           </div>
+
+          <div className="border border-outline bg-surface-lowest rounded-lg overflow-hidden">
+            <div className="px-4 py-3 border-b border-outline">
+              <p className="text-[12px] font-semibold text-on-surface">Post-submission actions</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 px-4 py-4">
+              <ActionButton label="Email Snapshot" onClick={openEmailSnapshot} />
+              <ActionButton label="Post to Chatter" onClick={() => { void postToChatter() }} />
+            </div>
+          </div>
         </div>
 
         <BottomActionBar
@@ -94,14 +129,14 @@ export function SummaryScreen() {
 
   return (
     <PhoneShell>
-      <TopBar title={store.name} subtitle={`${store.visitStatus} Visit | ${store.scorecard}`} showBack showTrellisToggle />
+      <TopBar title="Review & Submit" subtitle={`${store.name} | ${store.visitStatus} Visit`} showBack showTrellisToggle />
 
       <div className="flex-1 overflow-y-auto bg-[#f4f6f9]">
         <div className="sticky top-0 z-10 border-b border-outline bg-surface-lowest px-4 py-3">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Current Section</p>
-              <p className="text-[15px] font-semibold text-on-surface mt-1">Score Summary</p>
+              <p className="text-[15px] font-semibold text-on-surface mt-1">Review & Submit</p>
               <p className="text-[12px] text-on-surface-variant mt-1">Section {sectionNumber} of {totalSections} | {completionPercent}% overall complete</p>
             </div>
             <span className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${blockers.length === 0 ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'}`}>
@@ -255,5 +290,17 @@ function ListRow({ icon, text }: { icon: ReactNode; text: string }) {
       <span className="mt-0.5 shrink-0">{icon}</span>
       <p className="text-[12px] text-on-surface-variant leading-snug">{text}</p>
     </div>
+  )
+}
+
+function ActionButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="min-h-11 rounded-lg border border-outline bg-[#f7f9fb] px-3 text-[12px] font-semibold text-on-surface"
+    >
+      {label}
+    </button>
   )
 }

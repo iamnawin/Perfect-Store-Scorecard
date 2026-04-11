@@ -35,6 +35,8 @@ export interface OffShelfEntry {
   quantity: number | string
   classification: OffShelfClassification
   photoCaptured: boolean
+  photoName: string
+  photoPreviewUrl: string
   caption: string
   notes: string
   estimatedLgor: number
@@ -73,6 +75,8 @@ export interface EvidenceRequirement {
 export interface EvidenceStateItem {
   captured: boolean
   note: string
+  photoName: string
+  photoPreviewUrl: string
 }
 
 export interface EvidenceState {

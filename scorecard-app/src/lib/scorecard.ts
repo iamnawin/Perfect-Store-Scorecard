@@ -16,7 +16,7 @@ import type {
 
 export function createInitialEvidenceState() {
   return evidenceRequirements.reduce<Record<string, EvidenceStateItem>>((acc, item) => {
-    acc[item.id] = { captured: false, note: '' }
+    acc[item.id] = { captured: false, note: '', photoName: '', photoPreviewUrl: '' }
     return acc
   }, {})
 }

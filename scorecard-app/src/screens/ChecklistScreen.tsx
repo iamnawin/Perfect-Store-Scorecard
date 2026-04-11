@@ -51,7 +51,7 @@ export function ChecklistScreen() {
 
   return (
     <PhoneShell>
-      <TopBar title={store.name} subtitle={`${store.visitStatus} Visit | ${store.scorecard}`} showBack showTrellisToggle />
+      <TopBar title="Base Plan Check" subtitle={`${store.name} | ${store.visitStatus} Visit`} showBack showTrellisToggle />
 
       <div className="flex-1 overflow-y-auto bg-[#f4f6f9]">
         <div className="sticky top-0 z-10 border-b border-outline bg-surface-lowest">
@@ -59,7 +59,7 @@ export function ChecklistScreen() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Scorecard Progress</p>
-                <p className="text-[14px] font-semibold text-on-surface mt-1">{store.scorecard}</p>
+                <p className="text-[14px] font-semibold text-on-surface mt-1">Base Plan Check (Checklist)</p>
                 <p className="text-[12px] text-on-surface-variant mt-1">
                   {answeredChecks} of {totalChecks} checks answered | Section {currentSectionNumber} of {totalSections}
                 </p>

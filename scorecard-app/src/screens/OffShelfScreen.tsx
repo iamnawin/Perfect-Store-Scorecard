@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useState, type ChangeEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
 import {
@@ -41,6 +41,8 @@ interface DraftState {
   quantity: number | string | ''
   classification: OffShelfClassification
   photoCaptured: boolean
+  photoName: string
+  photoPreviewUrl: string
   caption: string
   notes: string
   searchTerm: string
@@ -60,6 +62,8 @@ function createEmptyDraft(): DraftState {
     quantity: '',
     classification: 'incremental',
     photoCaptured: false,
+    photoName: '',
+    photoPreviewUrl: '',
     caption: '',
     notes: '',
     searchTerm: '',
@@ -139,6 +143,9 @@ export function OffShelfScreen() {
   }
 
   function resetDraft() {
+    if (draft.photoPreviewUrl) {
+      URL.revokeObjectURL(draft.photoPreviewUrl)
+    }
     setDraft(createEmptyDraft())
     setEditingId(null)
   }
@@ -172,6 +179,8 @@ export function OffShelfScreen() {
       quantity: draft.quantity,
       classification: draft.classification,
       photoCaptured: draft.photoCaptured,
+      photoName: draft.photoName,
+      photoPreviewUrl: draft.photoPreviewUrl,
       caption: draft.caption.trim(),
       notes: draft.notes.trim(),
       estimatedLgor: draftImpact.estimatedLgor,
@@ -191,6 +200,9 @@ export function OffShelfScreen() {
   }
 
   function handleEdit(entry: OffShelfEntry) {
+    if (draft.photoPreviewUrl && draft.photoPreviewUrl !== entry.photoPreviewUrl) {
+      URL.revokeObjectURL(draft.photoPreviewUrl)
+    }
     setEditingId(entry.id)
     setDraft({
       location: entry.location,
@@ -199,6 +211,8 @@ export function OffShelfScreen() {
       quantity: entry.quantity,
       classification: entry.classification,
       photoCaptured: entry.photoCaptured,
+      photoName: entry.photoName,
+      photoPreviewUrl: entry.photoPreviewUrl,
       caption: entry.caption,
       notes: entry.notes,
       searchTerm: '',
@@ -209,6 +223,10 @@ export function OffShelfScreen() {
     const product = recommendation.product
     if (!product) return
 
+    if (draft.photoPreviewUrl) {
+      URL.revokeObjectURL(draft.photoPreviewUrl)
+    }
+
     setEditingId(null)
     setDraft({
       location: recommendation.location,
@@ -217,17 +235,43 @@ export function OffShelfScreen() {
       quantity: recommendation.quantity,
       classification: 'incremental',
       photoCaptured: false,
+      photoName: '',
+      photoPreviewUrl: '',
       caption: '',
       notes: '',
       searchTerm: '',
     })
   }
 
+  function handleDraftPhoto(file: File | null) {
+    setDraft(prev => {
+      if (prev.photoPreviewUrl) {
+        URL.revokeObjectURL(prev.photoPreviewUrl)
+      }
+
+      if (!file) {
+        return {
+          ...prev,
+          photoCaptured: false,
+          photoName: '',
+          photoPreviewUrl: '',
+        }
+      }
+
+      return {
+        ...prev,
+        photoCaptured: true,
+        photoName: file.name,
+        photoPreviewUrl: URL.createObjectURL(file),
+      }
+    })
+  }
+
   return (
     <PhoneShell>
       <TopBar
-        title={store.name}
-        subtitle={`Active Visit • ${store.scorecard}`}
+        title="Off-Shelf Opportunity Capture"
+        subtitle={`${store.name} | ${store.visitStatus} Visit`}
         showBack
         rightSlot={(
           <button
@@ -250,7 +294,7 @@ export function OffShelfScreen() {
             </div>
             <div>
               <div className="mb-1.5 flex items-center justify-between text-[11px] text-on-surface-variant">
-                <span>Step {sectionNumber} of {totalSections}: Off-Shelf Capture</span>
+                <span>Step {sectionNumber} of {totalSections}: Off-Shelf Opportunity Capture</span>
                 <span>{completionPercent}%</span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-[#dde3ea]">
@@ -370,18 +414,34 @@ export function OffShelfScreen() {
             />
 
             <FieldLabel label="Photo Evidence" />
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => updateDraft('photoCaptured', !draft.photoCaptured)}
-                className={clsx(
-                  'inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-3 text-[12px] font-semibold',
-                  draft.photoCaptured ? 'bg-[#edf7ee] text-[#1f5f33]' : 'bg-primary text-white'
-                )}
-              >
+            <div className="flex items-center gap-2 flex-wrap">
+              <label className={clsx(
+                'inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-[12px] font-semibold',
+                draft.photoCaptured ? 'bg-[#edf7ee] text-[#1f5f33]' : 'bg-primary text-white'
+              )}>
                 {draft.photoCaptured ? <Image size={14} /> : <Camera size={14} />}
                 {draft.photoCaptured ? 'Retake Photo' : 'Capture Photo'}
-              </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    const file = event.target.files?.[0] ?? null
+                    handleDraftPhoto(file)
+                    event.target.value = ''
+                  }}
+                />
+              </label>
+              {draft.photoCaptured && (
+                <button
+                  type="button"
+                  onClick={() => handleDraftPhoto(null)}
+                  className="rounded-md border border-[#f9d6d0] bg-[#fef1ee] px-3 py-2 text-[12px] font-semibold text-[#8e030f]"
+                >
+                  Remove
+                </button>
+              )}
               <span className={clsx(
                 'rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]',
                 draft.photoCaptured ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'
@@ -389,6 +449,12 @@ export function OffShelfScreen() {
                 {draft.photoCaptured ? 'Captured' : 'Required'}
               </span>
             </div>
+            {draft.photoPreviewUrl && (
+              <div className="overflow-hidden rounded-lg border border-outline bg-[#f7f9fb]">
+                <img src={draft.photoPreviewUrl} alt="Off-shelf evidence preview" className="h-40 w-full object-cover" />
+              </div>
+            )}
+            {draft.photoName && <p className="text-[11px] text-on-surface-variant">{draft.photoName}</p>}
             <input
               value={draft.caption}
               onChange={event => updateDraft('caption', event.target.value)}
@@ -478,6 +544,11 @@ export function OffShelfScreen() {
                       {entry.status}
                     </span>
                   </div>
+                  {entry.photoPreviewUrl && (
+                    <div className="mt-3 overflow-hidden rounded-lg border border-outline bg-[#f7f9fb]">
+                      <img src={entry.photoPreviewUrl} alt={`${entry.product} evidence`} className="h-28 w-full object-cover" />
+                    </div>
+                  )}
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <MiniMetric label="Impact" value={`+${entry.impactPoints.toFixed(1)} pts`} positive />
                     <MiniMetric label="Photo" value={entry.photoCaptured ? 'Captured' : 'Missing'} positive={entry.photoCaptured} />
