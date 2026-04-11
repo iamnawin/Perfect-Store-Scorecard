@@ -50,6 +50,8 @@ export function ChecklistScreen() {
     trellisEnabled,
   } = app
   const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({})
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({})
+  const [openEvidence, setOpenEvidence] = useState<Record<string, boolean>>({})
 
   const checklistSections = scorecardSections.filter(section => section.kind === 'checklist')
   const activeSection =
@@ -69,7 +71,27 @@ export function ChecklistScreen() {
   const helperText = lastSavedAt ? `Draft saved at ${lastSavedAt}` : 'Draft saves automatically inside the active visit.'
 
   function toggleNote(questionId: string) {
-    setOpenNotes(prev => ({ ...prev, [questionId]: !prev[questionId] }))
+    setOpenNotes(prev => {
+      const next = !prev[questionId]
+      if (next) {
+        setNoteDrafts(drafts => ({ ...drafts, [questionId]: questionNotes[questionId] ?? '' }))
+      }
+      return { ...prev, [questionId]: next }
+    })
+  }
+
+  function toggleEvidence(questionId: string) {
+    setOpenEvidence(prev => ({ ...prev, [questionId]: !prev[questionId] }))
+  }
+
+  function handleNoteDraftChange(questionId: string, value: string) {
+    setNoteDrafts(prev => ({ ...prev, [questionId]: value }))
+  }
+
+  function handleSaveQuestionNote(questionId: string) {
+    setQuestionNote(questionId, noteDrafts[questionId] ?? '')
+    saveDraft()
+    setOpenNotes(prev => ({ ...prev, [questionId]: false }))
   }
 
   return (
@@ -163,8 +185,10 @@ export function ChecklistScreen() {
             const primaryEvidence = relatedEvidence.find(item => item.required) ?? relatedEvidence[0]
             const currentNote = questionNotes[question.id] ?? ''
             const noteOpen = Boolean(openNotes[question.id] || currentNote)
+            const noteDraft = noteDrafts[question.id] ?? currentNote
             const currentEvidence = primaryEvidence ? evidence[primaryEvidence.id] : null
             const quickPhotoCaptured = Boolean(currentEvidence?.captured)
+            const evidenceOpen = Boolean(openEvidence[question.id])
             const impactValue = getChecklistImpactValue(question.weight, answer)
             const priority = question.weight >= 15 ? 'HIGH IMPACT' : question.weight >= 10 ? 'MEDIUM IMPACT' : 'LOW IMPACT'
             const impactTone = answer === 'yes' ? 'positive' : answer === 'no' ? 'negative' : 'neutral'
@@ -292,26 +316,19 @@ export function ChecklistScreen() {
                       {currentNote ? 'Edit Note' : 'Add Note'}
                     </button>
                     {primaryEvidence && evidenceLabel !== 'No photo required' && (
-                      <label className={clsx(
-                        'rounded-md border px-2.5 py-1.5 text-[11px] font-medium flex items-center gap-1.5 cursor-pointer',
-                        quickPhotoCaptured
-                          ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
-                          : 'border-outline bg-surface-low text-on-surface-variant'
-                      )}>
+                      <button
+                        type="button"
+                        onClick={() => toggleEvidence(question.id)}
+                        className={clsx(
+                          'rounded-md border px-2.5 py-1.5 text-[11px] font-medium flex items-center gap-1.5',
+                          quickPhotoCaptured
+                            ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
+                            : 'border-outline bg-surface-low text-on-surface-variant'
+                        )}
+                      >
                         <Camera size={12} />
                         {quickPhotoCaptured ? 'Retake Photo' : 'Capture Photo'}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          className="hidden"
-                          onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                            const file = event.target.files?.[0] ?? null
-                            setEvidencePhoto(primaryEvidence.id, file)
-                            event.target.value = ''
-                          }}
-                        />
-                      </label>
+                      </button>
                     )}
                   </div>
 
@@ -319,12 +336,67 @@ export function ChecklistScreen() {
                     <div className="mt-3 rounded-lg border border-outline bg-[#f7f9fb] p-3">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant mb-2">Question Note</p>
                       <textarea
-                        value={currentNote}
-                        onChange={(event) => setQuestionNote(question.id, event.target.value)}
+                        value={noteDraft}
+                        onChange={(event) => handleNoteDraftChange(question.id, event.target.value)}
                         placeholder="Add store-level context for this check."
                         rows={3}
                         className="w-full rounded-lg border border-outline bg-surface-lowest px-3 py-2.5 text-[13px] text-on-surface outline-none resize-none"
                       />
+                      <div className="mt-3 flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNoteDrafts(prev => ({ ...prev, [question.id]: currentNote }))
+                            setOpenNotes(prev => ({ ...prev, [question.id]: false }))
+                          }}
+                          className="min-h-9 rounded-md border border-outline bg-surface-low px-3 text-[12px] font-semibold text-on-surface-variant"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSaveQuestionNote(question.id)}
+                          className="min-h-9 rounded-md bg-primary px-3 text-[12px] font-semibold text-white"
+                        >
+                          Save Note
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {primaryEvidence && evidenceLabel !== 'No photo required' && evidenceOpen && (
+                    <div className="mt-3 rounded-lg border border-outline bg-[#f7f9fb] p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant mb-2">Photo Evidence</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <label className={clsx(
+                          'inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-md px-3 text-[12px] font-semibold',
+                          quickPhotoCaptured
+                            ? 'border border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
+                            : 'bg-primary text-white'
+                        )}>
+                          <Camera size={13} />
+                          {quickPhotoCaptured ? 'Retake Photo' : 'Capture Photo'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="hidden"
+                            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                              const file = event.target.files?.[0] ?? null
+                              setEvidencePhoto(primaryEvidence.id, file)
+                              event.target.value = ''
+                              setOpenEvidence(prev => ({ ...prev, [question.id]: false }))
+                            }}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setOpenEvidence(prev => ({ ...prev, [question.id]: false }))}
+                          className="min-h-10 rounded-md border border-outline bg-surface-low px-3 text-[12px] font-semibold text-on-surface-variant"
+                        >
+                          Close
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

@@ -24,8 +24,6 @@ export function SummaryScreen() {
     totalScore,
     lgorPct,
     riskDelta,
-    answeredChecks,
-    totalChecks,
     completionPercent,
     totalSections,
     lastSavedAt,
@@ -40,14 +38,37 @@ export function SummaryScreen() {
   const noItems = checklistQuestions.filter(question => checklist[question.id] === 'no')
   const unanswered = checklistQuestions.filter(question => !checklist[question.id])
   const missingEvidence = getMissingRequiredEvidence(evidence, offShelf)
-  const blockers = [
-    ...missingEvidence.map(item => `${item.title} evidence is still missing.`),
-    ...unanswered.map(question => `${question.title} has not been answered.`),
-    ...(!offShelfConfirmed && offShelf.length === 0 ? ['Off-Shelf Capture has not been reviewed.'] : []),
+  const blockerCards = [
+    ...missingEvidence.map(item => ({
+      key: `evidence-${item.id}`,
+      title: `${item.title} photo is still missing`,
+      detail: 'Go to Photo Evidence and capture the required proof before submit.',
+      route: '/photo',
+      actionLabel: 'Open Photo Evidence',
+    })),
+    ...(unanswered.length > 0
+      ? [{
+          key: 'checklist-unanswered',
+          title: `${unanswered.length} checklist question${unanswered.length > 1 ? 's are' : ' is'} still unanswered`,
+          detail: 'Return to Checklist Execution and finish the remaining checks.',
+          route: '/checklist',
+          actionLabel: 'Return to Checklist',
+        }]
+      : []),
+    ...(!offShelfConfirmed && offShelf.length === 0
+      ? [{
+          key: 'off-shelf-review',
+          title: 'Off-Shelf Capture is not reviewed yet',
+          detail: 'Open Off-Shelf Opportunity Capture and either save an entry or confirm no display today.',
+          route: '/off-shelf',
+          actionLabel: 'Open Off-Shelf',
+        }]
+      : []),
   ]
+  const blockers = blockerCards.map(item => item.title)
   const sectionNumber = scorecardSections.findIndex(section => section.id === 'review-submit') + 1
-  const helperText = blockers.length > 0
-    ? 'Resolve blockers before submitting from the visit.'
+  const helperText = blockerCards.length > 0
+    ? `Next required action: ${blockerCards[0]?.actionLabel}`
     : lastSavedAt
       ? `Draft saved at ${lastSavedAt}`
       : 'Review score impact and submit from the active visit when ready.'
@@ -237,16 +258,31 @@ export function SummaryScreen() {
 
           <div className="border border-outline bg-surface-lowest rounded-lg overflow-hidden">
             <div className="px-4 py-3 border-b border-outline">
-              <p className="text-[12px] font-semibold text-on-surface">Key gaps and blockers</p>
+              <p className="text-[12px] font-semibold text-on-surface">Required before submit</p>
             </div>
             <div className="px-4 py-3 space-y-2">
               {noItems.map(item => (
                 <ListRow key={item.id} icon={<AlertTriangle size={13} className="text-[#ba0517]" />} text={`${item.title} failed and is reducing score impact.`} />
               ))}
-              {blockers.map(blocker => (
-                <ListRow key={blocker} icon={<Flag size={13} className="text-[#ba0517]" />} text={blocker} />
+              {blockerCards.map(blocker => (
+                <div key={blocker.key} className="rounded-lg border border-[#f9d6d0] bg-[#fef1ee] px-3 py-3">
+                  <div className="flex items-start gap-2">
+                    <Flag size={13} className="text-[#ba0517] mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-semibold text-[#8e030f]">{blocker.title}</p>
+                      <p className="text-[12px] text-[#8e030f] mt-1">{blocker.detail}</p>
+                      <button
+                        type="button"
+                        onClick={() => navigate(blocker.route)}
+                        className="mt-3 min-h-10 rounded-md bg-primary px-3 text-[12px] font-semibold text-white"
+                      >
+                        {blocker.actionLabel}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               ))}
-              {blockers.length === 0 && (
+              {blockerCards.length === 0 && (
                 <ListRow icon={<CheckCircle2 size={13} className="text-[#2e844a]" />} text="No submission blockers remain. This visit is ready for manager review." />
               )}
             </div>
@@ -271,10 +307,10 @@ export function SummaryScreen() {
       <BottomActionBar
         secondaryLabel="Save Draft"
         onSecondary={saveDraft}
-        primaryLabel={blockers.length === 0 ? 'Submit Audit' : 'Submission Blocked'}
-        onPrimary={submitScorecard}
-        primaryDisabled={blockers.length > 0 || answeredChecks < totalChecks}
-        primaryIcon={<Send size={15} />}
+        primaryLabel={blockerCards.length === 0 ? 'Submit Audit' : blockerCards[0]?.actionLabel ?? 'Resolve Blocker'}
+        onPrimary={blockerCards.length === 0 ? submitScorecard : () => navigate(blockerCards[0].route)}
+        primaryDisabled={false}
+        primaryIcon={blockerCards.length === 0 ? <Send size={15} /> : undefined}
         helperText={helperText}
       />
     </PhoneShell>
