@@ -41,12 +41,24 @@ export function getRequiredPhotoCount() {
   return evidenceRequirements.filter(item => item.required).length
 }
 
-export function getCapturedRequiredPhotos(evidence: EvidenceState) {
-  return evidenceRequirements.filter(item => item.required && evidence[item.id]?.captured).length
+function hasOffShelfPhoto(offShelf: OffShelfEntry[]) {
+  return offShelf.some(entry => entry.photoCaptured)
 }
 
-export function getMissingRequiredEvidence(evidence: EvidenceState) {
-  return evidenceRequirements.filter(item => item.required && !evidence[item.id]?.captured)
+function isEvidenceCaptured(itemId: string, evidence: EvidenceState, offShelf: OffShelfEntry[] = []) {
+  if (itemId === 'endcap-photo') {
+    return Boolean(evidence[itemId]?.captured || hasOffShelfPhoto(offShelf))
+  }
+
+  return Boolean(evidence[itemId]?.captured)
+}
+
+export function getCapturedRequiredPhotos(evidence: EvidenceState, offShelf: OffShelfEntry[] = []) {
+  return evidenceRequirements.filter(item => item.required && isEvidenceCaptured(item.id, evidence, offShelf)).length
+}
+
+export function getMissingRequiredEvidence(evidence: EvidenceState, offShelf: OffShelfEntry[] = []) {
+  return evidenceRequirements.filter(item => item.required && !isEvidenceCaptured(item.id, evidence, offShelf))
 }
 
 export function getChecklistQuestionsForSection(sectionId: string) {
@@ -72,6 +84,17 @@ export function isOffShelfSectionComplete(offShelf: OffShelfEntry[], offShelfCon
 export function parseOffShelfQuantity(quantity: number | string) {
   if (quantity === '400+') return 400
   return typeof quantity === 'number' ? quantity : Number.parseInt(quantity, 10)
+}
+
+export function getOffShelfQuantityLabel(quantity: number | string) {
+  const normalizedQuantity = parseOffShelfQuantity(quantity)
+
+  if (normalizedQuantity >= 400) return 'Bulk'
+  if (normalizedQuantity >= 320) return 'Bulk'
+  if (normalizedQuantity >= 200) return 'Pallet'
+  if (normalizedQuantity >= 120) return 'Large Display'
+  if (normalizedQuantity >= 80) return 'Medium Display'
+  return 'Small Display'
 }
 
 export function getOffShelfProductById(productId: string) {
@@ -169,8 +192,8 @@ export function getPotentialAdditionalGain(entries: OffShelfEntry[]) {
     .toFixed(1)
 }
 
-export function isPhotoSectionComplete(evidence: EvidenceState) {
-  return getMissingRequiredEvidence(evidence).length === 0
+export function isPhotoSectionComplete(evidence: EvidenceState, offShelf: OffShelfEntry[] = []) {
+  return getMissingRequiredEvidence(evidence, offShelf).length === 0
 }
 
 export function isSectionComplete(section: ScorecardSection, state: AppState) {
@@ -183,7 +206,7 @@ export function isSectionComplete(section: ScorecardSection, state: AppState) {
   }
 
   if (section.id === 'photo-evidence') {
-    return isPhotoSectionComplete(state.evidence)
+    return isPhotoSectionComplete(state.evidence, state.offShelf)
   }
 
   return state.submitted
@@ -195,7 +218,7 @@ export function getCompletionPercent(state: AppState) {
   const totalUnits = getTotalChecks() + getRequiredPhotoCount() + 1
   const completedUnits =
     getAnsweredChecks(state.checklist) +
-    getCapturedRequiredPhotos(state.evidence) +
+    getCapturedRequiredPhotos(state.evidence, state.offShelf) +
     (isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed) ? 1 : 0)
 
   return Math.round((completedUnits / totalUnits) * 100)
@@ -208,7 +231,7 @@ export function getScorecardStatus(state: AppState): ScorecardStatus {
     getAnsweredChecks(state.checklist) > 0 ||
     state.offShelf.length > 0 ||
     state.offShelfConfirmed ||
-    getCapturedRequiredPhotos(state.evidence) > 0 ||
+    getCapturedRequiredPhotos(state.evidence, state.offShelf) > 0 ||
     state.notes.trim().length > 0 ||
     state.revisitRequired ||
     state.shelfResetNeeded
@@ -218,7 +241,7 @@ export function getScorecardStatus(state: AppState): ScorecardStatus {
   const ready =
     getAnsweredChecks(state.checklist) === getTotalChecks() &&
     isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed) &&
-    isPhotoSectionComplete(state.evidence)
+    isPhotoSectionComplete(state.evidence, state.offShelf)
 
   return ready ? 'ready-for-review' : 'in-progress'
 }
@@ -254,7 +277,7 @@ export function getExecutionScore(checklist: ChecklistState) {
 export function getTotalScore(state: AppState) {
   const noCount = Object.values(state.checklist).filter(answer => answer === 'no').length
   const offShelfBonus = Math.min(getOffShelfIncrementalScore(state.offShelf), 24)
-  const evidencePenalty = getMissingRequiredEvidence(state.evidence).length * 6
+  const evidencePenalty = getMissingRequiredEvidence(state.evidence, state.offShelf).length * 6
   const executionScore = getExecutionScore(state.checklist)
 
   return Math.max(0, +(136 + Math.round(executionScore * 0.48) + offShelfBonus - noCount * 4 - evidencePenalty).toFixed(1))
@@ -266,7 +289,7 @@ export function getLgorPct(state: AppState) {
 
 export function getRiskDelta(state: AppState) {
   const noCount = Object.values(state.checklist).filter(answer => answer === 'no').length
-  const missingEvidence = getMissingRequiredEvidence(state.evidence).length
+  const missingEvidence = getMissingRequiredEvidence(state.evidence, state.offShelf).length
   const reducedRisk = getYesCount(state.checklist) * 1.4
   return Math.round(-1 * Math.max(6, 18 + noCount * 4 + missingEvidence * 5 - reducedRisk))
 }

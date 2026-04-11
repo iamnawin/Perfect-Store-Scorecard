@@ -28,9 +28,9 @@ import {
 } from '../data/mock'
 import {
   estimateOffShelfImpact,
-  getOffShelfOpportunityScore,
   getOffShelfIncrementalScore,
   getOffShelfProductById,
+  getOffShelfQuantityLabel,
   getPotentialAdditionalGain,
   getRemainingOffShelfRecommendations,
 } from '../lib/scorecard'
@@ -51,8 +51,8 @@ interface DraftState {
 }
 
 const classificationOptions: Array<{ id: OffShelfClassification; label: string }> = [
-  { id: 'base-plan', label: 'Base Plan' },
-  { id: 'incremental', label: 'Incremental' },
+  { id: 'base-plan', label: 'Yes' },
+  { id: 'incremental', label: 'No' },
   { id: 'not-sure', label: 'Not Sure' },
 ]
 
@@ -86,7 +86,6 @@ export function OffShelfScreen() {
     answeredChecks,
     totalChecks,
     totalSections,
-    saveDraft,
     lastSavedAt,
     trellisEnabled,
   } = useApp()
@@ -115,10 +114,8 @@ export function OffShelfScreen() {
     })
 
   const currentIncremental = getOffShelfIncrementalScore(offShelf)
-  const currentOpportunityScore = getOffShelfOpportunityScore(offShelf)
-  const potentialAdditionalGain = getPotentialAdditionalGain(offShelf)
-  const remainingRecommendations = getRemainingOffShelfRecommendations(offShelf).slice(0, 4)
-
+  const editingEntry = editingId ? offShelf.find(entry => entry.id === editingId) : null
+  const editingImpact = editingEntry?.impactPoints ?? 0
   const draftImpact = selectedProduct && draft.location && draft.quantity !== ''
     ? estimateOffShelfImpact({
         product: selectedProduct,
@@ -127,6 +124,14 @@ export function OffShelfScreen() {
         classification: draft.classification,
       })
     : null
+  const liveIncremental = +(currentIncremental - editingImpact + (draftImpact?.impactPoints ?? editingImpact)).toFixed(1)
+  const projectedScore = +(100 + liveIncremental).toFixed(1)
+  const potentialAdditionalGain = getPotentialAdditionalGain(offShelf)
+  const remainingRecommendations = getRemainingOffShelfRecommendations(offShelf).slice(0, 4)
+  const quantityLabel = draft.quantity === '' ? '' : getOffShelfQuantityLabel(draft.quantity)
+  const classificationPrompt = draft.location === 'Endcap' || draft.location === 'Garden Door'
+    ? 'Suggested: No, this looks incremental for this location.'
+    : 'Use this to separate base plan coverage from incremental gain.'
 
   const canSaveEntry = Boolean(
     draft.location &&
@@ -160,6 +165,16 @@ export function OffShelfScreen() {
     }))
   }
 
+  function handleLocationSelect(location: string) {
+    setDraft(prev => ({
+      ...prev,
+      location,
+      classification: location === 'Endcap' || location === 'Garden Door'
+        ? 'incremental'
+        : prev.classification,
+    }))
+  }
+
   function handleProductSelect(productId: string) {
     setDraft(prev => ({
       ...prev,
@@ -168,7 +183,7 @@ export function OffShelfScreen() {
     }))
   }
 
-  function handleSaveEntry() {
+  function handleSaveEntry(resetAfterSave = true) {
     if (!selectedProduct || !draftImpact || !canSaveEntry) return
 
     const entry: OffShelfEntry = {
@@ -197,7 +212,12 @@ export function OffShelfScreen() {
       addOffShelfEntry(entry)
     }
 
-    resetDraft()
+    if (resetAfterSave) {
+      resetDraft()
+      return
+    }
+
+    setEditingId(entry.id)
   }
 
   function handleEdit(entry: OffShelfEntry) {
@@ -290,8 +310,8 @@ export function OffShelfScreen() {
               </div>
               <div className="grid grid-cols-3 gap-2 text-right">
                 <BandMetric label="Done" value={`${completionPercent}%`} />
-                <BandMetric label="Score" value={currentOpportunityScore.toFixed(1)} />
-                <BandMetric label="Lift" value={`+${currentIncremental.toFixed(1)}`} />
+                <BandMetric label="Score" value={projectedScore.toFixed(1)} />
+                <BandMetric label="Lift" value={`+${liveIncremental.toFixed(1)}`} />
               </div>
             </div>
             <div>
@@ -309,10 +329,14 @@ export function OffShelfScreen() {
         <div className="px-4 py-3 space-y-3">
           <SectionCard title="Score Impact" subtitle="Current score state for this visit.">
             <div className="grid grid-cols-2 gap-2">
-              <ScoreCell label="Current Score" value={currentOpportunityScore.toFixed(1)} tone="neutral" />
+              <ScoreCell label="Current Score" value={projectedScore.toFixed(1)} tone="neutral" />
               <ScoreCell label="Base Plan" value="100.0" tone="neutral" />
-              <ScoreCell label="Incremental Off-Shelf" value={`+${currentIncremental.toFixed(1)}`} tone="positive" />
-              <ScoreCell label="Potential Additional Gain" value={`+${potentialAdditionalGain.toFixed(1)}`} tone="positive" />
+              <ScoreCell label="Incremental Off-Shelf" value={`+${liveIncremental.toFixed(1)}`} tone="positive" />
+              <InsightCell
+                label="You Can Gain"
+                value={`+${potentialAdditionalGain.toFixed(1)} pts`}
+                lines={remainingRecommendations.slice(0, 3).map(item => `Add ${item.location} display -> +${item.potentialPoints.toFixed(1)} pts`)}
+              />
             </div>
           </SectionCard>
 
@@ -341,7 +365,7 @@ export function OffShelfScreen() {
             <SegmentGrid
               values={offShelfLocations}
               selectedValue={draft.location}
-              onSelect={value => updateDraft('location', value)}
+              onSelect={handleLocationSelect}
               columns="grid-cols-3"
             />
 
@@ -388,11 +412,16 @@ export function OffShelfScreen() {
                         <p className="text-[13px] font-semibold text-on-surface">{product.name}</p>
                         <p className="mt-1 text-[11px] text-on-surface-variant">{product.subtitle}</p>
                       </div>
-                      {recommended && (
-                        <span className="rounded-md border border-[#cde8d3] bg-[#edf7ee] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#1f5f33]">
-                          Recommended
+                      <div className="flex flex-col items-end gap-1">
+                        {recommended && (
+                          <span className="rounded-md border border-[#c9d8ea] bg-[#edf4ff] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
+                            {product.basePoints >= 9 ? 'High Impact' : 'Recommended'}
+                          </span>
+                        )}
+                        <span className="text-[11px] font-semibold text-[#1f5f33]">
+                          +{getProductPotential(product, draft.location, draft.quantity).toFixed(1)} pts potential
                         </span>
-                      )}
+                      </div>
                     </div>
                   </button>
                 )
@@ -401,13 +430,22 @@ export function OffShelfScreen() {
 
             <FieldLabel label="Quantity" />
             <SegmentGrid
-              values={offShelfQuantityOptions.map(value => String(value))}
-              selectedValue={draft.quantity === '' ? '' : String(draft.quantity)}
-              onSelect={value => updateDraft('quantity', value === '400+' ? value : Number(value))}
+              values={offShelfQuantityOptions.map(value => formatQuantityOption(value))}
+              selectedValue={draft.quantity === '' ? '' : formatQuantityOption(draft.quantity)}
+              onSelect={value => updateDraft('quantity', parseQuantityOption(value))}
               columns="grid-cols-3"
             />
 
-            <FieldLabel label="Classification" />
+            <ImpactPreviewCard
+              location={draft.location}
+              sku={selectedProduct?.name ?? ''}
+              quantity={quantityLabel}
+              estimatedLgor={draftImpact?.estimatedLgor ?? null}
+              impactPoints={draftImpact?.impactPoints ?? null}
+              projectedScore={draftImpact ? projectedScore : null}
+            />
+
+            <FieldLabel label="Is this part of base plan?" />
             <SegmentGrid
               values={classificationOptions.map(item => item.label)}
               selectedValue={classificationOptions.find(item => item.id === draft.classification)?.label ?? ''}
@@ -417,42 +455,58 @@ export function OffShelfScreen() {
               }}
               columns="grid-cols-3"
             />
+            <p className="text-[11px] text-on-surface-variant">{classificationPrompt}</p>
 
             <FieldLabel label="Photo Evidence" />
-            <div className="flex items-center gap-2 flex-wrap">
-              <label className={clsx(
-                'inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-[12px] font-semibold',
-                draft.photoCaptured ? 'bg-[#edf7ee] text-[#1f5f33]' : 'bg-primary text-white'
-              )}>
-                {draft.photoCaptured ? <Image size={14} /> : <Camera size={14} />}
-                {draft.photoCaptured ? 'Retake Photo' : 'Capture Photo'}
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                    const file = event.target.files?.[0] ?? null
-                    handleDraftPhoto(file)
-                    event.target.value = ''
-                  }}
-                />
-              </label>
-              {draft.photoCaptured && (
-                <button
-                  type="button"
-                  onClick={() => handleDraftPhoto(null)}
-                  className="rounded-md border border-[#f9d6d0] bg-[#fef1ee] px-3 py-2 text-[12px] font-semibold text-[#8e030f]"
-                >
-                  Remove
-                </button>
-              )}
-              <span className={clsx(
-                'rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]',
-                draft.photoCaptured ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'
-              )}>
-                {draft.photoCaptured ? 'Captured' : 'Required'}
-              </span>
+            <div className={clsx(
+              'rounded-lg border px-3 py-3',
+              draft.photoCaptured ? 'border-[#cde8d3] bg-[#edf7ee]' : 'border-[#f9d6d0] bg-[#fef1ee]'
+            )}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className={clsx('text-[11px] font-semibold uppercase tracking-[0.14em]', draft.photoCaptured ? 'text-[#1f5f33]' : 'text-[#8e030f]')}>
+                    Photo Required
+                  </p>
+                  <p className={clsx('text-[12px] mt-1', draft.photoCaptured ? 'text-[#1f5f33]' : 'text-[#8e030f]')}>
+                    Attach image to verify display. Required before submission.
+                  </p>
+                </div>
+                <span className={clsx(
+                  'rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]',
+                  draft.photoCaptured ? 'border-[#cde8d3] bg-white text-[#1f5f33]' : 'border-[#f9d6d0] bg-white text-[#8e030f]'
+                )}>
+                  {draft.photoCaptured ? 'Uploaded' : 'Missing'}
+                </span>
+              </div>
+              <div className="mt-3 flex items-center gap-2 flex-wrap">
+                <label className={clsx(
+                  'inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-md px-3 text-[12px] font-semibold',
+                  draft.photoCaptured ? 'border border-[#cde8d3] bg-white text-[#1f5f33]' : 'bg-primary text-white'
+                )}>
+                  {draft.photoCaptured ? <Image size={14} /> : <Camera size={14} />}
+                  {draft.photoCaptured ? 'Retake Photo' : 'Capture Photo'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      const file = event.target.files?.[0] ?? null
+                      handleDraftPhoto(file)
+                      event.target.value = ''
+                    }}
+                  />
+                </label>
+                {draft.photoCaptured && (
+                  <button
+                    type="button"
+                    onClick={() => handleDraftPhoto(null)}
+                    className="rounded-md border border-[#f9d6d0] bg-white px-3 py-2 text-[12px] font-semibold text-[#8e030f]"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
             </div>
             {draft.photoPreviewUrl && (
               <div className="overflow-hidden rounded-lg border border-outline bg-[#f7f9fb]">
@@ -477,15 +531,26 @@ export function OffShelfScreen() {
             />
           </SectionCard>
 
-          <SectionCard title="Live Impact" subtitle="Real-time score feedback from the current entry.">
+          <SectionCard title="Live Impact Panel" subtitle="Real-time score feedback from the current entry.">
             {draftImpact && selectedProduct ? (
               <div className="space-y-2.5">
+                <div className="rounded-lg border border-[#c9d8ea] bg-[#edf4ff] px-3 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">Impact Preview</p>
+                  <div className="mt-3 space-y-2">
+                    <PreviewRow label="Location" value={draft.location} />
+                    <PreviewRow label="SKU" value={selectedProduct.name} />
+                    <PreviewRow label="Quantity" value={quantityLabel || String(draft.quantity)} />
+                    <PreviewRow label="LGOR Contribution" value={`+${draftImpact.estimatedLgor}%`} positive />
+                    <PreviewRow label="Score Impact" value={`+${draftImpact.impactPoints} pts`} positive />
+                    <PreviewRow label="Projected Score" value={projectedScore.toFixed(1)} positive />
+                  </div>
+                </div>
                 <ImpactRow label="Selected SKU + location" value={`${selectedProduct.name} • ${draft.location}`} />
                 <ImpactRow label="Quantity" value={`${draft.quantity}`} />
                 <ImpactRow label="Estimated LGOR Lift" value={`+${draftImpact.estimatedLgor}%`} positive />
                 <ImpactRow label="Points Added" value={`+${draftImpact.impactPoints} pts`} positive />
                 <ImpactRow label="Multiplier Applied" value={`${draftImpact.multiplier.toFixed(2)}x • ${draftImpact.multiplierLabel}`} />
-                <ImpactRow label="Projected New Score" value={(currentOpportunityScore + draftImpact.impactPoints).toFixed(1)} positive />
+                <ImpactRow label="Projected New Score" value={projectedScore.toFixed(1)} positive />
               </div>
             ) : (
               <p className="text-[12px] text-on-surface-variant">
@@ -496,7 +561,7 @@ export function OffShelfScreen() {
 
           <SectionCard
             title="Top Opportunities for This Store"
-            subtitle={store.motto}
+            subtitle={`You can gain +${potentialAdditionalGain.toFixed(1)} points from the best remaining actions.`}
             open={showRecommendations}
             onToggle={() => setShowRecommendations(prev => !prev)}
             utility={(
@@ -514,7 +579,7 @@ export function OffShelfScreen() {
                       {item.product?.name} to {item.location}
                     </p>
                     <p className="mt-1 text-[11px] text-on-surface-variant">{item.rationale}</p>
-                    <p className="mt-1 text-[11px] font-medium text-[#1f5f33]">Potential gain +{item.potentialPoints.toFixed(1)} pts</p>
+                    <p className="mt-1 text-[11px] font-medium text-[#1f5f33]">Add {item.location} display to gain +{item.potentialPoints.toFixed(1)} pts</p>
                   </div>
                   <button
                     type="button"
@@ -529,7 +594,7 @@ export function OffShelfScreen() {
           </SectionCard>
 
           <SectionCard
-            title="Captured Off-Shelf Displays"
+            title="Added in This Visit"
             subtitle={offShelf.length > 0
               ? `${offShelf.length} display records saved for this visit.`
               : offShelfConfirmed
@@ -543,7 +608,7 @@ export function OffShelfScreen() {
                 <div key={entry.id} className="rounded-lg border border-outline bg-surface-lowest px-3 py-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-[13px] font-semibold text-on-surface">{entry.location} • {entry.category}</p>
+                      <p className="text-[13px] font-semibold text-on-surface">{entry.location} • {entry.product} • {getOffShelfQuantityLabel(entry.quantity)}</p>
                       <p className="mt-1 text-[12px] text-on-surface">{entry.product}</p>
                       <p className="mt-1 text-[11px] text-on-surface-variant">
                         Qty {entry.quantity} • {entry.classification === 'incremental' ? 'Incremental' : entry.classification === 'base-plan' ? 'Base Plan' : 'Not Sure'}
@@ -584,28 +649,35 @@ export function OffShelfScreen() {
         <div className="grid grid-cols-3 gap-2">
           <button
             type="button"
-            onClick={editingId ? resetDraft : saveDraft}
-            className="min-h-11 rounded-lg border border-outline bg-surface-low px-3 text-[12px] font-semibold text-on-surface-variant"
-          >
-            {editingId ? 'Cancel' : 'Save Draft'}
-          </button>
-          <button
-            type="button"
-            onClick={handleSaveEntry}
+            onClick={() => handleSaveEntry(false)}
             disabled={!canSaveEntry}
             className={clsx(
               'min-h-11 rounded-lg px-3 text-[12px] font-semibold',
-              canSaveEntry ? 'bg-[#0176d3] text-white' : 'bg-[#c9d8ea] text-white'
+              canSaveEntry ? 'bg-primary text-white' : 'bg-[#c9d8ea] text-white'
             )}
           >
-            {editingId ? 'Save Entry' : 'Add Another'}
+            Save Entry
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (!canSaveEntry) return
+              handleSaveEntry()
+            }}
+            disabled={!canSaveEntry}
+            className={clsx(
+              'min-h-11 rounded-lg px-3 text-[12px] font-semibold',
+              canSaveEntry ? 'bg-[#014486] text-white' : 'bg-[#c9d8ea] text-white'
+            )}
+          >
+            Add Another
           </button>
           <button
             type="button"
             onClick={() => navigate('/summary')}
             className="min-h-11 rounded-lg bg-primary px-3 text-[12px] font-semibold text-white"
           >
-            {editingId ? 'Next' : 'Review Score →'}
+            Review Score →
           </button>
         </div>
         <p className="mt-2 text-[11px] text-on-surface-variant">{footerHelper}</p>
@@ -686,7 +758,7 @@ function SegmentGrid({
           className={clsx(
             'min-h-10 rounded-md border px-3 text-[12px] font-semibold transition-colors',
             selectedValue === value
-              ? 'border-[#0176d3] bg-[#eaf5fe] text-[#014486]'
+              ? 'border-[#014486] bg-[#0176d3] text-white'
               : 'border-transparent bg-white text-[#2e3a47]'
           )}
         >
@@ -721,6 +793,112 @@ function ScoreCell({
       <p className={clsx('mt-1 text-[15px] font-semibold', tone === 'positive' ? 'text-[#1f5f33]' : 'text-on-surface')}>
         {value}
       </p>
+    </div>
+  )
+}
+
+function InsightCell({
+  label,
+  value,
+  lines,
+}: {
+  label: string
+  value: string
+  lines: string[]
+}) {
+  return (
+    <div className="rounded-lg border border-[#c9d8ea] bg-[#edf4ff] px-3 py-2">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">{label}</p>
+      <p className="mt-1 text-[15px] font-semibold text-primary">{value}</p>
+      <div className="mt-2 space-y-1">
+        {lines.map(line => (
+          <p key={line} className="text-[10px] text-[#014486]">{line}</p>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function formatQuantityOption(value: number | string) {
+  const numeric = typeof value === 'number' ? value : value === '400+' ? 400 : Number(value)
+
+  if (numeric >= 400) return 'Bulk'
+  if (numeric >= 320) return 'Bulk'
+  if (numeric >= 200) return 'Pallet'
+  if (numeric >= 120) return 'Large Display'
+  if (numeric >= 80) return 'Medium Display'
+  return 'Small Display'
+}
+
+function parseQuantityOption(value: string) {
+  return {
+    'Small Display': 40,
+    'Medium Display': 80,
+    'Large Display': 120,
+    Pallet: 200,
+    Bulk: '400+',
+  }[value] ?? 40
+}
+
+function getProductPotential(product: NonNullable<ReturnType<typeof getOffShelfProductById>>, location: string, quantity: number | string | '') {
+  const fallbackLocation = location || product.recommendedLocations[0] || 'Racetrack'
+  const fallbackQuantity = quantity === '' ? 80 : quantity
+
+  return estimateOffShelfImpact({
+    product,
+    location: fallbackLocation,
+    quantity: fallbackQuantity,
+    classification: 'incremental',
+  }).impactPoints
+}
+
+function ImpactPreviewCard({
+  location,
+  sku,
+  quantity,
+  estimatedLgor,
+  impactPoints,
+  projectedScore,
+}: {
+  location: string
+  sku: string
+  quantity: string
+  estimatedLgor: number | null
+  impactPoints: number | null
+  projectedScore: number | null
+}) {
+  return (
+    <div className="rounded-lg border border-[#c9d8ea] bg-[#edf4ff] px-3 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">Impact Preview</p>
+      {impactPoints !== null && projectedScore !== null ? (
+        <div className="mt-3 space-y-2">
+          <PreviewRow label="Location" value={location} />
+          <PreviewRow label="SKU" value={sku} />
+          <PreviewRow label="Quantity" value={quantity} />
+          <PreviewRow label="LGOR Contribution" value={`+${estimatedLgor}%`} positive />
+          <PreviewRow label="Score Impact" value={`+${impactPoints} pts`} positive />
+          <PreviewRow label="Projected Score" value={projectedScore.toFixed(1)} positive />
+        </div>
+      ) : (
+        <p className="mt-2 text-[12px] text-[#014486]">Select location, SKU, and quantity to see real-time score impact.</p>
+      )}
+    </div>
+  )
+}
+
+function PreviewRow({
+  label,
+  value,
+  positive = false,
+}: {
+  label: string
+  value: string
+  positive?: boolean
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <p className="text-[12px] text-[#014486]">{label}</p>
+      <p className={clsx('text-[12px] font-semibold', positive ? 'text-[#1f5f33]' : 'text-on-surface')}>{value}</p>
     </div>
   )
 }

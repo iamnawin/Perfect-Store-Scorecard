@@ -13,6 +13,7 @@ export function PhotoScreen() {
   const navigate = useNavigate()
   const {
     evidence,
+    offShelf,
     notes,
     setNotes,
     revisitRequired,
@@ -28,7 +29,7 @@ export function PhotoScreen() {
     trellisEnabled,
   } = useApp()
 
-  const missingEvidence = getMissingRequiredEvidence(evidence)
+  const missingEvidence = getMissingRequiredEvidence(evidence, offShelf)
   const sectionNumber = scorecardSections.findIndex(section => section.id === 'photo-evidence') + 1
   const helperText = lastSavedAt ? `Draft saved at ${lastSavedAt}` : 'Missing required evidence will block submission.'
 
@@ -76,7 +77,9 @@ export function PhotoScreen() {
           {evidenceRequirements.map(requirement => {
             const evidenceItem = evidence[requirement.id]
             const linkedQuestions = getLinkedQuestionTitles(requirement.linkedQuestionIds)
-            const captured = evidenceItem?.captured
+            const captured = requirement.id === 'endcap-photo'
+              ? Boolean(evidenceItem?.captured || offShelf.some(entry => entry.photoCaptured))
+              : evidenceItem?.captured
             const previewUrl = evidenceItem?.photoPreviewUrl
             const photoName = evidenceItem?.photoName
 

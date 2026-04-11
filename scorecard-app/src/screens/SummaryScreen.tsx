@@ -39,7 +39,7 @@ export function SummaryScreen() {
   const yesItems = checklistQuestions.filter(question => checklist[question.id] === 'yes')
   const noItems = checklistQuestions.filter(question => checklist[question.id] === 'no')
   const unanswered = checklistQuestions.filter(question => !checklist[question.id])
-  const missingEvidence = getMissingRequiredEvidence(evidence)
+  const missingEvidence = getMissingRequiredEvidence(evidence, offShelf)
   const blockers = [
     ...missingEvidence.map(item => `${item.title} evidence is still missing.`),
     ...unanswered.map(question => `${question.title} has not been answered.`),

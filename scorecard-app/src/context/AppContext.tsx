@@ -157,7 +157,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const totalChecks = getTotalChecks()
   const totalSections = getTotalSections()
   const requiredPhotos = getRequiredPhotoCount()
-  const capturedRequiredPhotos = getCapturedRequiredPhotos(evidence)
+  const capturedRequiredPhotos = getCapturedRequiredPhotos(evidence, offShelf)
   const completionPercent = getCompletionPercent(appState)
   const scorecardStatus = getScorecardStatus(appState)
   const executionScore = getExecutionScore(checklist)
