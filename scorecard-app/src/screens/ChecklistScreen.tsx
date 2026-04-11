@@ -402,6 +402,13 @@ export function ChecklistScreen() {
                     </div>
                   )}
 
+                  {!noteOpen && currentNote && (
+                    <div className="mt-3 rounded-lg border border-outline bg-[#f7f9fb] p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Saved Note</p>
+                      <p className="mt-2 text-[12px] text-on-surface leading-snug whitespace-pre-wrap">{currentNote}</p>
+                    </div>
+                  )}
+
                   {primaryEvidence && evidenceLabel !== 'No photo required' && evidenceOpen && (
                     <div className="mt-3 rounded-lg border border-outline bg-[#f7f9fb] p-3">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant mb-2">Photo Evidence</p>

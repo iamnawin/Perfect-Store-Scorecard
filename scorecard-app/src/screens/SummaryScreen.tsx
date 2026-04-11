@@ -137,7 +137,7 @@ export function SummaryScreen() {
             </div>
             <div className="grid grid-cols-2 gap-2 px-4 py-4">
               <ActionButton label="Email Snapshot" icon={<Mail size={14} />} onClick={openEmailSnapshot} />
-              <ActionButton label="Post to Chatter" icon={<Share2 size={14} />} onClick={() => { void postToChatter() }} />
+              <ActionButton label="Post to Chatter" icon={<Share2 size={14} />} tone="secondary" onClick={() => { void postToChatter() }} />
             </div>
           </div>
 
@@ -166,9 +166,9 @@ export function SummaryScreen() {
         </div>
 
         <BottomActionBar
-          primaryLabel="Return to Entry"
+          primaryLabel="Done"
           onPrimary={() => navigate('/')}
-          helperText="Submitted scorecards should be reviewed with the manager summary before the visit closes."
+          helperText="Scorecard is complete. Return to the visit context when you are done sharing the result."
         />
       </PhoneShell>
     )
@@ -360,17 +360,23 @@ function ListRow({ icon, text }: { icon: ReactNode; text: string }) {
 function ActionButton({
   label,
   icon,
+  tone = 'primary',
   onClick,
 }: {
   label: string
   icon?: ReactNode
+  tone?: 'primary' | 'secondary'
   onClick: () => void
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="min-h-11 rounded-lg border border-outline bg-[#f7f9fb] px-3 text-[12px] font-semibold text-on-surface flex items-center justify-center gap-2"
+      className={`min-h-11 rounded-md px-3 text-[12px] font-semibold flex items-center justify-center gap-2 ${
+        tone === 'primary'
+          ? 'bg-primary text-white'
+          : 'border border-[#c9d8ea] bg-[#edf4ff] text-primary'
+      }`}
     >
       {icon}
       {label}

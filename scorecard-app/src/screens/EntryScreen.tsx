@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BarChart3, CheckCircle2, ChevronRight, CircleDot, ClipboardCheck, Image, Layers3, LockKeyhole, MapPin } from 'lucide-react'
+import { BarChart3, CheckCircle2, ChevronRight, CircleDot, ClipboardCheck, Image, Layers3, LockKeyhole, MapPin, TrendingUp } from 'lucide-react'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
 import { TrellisBot } from '../components/TrellisBot'
@@ -34,7 +34,7 @@ export function EntryScreen() {
     'not-started': 'Start Scorecard',
     'in-progress': 'Resume Scorecard',
     'ready-for-review': 'Review Scorecard',
-    'completed': 'View Summary',
+    'completed': 'Scorecard Completed',
   }[scorecardStatus]
 
   const ctaRoute = scorecardStatus === 'ready-for-review' || scorecardStatus === 'completed'
@@ -46,7 +46,6 @@ export function EntryScreen() {
     { label: 'Checks', value: String(totalChecks) },
     { label: 'Photos', value: `${capturedRequiredPhotos}/${requiredPhotos}` },
     { label: 'Est. Time', value: `${estimatedTime} min` },
-    { label: 'Progress', value: scorecardStatus === 'not-started' ? 'Not Started' : `${completionPercent}%` },
   ]
 
   const statusMeta = {
@@ -72,7 +71,7 @@ export function EntryScreen() {
       label: 'Completed',
       tone: 'text-[#1f5f33] bg-[#edf7ee] border-[#cde8d3]',
       detail: `Submitted from active visit • Final score ${totalScore}`,
-      continueFrom: 'Open the submitted summary and post-visit actions.',
+      continueFrom: 'Scorecard is submitted for this visit. Review the summary or return to the visit.',
     },
   }[scorecardStatus]
 
@@ -102,7 +101,7 @@ export function EntryScreen() {
               </span>
             </div>
           </div>
-          <div className="grid grid-cols-5 gap-2 px-4 py-3 bg-[#f7f9fb]">
+          <div className="grid grid-cols-4 gap-2 px-4 py-3 bg-[#f7f9fb]">
             {readinessItems.map(item => (
               <ReadinessCell key={item.label} label={item.label} value={item.value} />
             ))}
@@ -120,53 +119,33 @@ export function EntryScreen() {
               {statusMeta.label}
             </span>
           </div>
-          <div className="px-4 py-3 flex items-center justify-between gap-3">
+          <div className="px-4 py-3">
             <div className="min-w-0">
               <p className="text-[12px] font-semibold text-on-surface">{statusMeta.detail}</p>
               <p className="text-[11px] text-on-surface-variant mt-1">{store.motto}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => navigate(ctaRoute)}
-              className="min-h-11 rounded-md bg-primary px-4 text-[13px] font-semibold text-white flex items-center gap-2 shrink-0"
-            >
-              {ctaLabel}
-              <ChevronRight size={15} />
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <CompactPanel
-            label="Today’s Focus"
-            title="Visit priorities"
-            lines={[
-              `Repeated gap: ${previousSnapshot.gap}`,
-              `Top opportunity: ${previousSnapshot.opportunity}`,
-              `Priority section: ${prioritySection}`,
-            ]}
-          />
-          <CompactPanel
-            label="Trend"
-            title="Score trend"
-            lines={[
-              `Last score: ${previousSnapshot.score}`,
-              `Current score: ${totalScore}`,
-              `Trend vs last visit: ${trendDelta >= 0 ? '+' : ''}${trendDelta} pts`,
-            ]}
-            accent={trendDelta >= 0 ? 'positive' : 'neutral'}
-          />
-        </div>
-
-        <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
-          <div className="px-4 py-3 border-b border-outline">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Quick Navigation</p>
-          </div>
-          <div className="px-4 py-3 flex flex-wrap gap-2">
-            <QuickChip icon={<ClipboardCheck size={13} />} label="Checklist" onClick={() => navigate('/checklist')} />
-            <QuickChip icon={<Layers3 size={13} />} label="Off-Shelf" onClick={() => navigate('/off-shelf')} />
-            <QuickChip icon={<Image size={13} />} label="Photos" onClick={() => navigate('/photo')} />
-            <QuickChip icon={<BarChart3 size={13} />} label="Summary" onClick={() => navigate('/summary')} />
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <div className="rounded-md border border-outline bg-[#f7f9fb] px-3 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Progress</p>
+                <p className="text-[13px] font-semibold text-on-surface mt-1">{scorecardStatus === 'not-started' ? 'Not Started' : `${completionPercent}% Complete`}</p>
+              </div>
+              {submitted ? (
+                <div className="rounded-md border border-[#cde8d3] bg-[#edf7ee] px-3 py-2 text-right shrink-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#1f5f33]">Final Score</p>
+                  <p className="text-[15px] font-semibold text-[#1f5f33] mt-1">{totalScore}</p>
+                </div>
+              ) : null}
+            </div>
+            {submitted ? null : (
+              <button
+                type="button"
+                onClick={() => navigate(ctaRoute)}
+                className="mt-4 mx-auto min-h-11 rounded-md bg-primary px-6 text-[13px] font-semibold text-white flex items-center justify-center gap-2"
+              >
+                {ctaLabel}
+                <ChevronRight size={15} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -184,6 +163,39 @@ export function EntryScreen() {
             <p className="text-[12px] text-on-surface-variant leading-snug">{previousSnapshot.gap}</p>
             <p className="text-[12px] text-on-surface-variant leading-snug mt-1">{previousSnapshot.opportunity}</p>
             <p className="text-[12px] font-medium text-[#52606d] mt-2">Insight: close the repeated Garden Doors gap first, then push the best off-shelf opportunity to recover score fastest.</p>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
+          <div className="px-4 py-3 border-b border-outline">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Today’s Focus</p>
+          </div>
+          <div className="px-4 py-3 space-y-2">
+            <p className="text-[12px] text-on-surface-variant">Repeated gap: {previousSnapshot.gap}</p>
+            <p className="text-[12px] text-on-surface-variant">Top opportunity: {previousSnapshot.opportunity}</p>
+            <p className="text-[12px] text-on-surface-variant">Priority section: {prioritySection}</p>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
+          <div className="px-4 py-3 border-b border-outline flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Trend</p>
+              <p className="text-[13px] font-semibold text-on-surface mt-1">Score trend</p>
+            </div>
+            <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${trendDelta >= 0 ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : 'border-[#dde3ea] bg-[#f4f6f9] text-[#52606d]'}`}>
+              {trendDelta >= 0 ? 'Improving' : 'Below Last'}
+            </span>
+          </div>
+          <div className="px-4 py-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[12px] text-on-surface-variant">Last score {previousSnapshot.score}</p>
+              <p className="text-[12px] text-on-surface-variant mt-1">Current score {totalScore}</p>
+            </div>
+            <div className={`inline-flex items-center gap-1 rounded-md border px-3 py-2 text-[12px] font-semibold ${trendDelta >= 0 ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : 'border-[#dde3ea] bg-[#f4f6f9] text-[#52606d]'}`}>
+              <TrendingUp size={13} />
+              {trendDelta >= 0 ? '+' : ''}{trendDelta} pts
+            </div>
           </div>
         </div>
 
@@ -213,6 +225,18 @@ export function EntryScreen() {
                 </div>
               )
             })}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
+          <div className="px-4 py-3 border-b border-outline">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Quick Navigation</p>
+          </div>
+          <div className="px-4 py-3 flex flex-wrap gap-2">
+            <QuickChip icon={<ClipboardCheck size={13} />} label="Checklist" onClick={() => navigate('/checklist')} />
+            <QuickChip icon={<Layers3 size={13} />} label="Off-Shelf" onClick={() => navigate('/off-shelf')} />
+            <QuickChip icon={<Image size={13} />} label="Photos" onClick={() => navigate('/photo')} />
+            <QuickChip icon={<BarChart3 size={13} />} label="Summary" onClick={() => navigate('/summary')} />
           </div>
         </div>
 
@@ -257,32 +281,6 @@ function ReadinessCell({ label, value }: { label: string; value: string }) {
     <div className="rounded-md border border-outline bg-white px-2 py-2">
       <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">{label}</p>
       <p className="text-[12px] font-semibold text-on-surface mt-1">{value}</p>
-    </div>
-  )
-}
-
-function CompactPanel({
-  label,
-  title,
-  lines,
-  accent = 'neutral',
-}: {
-  label: string
-  title: string
-  lines: string[]
-  accent?: 'neutral' | 'positive'
-}) {
-  return (
-    <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
-      <div className="px-4 py-3 border-b border-outline">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">{label}</p>
-        <p className="text-[13px] font-semibold text-on-surface mt-1">{title}</p>
-      </div>
-      <div className="px-4 py-3 space-y-2">
-        {lines.map(line => (
-          <p key={line} className={`text-[12px] leading-snug ${accent === 'positive' ? 'text-[#1f5f33]' : 'text-on-surface-variant'}`}>{line}</p>
-        ))}
-      </div>
     </div>
   )
 }
