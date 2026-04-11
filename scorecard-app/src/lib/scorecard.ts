@@ -1,0 +1,314 @@
+import { checklistQuestions, evidenceRequirements, offShelfProducts, offShelfRecommendations, scorecardSections } from '../data/mock'
+import type {
+  AppState,
+  ChecklistAnswer,
+  ChecklistQuestion,
+  ChecklistState,
+  EvidenceState,
+  EvidenceStateItem,
+  OffShelfClassification,
+  OffShelfEntry,
+  OffShelfProduct,
+  ScorecardSection,
+  ScorecardStatus,
+  StepState,
+} from '../types'
+
+export function createInitialEvidenceState() {
+  return evidenceRequirements.reduce<Record<string, EvidenceStateItem>>((acc, item) => {
+    acc[item.id] = { captured: false, note: '' }
+    return acc
+  }, {})
+}
+
+export function getTotalChecks() {
+  return checklistQuestions.length
+}
+
+export function getTotalSections() {
+  return scorecardSections.length
+}
+
+export function getAnsweredChecks(checklist: ChecklistState) {
+  return Object.values(checklist).filter(Boolean).length
+}
+
+export function getYesCount(checklist: ChecklistState) {
+  return Object.values(checklist).filter(answer => answer === 'yes').length
+}
+
+export function getRequiredPhotoCount() {
+  return evidenceRequirements.filter(item => item.required).length
+}
+
+export function getCapturedRequiredPhotos(evidence: EvidenceState) {
+  return evidenceRequirements.filter(item => item.required && evidence[item.id]?.captured).length
+}
+
+export function getMissingRequiredEvidence(evidence: EvidenceState) {
+  return evidenceRequirements.filter(item => item.required && !evidence[item.id]?.captured)
+}
+
+export function getChecklistQuestionsForSection(sectionId: string) {
+  return checklistQuestions.filter(question => question.sectionId === sectionId)
+}
+
+export function getChecklistSectionProgress(sectionId: string, checklist: ChecklistState) {
+  const questions = getChecklistQuestionsForSection(sectionId)
+  const answered = questions.filter(question => checklist[question.id]).length
+  return {
+    questions,
+    answered,
+    total: questions.length,
+    started: answered > 0,
+    complete: answered === questions.length,
+  }
+}
+
+export function isOffShelfSectionComplete(offShelf: OffShelfEntry[], offShelfConfirmed: boolean) {
+  return offShelfConfirmed || offShelf.length > 0
+}
+
+export function parseOffShelfQuantity(quantity: number | string) {
+  if (quantity === '400+') return 400
+  return typeof quantity === 'number' ? quantity : Number.parseInt(quantity, 10)
+}
+
+export function getOffShelfProductById(productId: string) {
+  return offShelfProducts.find(product => product.id === productId)
+}
+
+function getLocationMultiplier(location: string) {
+  return {
+    Endcap: 1.2,
+    'Fence Line': 1.12,
+    'Garden Door': 1.08,
+    'Drive Aisle': 1.04,
+    Racetrack: 1,
+    Other: 0.92,
+  }[location] ?? 1
+}
+
+function getQuantityMultiplier(quantity: number) {
+  if (quantity >= 400) return 1.75
+  if (quantity >= 320) return 1.55
+  if (quantity >= 200) return 1.3
+  if (quantity >= 120) return 1.1
+  if (quantity >= 80) return 0.95
+  return 0.78
+}
+
+function getClassificationMultiplier(classification: OffShelfClassification) {
+  return {
+    'base-plan': 0,
+    incremental: 1,
+    'not-sure': 0.55,
+  }[classification]
+}
+
+export function estimateOffShelfImpact({
+  product,
+  location,
+  quantity,
+  classification,
+}: {
+  product: OffShelfProduct
+  location: string
+  quantity: number | string
+  classification: OffShelfClassification
+}) {
+  const normalizedQuantity = parseOffShelfQuantity(quantity)
+  const locationMultiplier = getLocationMultiplier(location)
+  const quantityMultiplier = getQuantityMultiplier(normalizedQuantity)
+  const classificationMultiplier = getClassificationMultiplier(classification)
+  const multiplier = +(locationMultiplier * quantityMultiplier * classificationMultiplier).toFixed(2)
+  const impactPoints = +(product.basePoints * multiplier).toFixed(1)
+  const estimatedLgor = +(product.baseLgor * multiplier).toFixed(1)
+
+  const multiplierLabel = classification === 'base-plan'
+    ? 'Base plan coverage only'
+    : classification === 'not-sure'
+      ? 'Pending classification review'
+      : locationMultiplier > 1
+        ? `${location} multiplier`
+        : 'Standard placement'
+
+  return {
+    normalizedQuantity,
+    multiplier,
+    multiplierLabel,
+    impactPoints,
+    estimatedLgor,
+  }
+}
+
+export function getOffShelfIncrementalScore(entries: OffShelfEntry[]) {
+  return +entries.reduce((total, entry) => total + entry.impactPoints, 0).toFixed(1)
+}
+
+export function getOffShelfOpportunityScore(entries: OffShelfEntry[]) {
+  return +(100 + getOffShelfIncrementalScore(entries)).toFixed(1)
+}
+
+export function getRemainingOffShelfRecommendations(entries: OffShelfEntry[]) {
+  const capturedKeys = new Set(entries.map(entry => `${entry.skuId}:${entry.location}`))
+
+  return offShelfRecommendations
+    .filter(item => !capturedKeys.has(`${item.skuId}:${item.location}`))
+    .map(item => ({
+      ...item,
+      product: getOffShelfProductById(item.skuId),
+    }))
+    .filter(item => item.product)
+}
+
+export function getPotentialAdditionalGain(entries: OffShelfEntry[]) {
+  return +getRemainingOffShelfRecommendations(entries)
+    .slice(0, 3)
+    .reduce((total, item) => total + item.potentialPoints, 0)
+    .toFixed(1)
+}
+
+export function isPhotoSectionComplete(evidence: EvidenceState) {
+  return getMissingRequiredEvidence(evidence).length === 0
+}
+
+export function isSectionComplete(section: ScorecardSection, state: AppState) {
+  if (section.kind === 'checklist') {
+    return getChecklistSectionProgress(section.id, state.checklist).complete
+  }
+
+  if (section.id === 'off-shelf-capture') {
+    return isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed)
+  }
+
+  if (section.id === 'photo-evidence') {
+    return isPhotoSectionComplete(state.evidence)
+  }
+
+  return state.submitted
+}
+
+export function getCompletionPercent(state: AppState) {
+  if (state.submitted) return 100
+
+  const totalUnits = getTotalChecks() + getRequiredPhotoCount() + 1
+  const completedUnits =
+    getAnsweredChecks(state.checklist) +
+    getCapturedRequiredPhotos(state.evidence) +
+    (isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed) ? 1 : 0)
+
+  return Math.round((completedUnits / totalUnits) * 100)
+}
+
+export function getScorecardStatus(state: AppState): ScorecardStatus {
+  if (state.submitted) return 'completed'
+
+  const touched =
+    getAnsweredChecks(state.checklist) > 0 ||
+    state.offShelf.length > 0 ||
+    state.offShelfConfirmed ||
+    getCapturedRequiredPhotos(state.evidence) > 0 ||
+    state.notes.trim().length > 0 ||
+    state.revisitRequired ||
+    state.shelfResetNeeded
+
+  if (!touched) return 'not-started'
+
+  const ready =
+    getAnsweredChecks(state.checklist) === getTotalChecks() &&
+    isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed) &&
+    isPhotoSectionComplete(state.evidence)
+
+  return ready ? 'ready-for-review' : 'in-progress'
+}
+
+export function getCurrentSection(state: AppState) {
+  const next = scorecardSections.find(section => !isSectionComplete(section, state))
+  return next ?? scorecardSections[scorecardSections.length - 1]
+}
+
+export function getCurrentSectionNumber(state: AppState) {
+  const current = getCurrentSection(state)
+  return scorecardSections.findIndex(section => section.id === current.id) + 1
+}
+
+export function getStepState(sectionId: string, state: AppState): StepState {
+  const sectionIndex = scorecardSections.findIndex(section => section.id === sectionId)
+  const currentIndex = getCurrentSectionNumber(state) - 1
+  const status = getScorecardStatus(state)
+  const section = scorecardSections[sectionIndex]
+
+  if (section && isSectionComplete(section, state)) return 'completed'
+  if (status === 'not-started') return sectionIndex === 0 ? 'pending' : 'locked'
+  if (sectionIndex === currentIndex) return 'in-progress'
+  if (sectionIndex === currentIndex + 1) return 'pending'
+  if (sectionIndex > currentIndex + 1) return 'locked'
+  return 'completed'
+}
+
+export function getExecutionScore(checklist: ChecklistState) {
+  return Math.round((getYesCount(checklist) / getTotalChecks()) * 100)
+}
+
+export function getTotalScore(state: AppState) {
+  const noCount = Object.values(state.checklist).filter(answer => answer === 'no').length
+  const offShelfBonus = Math.min(getOffShelfIncrementalScore(state.offShelf), 24)
+  const evidencePenalty = getMissingRequiredEvidence(state.evidence).length * 6
+  const executionScore = getExecutionScore(state.checklist)
+
+  return Math.max(0, +(136 + Math.round(executionScore * 0.48) + offShelfBonus - noCount * 4 - evidencePenalty).toFixed(1))
+}
+
+export function getLgorPct(state: AppState) {
+  return +(6.8 + getYesCount(state.checklist) * 0.55 + getOffShelfIncrementalScore(state.offShelf) * 0.12).toFixed(1)
+}
+
+export function getRiskDelta(state: AppState) {
+  const noCount = Object.values(state.checklist).filter(answer => answer === 'no').length
+  const missingEvidence = getMissingRequiredEvidence(state.evidence).length
+  const reducedRisk = getYesCount(state.checklist) * 1.4
+  return Math.round(-1 * Math.max(6, 18 + noCount * 4 + missingEvidence * 5 - reducedRisk))
+}
+
+export function getQuestionStatus(answer: ChecklistAnswer) {
+  if (answer === 'no') {
+    return {
+      label: 'Action Required',
+      stripClass: 'bg-[#ba0517]',
+      statusClass: 'text-[#8e030f] bg-[#fef1ee] border-[#f9d6d0]',
+    }
+  }
+
+  if (answer === 'yes' || answer === 'na') {
+    return {
+      label: 'Complete',
+      stripClass: 'bg-[#2e844a]',
+      statusClass: 'text-[#1f5f33] bg-[#edf7ee] border-[#cde8d3]',
+    }
+  }
+
+  return {
+    label: 'Not Answered',
+    stripClass: 'bg-[#c9cfd6]',
+    statusClass: 'text-[#52606d] bg-[#f4f6f9] border-[#dde3ea]',
+  }
+}
+
+export function getQuestionEvidenceLabel(question: ChecklistQuestion, evidence: EvidenceState) {
+  const relatedEvidence = evidenceRequirements.filter(item => item.linkedQuestionIds.includes(question.id))
+  const requiredEvidence = relatedEvidence.filter(item => item.required)
+
+  if (requiredEvidence.length === 0) {
+    return 'No photo required'
+  }
+
+  const missing = requiredEvidence.some(item => !evidence[item.id]?.captured)
+  return missing ? 'Photo required before submit' : 'Required photo captured'
+}
+
+export function getLinkedQuestionTitles(questionIds: string[]) {
+  return checklistQuestions
+    .filter(question => questionIds.includes(question.id))
+    .map(question => question.title)
+}

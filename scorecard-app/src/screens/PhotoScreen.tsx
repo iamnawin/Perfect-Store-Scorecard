@@ -1,120 +1,190 @@
-import { useRef } from 'react'
+import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Camera, FileText, RotateCcw, Flag } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, FileText, Flag, Image, RotateCcw } from 'lucide-react'
+import { BottomActionBar } from '../components/BottomActionBar'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
 import { TrellisBot } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
-import { trellisBotInsights } from '../data/mock'
+import { evidenceRequirements, scorecardSections, store, trellisContent } from '../data/mock'
+import { getLinkedQuestionTitles, getMissingRequiredEvidence } from '../lib/scorecard'
 
 export function PhotoScreen() {
   const navigate = useNavigate()
-  const { photoCaption, setPhotoCaption, notes, setNotes, revisitRequired, setRevisitRequired, shelfResetNeeded, setShelfResetNeeded, trellisEnabled } = useApp()
-  const fileRef = useRef<HTMLInputElement>(null)
+  const {
+    evidence,
+    notes,
+    setNotes,
+    revisitRequired,
+    setRevisitRequired,
+    shelfResetNeeded,
+    setShelfResetNeeded,
+    setEvidenceCaptured,
+    setEvidenceNote,
+    completionPercent,
+    totalSections,
+    lastSavedAt,
+    saveDraft,
+    trellisEnabled,
+  } = useApp()
+
+  const missingEvidence = getMissingRequiredEvidence(evidence)
+  const sectionNumber = scorecardSections.findIndex(section => section.id === 'photo-evidence') + 1
+  const helperText = lastSavedAt ? `Draft saved at ${lastSavedAt}` : 'Missing required evidence will block submission.'
 
   return (
     <PhoneShell>
-      <TopBar title="Photo & Notes" subtitle="Proof of execution" showBack showTrellisToggle />
+      <TopBar title={store.name} subtitle={`${store.visitStatus} Visit | ${store.scorecard}`} showBack showTrellisToggle />
 
-      <div className="flex-1 overflow-y-auto bg-surface-low">
-        {trellisEnabled && (
-          <div className="pt-3">
-            <TrellisBot insight={trellisBotInsights.photo} />
-          </div>
-        )}
-
-        {/* Photo upload */}
-        <div className="bg-surface-lowest mx-4 mt-3 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
-          <div className="px-4 py-3 border-b border-outline/50">
-            <div className="flex items-center gap-1.5">
-              <Camera size={14} className="text-primary" />
-              <p className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">Photo Proof</p>
+      <div className="flex-1 overflow-y-auto bg-[#f4f6f9]">
+        <div className="sticky top-0 z-10 border-b border-outline bg-surface-lowest px-4 py-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Current Section</p>
+              <p className="text-[15px] font-semibold text-on-surface mt-1">Photo and Notes</p>
+              <p className="text-[12px] text-on-surface-variant mt-1">Section {sectionNumber} of {totalSections} | {completionPercent}% overall complete</p>
             </div>
-          </div>
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="w-full flex flex-col items-center justify-center gap-3 py-10 bg-surface-low active:bg-surface transition-colors"
-          >
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-              <Camera size={24} className="text-primary" />
-            </div>
-            <div className="text-center">
-              <p className="text-[14px] font-semibold text-on-surface">Upload Photo</p>
-              <p className="text-[12px] text-on-surface-variant mt-0.5">Tap to select from library or camera</p>
-            </div>
-          </button>
-          <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" />
-
-          {/* Caption */}
-          <div className="px-4 py-3 border-t border-outline/50">
-            <p className="text-[12px] font-semibold text-on-surface-variant mb-2">Caption <span className="text-on-surface-variant font-normal">(required)</span></p>
-            <input
-              type="text"
-              value={photoCaption}
-              onChange={e => setPhotoCaption(e.target.value)}
-              placeholder="e.g. Endcap set — Weed & Feed 80 units"
-              className="w-full text-[14px] text-on-surface bg-surface-low rounded-lg px-3 py-2.5 outline-none border border-outline/40 focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
-            />
+            <span className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${missingEvidence.length === 0 ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'}`}>
+              {missingEvidence.length === 0 ? 'Evidence Ready' : `${missingEvidence.length} Missing`}
+            </span>
           </div>
         </div>
 
-        {/* Notes */}
-        <div className="bg-surface-lowest mx-4 mt-3 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
-          <div className="px-4 py-3 border-b border-outline/50">
-            <div className="flex items-center gap-1.5">
-              <FileText size={14} className="text-primary" />
-              <p className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">Notes <span className="font-normal normal-case">(optional)</span></p>
+        <div className="px-4 py-3 space-y-3">
+          {missingEvidence.length > 0 && (
+            <div className="border border-[#f9d6d0] bg-[#fef1ee] rounded-lg px-4 py-3 flex gap-2.5">
+              <AlertTriangle size={16} className="text-[#ba0517] shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[12px] font-semibold text-[#8e030f]">Submission blocked until required evidence is captured.</p>
+                <p className="text-[12px] text-[#8e030f] mt-1">
+                  Missing: {missingEvidence.map(item => item.title).join(', ')}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {trellisEnabled && (
+            <TrellisBot
+              title={trellisContent.photo.title}
+              insight={trellisContent.photo.insight}
+              prompts={trellisContent.photo.prompts}
+            />
+          )}
+
+          {evidenceRequirements.map(requirement => {
+            const evidenceItem = evidence[requirement.id]
+            const linkedQuestions = getLinkedQuestionTitles(requirement.linkedQuestionIds)
+            const captured = evidenceItem?.captured
+
+            return (
+              <div key={requirement.id} className="border border-outline bg-surface-lowest rounded-lg overflow-hidden">
+                <div className="px-4 py-3 border-b border-outline flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">{requirement.required ? 'Required Photo' : 'Optional Photo'}</p>
+                    <p className="text-[15px] font-semibold text-on-surface mt-1">{requirement.title}</p>
+                    <p className="text-[12px] text-on-surface-variant mt-1">{requirement.relevance}</p>
+                  </div>
+                  <span className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${captured ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : requirement.required ? 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]' : 'border-[#dde3ea] bg-[#f4f6f9] text-[#52606d]'}`}>
+                    {captured ? 'Captured' : requirement.required ? 'Missing' : 'Optional'}
+                  </span>
+                </div>
+                <div className="px-4 py-4">
+                  <div className="flex gap-3">
+                    <div className={`h-20 w-20 rounded-lg border flex items-center justify-center ${captured ? 'border-[#cde8d3] bg-[#edf7ee]' : 'border-outline bg-[#f7f9fb]'}`}>
+                      {captured ? <CheckCircle2 size={22} className="text-[#2e844a]" /> : <Image size={20} className="text-on-surface-variant" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-semibold text-on-surface">Linked checklist relevance</p>
+                      <p className="text-[12px] text-on-surface-variant mt-1">{linkedQuestions.join(' | ')}</p>
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          type="button"
+                          onClick={() => setEvidenceCaptured(requirement.id, !captured)}
+                          className={`rounded-md px-3 py-2 text-[12px] font-semibold ${captured ? 'border border-outline bg-surface-low text-on-surface-variant' : 'bg-primary text-white'}`}
+                        >
+                          {captured ? 'Retake Photo' : 'Capture Photo'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant mb-2">Evidence note</p>
+                    <input
+                      type="text"
+                      value={evidenceItem?.note ?? ''}
+                      onChange={(event) => setEvidenceNote(requirement.id, event.target.value)}
+                      placeholder="Describe what this photo proves for review."
+                      className="w-full rounded-lg border border-outline bg-[#f7f9fb] px-3 py-2.5 text-[13px] text-on-surface outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+
+          <div className="border border-outline bg-surface-lowest rounded-lg overflow-hidden">
+            <div className="px-4 py-3 border-b border-outline">
+              <div className="flex items-center gap-1.5">
+                <FileText size={14} className="text-primary" />
+                <p className="text-[12px] font-semibold text-on-surface">Notes and visit flags</p>
+              </div>
+            </div>
+            <div className="px-4 py-4 space-y-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant mb-2">Manager notes</p>
+                <textarea
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                  placeholder="Document missing placements, recovery actions, or store-specific context."
+                  rows={3}
+                  className="w-full rounded-lg border border-outline bg-[#f7f9fb] px-3 py-2.5 text-[13px] text-on-surface outline-none resize-none"
+                />
+              </div>
+
+              <div className="divide-y divide-outline border border-outline rounded-lg overflow-hidden">
+                <Toggle
+                  icon={<RotateCcw size={15} className="text-[#8b5d00]" />}
+                  label="Revisit Required"
+                  description="Flag this store for a follow-up visit."
+                  value={revisitRequired}
+                  onChange={setRevisitRequired}
+                />
+                <Toggle
+                  icon={<Flag size={15} className="text-[#8b5d00]" />}
+                  label="Shelf Reset Needed"
+                  description="Use when the planogram needs to be reset before the next visit."
+                  value={shelfResetNeeded}
+                  onChange={setShelfResetNeeded}
+                />
+              </div>
             </div>
           </div>
-          <div className="px-4 py-3">
-            <textarea
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="Any additional context for the manager or compliance team..."
-              rows={3}
-              className="w-full text-[14px] text-on-surface bg-surface-low rounded-lg px-3 py-2.5 outline-none border border-outline/40 focus:border-primary transition-colors resize-none placeholder:text-on-surface-variant/50"
-            />
-          </div>
-        </div>
-
-        {/* Toggles */}
-        <div className="bg-surface-lowest mx-4 mt-3 mb-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] divide-y divide-outline/40">
-          <Toggle
-            icon={<RotateCcw size={15} className="text-tertiary" />}
-            label="Revisit Required"
-            description="Flag this store for a follow-up visit"
-            value={revisitRequired}
-            onChange={setRevisitRequired}
-          />
-          <Toggle
-            icon={<Flag size={15} className="text-tertiary" />}
-            label="Shelf Reset Needed"
-            description="Planogram needs to be re-set before next visit"
-            value={shelfResetNeeded}
-            onChange={setShelfResetNeeded}
-          />
         </div>
       </div>
 
-      <div className="shrink-0 bg-white/80 backdrop-blur-md border-t border-outline/40 px-4 py-4 pb-8">
-        <button
-          onClick={() => navigate('/summary')}
-          className="w-full py-4 rounded-xl text-[15px] font-semibold text-white"
-          style={{ background: 'linear-gradient(135deg, #005da9 0%, #0176d3 100%)' }}
-        >
-          Next — Score Summary
-        </button>
-      </div>
+      <BottomActionBar
+        secondaryLabel="Save Draft"
+        onSecondary={saveDraft}
+        primaryLabel="Review and Submit"
+        onPrimary={() => navigate('/summary')}
+        helperText={helperText}
+      />
     </PhoneShell>
   )
 }
 
-function Toggle({ icon, label, description, value, onChange }: {
-  icon: React.ReactNode
+function Toggle({
+  icon,
+  label,
+  description,
+  value,
+  onChange,
+}: {
+  icon: ReactNode
   label: string
   description: string
   value: boolean
-  onChange: (v: boolean) => void
+  onChange: (value: boolean) => void
 }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3.5">
@@ -124,10 +194,11 @@ function Toggle({ icon, label, description, value, onChange }: {
         <p className="text-[12px] text-on-surface-variant mt-0.5">{description}</p>
       </div>
       <button
+        type="button"
         onClick={() => onChange(!value)}
-        className={`w-11 h-6 rounded-full transition-colors shrink-0 relative ${value ? 'bg-primary' : 'bg-outline'}`}
+        className={`w-11 h-6 rounded-full transition-colors shrink-0 relative overflow-hidden ${value ? 'bg-primary' : 'bg-outline'}`}
       >
-        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${value ? 'translate-x-5' : 'translate-x-0.5'}`} />
+        <span className={`absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${value ? 'translate-x-5' : 'translate-x-0'}`} />
       </button>
     </div>
   )

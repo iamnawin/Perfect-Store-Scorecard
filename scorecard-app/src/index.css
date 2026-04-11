@@ -12,6 +12,9 @@
   --color-on-surface-variant: #414752;
   --color-outline: #e5e8ed;
   --color-tertiary: #964500;
+  --color-success: #2e844a;
+  --color-danger: #ba0517;
+  --color-warning: #8b5d00;
 
   --font-sans: 'Inter', system-ui, sans-serif;
 }
@@ -25,7 +28,7 @@
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background: #e8edf2;
+  background: #e7ebf0;
 }
 
 #root {
