@@ -60,13 +60,13 @@ export function EntryScreen() {
 
   return (
     <PhoneShell>
-      <TopBar
-        title="Perfect Store Scorecard"
-        subtitle={`${store.name} • ${store.visitStatus} Visit`}
-        showTrellisToggle
-      />
-
       <div className="flex-1 overflow-y-auto bg-[#f4f6f9] px-4 py-4">
+        <TopBar
+          title="Perfect Store Scorecard"
+          subtitle={`${store.name} • ${store.visitStatus} Visit`}
+          showTrellisToggle
+        />
+
         <div className="rounded-xl border border-outline bg-surface-lowest px-4 py-4">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Store Context</p>
           <div className="mt-3 space-y-2">

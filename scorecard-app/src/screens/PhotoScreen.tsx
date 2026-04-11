@@ -34,19 +34,21 @@ export function PhotoScreen() {
 
   return (
     <PhoneShell>
-      <TopBar title="Photo Evidence" subtitle={`${store.name} | ${store.visitStatus} Visit`} showBack showTrellisToggle />
-
       <div className="flex-1 overflow-y-auto bg-[#f4f6f9]">
-        <div className="sticky top-0 z-10 border-b border-outline bg-surface-lowest px-4 py-3">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Current Section</p>
-              <p className="text-[15px] font-semibold text-on-surface mt-1">Photo Evidence</p>
-              <p className="text-[12px] text-on-surface-variant mt-1">Section {sectionNumber} of {totalSections} | {completionPercent}% overall complete</p>
+        <TopBar title="Photo Evidence" subtitle={`${store.name} | ${store.visitStatus} Visit`} showBack showTrellisToggle />
+
+        <div className="border-b border-outline bg-surface-lowest px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Progress</p>
+              <p className="text-[12px] text-on-surface-variant mt-1">Step {sectionNumber} of {totalSections} • {completionPercent}% complete</p>
             </div>
             <span className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${missingEvidence.length === 0 ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'}`}>
               {missingEvidence.length === 0 ? 'Evidence Ready' : `${missingEvidence.length} Missing`}
             </span>
+          </div>
+          <div className="h-2 rounded-full bg-[#dde3ea] overflow-hidden mt-3">
+            <div className="h-full bg-primary rounded-full" style={{ width: `${completionPercent}%` }} />
           </div>
         </div>
 

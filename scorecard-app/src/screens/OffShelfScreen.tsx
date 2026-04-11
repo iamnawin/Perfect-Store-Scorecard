@@ -147,9 +147,6 @@ export function OffShelfScreen() {
   }
 
   function resetDraft() {
-    if (draft.photoPreviewUrl) {
-      URL.revokeObjectURL(draft.photoPreviewUrl)
-    }
     setDraft(createEmptyDraft())
     setEditingId(null)
   }
@@ -204,9 +201,6 @@ export function OffShelfScreen() {
   }
 
   function handleEdit(entry: OffShelfEntry) {
-    if (draft.photoPreviewUrl && draft.photoPreviewUrl !== entry.photoPreviewUrl) {
-      URL.revokeObjectURL(draft.photoPreviewUrl)
-    }
     setEditingId(entry.id)
     setDraft({
       location: entry.location,
@@ -227,10 +221,6 @@ export function OffShelfScreen() {
     const product = recommendation.product
     if (!product) return
 
-    if (draft.photoPreviewUrl) {
-      URL.revokeObjectURL(draft.photoPreviewUrl)
-    }
-
     setEditingId(null)
     setDraft({
       location: recommendation.location,
@@ -248,73 +238,84 @@ export function OffShelfScreen() {
   }
 
   function handleDraftPhoto(file: File | null) {
-    setDraft(prev => {
-      if (prev.photoPreviewUrl) {
-        URL.revokeObjectURL(prev.photoPreviewUrl)
-      }
+    if (!file) {
+      setDraft(prev => ({
+        ...prev,
+        photoCaptured: false,
+        photoName: '',
+        photoPreviewUrl: '',
+      }))
+      return
+    }
 
-      if (!file) {
-        return {
-          ...prev,
-          photoCaptured: false,
-          photoName: '',
-          photoPreviewUrl: '',
-        }
-      }
-
-      return {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : ''
+      setDraft(prev => ({
         ...prev,
         photoCaptured: true,
         photoName: file.name,
-        photoPreviewUrl: URL.createObjectURL(file),
-      }
-    })
+        photoPreviewUrl: result,
+      }))
+    }
+    reader.readAsDataURL(file)
   }
 
   return (
     <PhoneShell>
-      <TopBar
-        title="Off-Shelf Opportunity Capture"
-        subtitle={`${store.name} | ${store.visitStatus} Visit`}
-        showBack
-        rightSlot={(
-          <button
-            type="button"
-            className="rounded-md border border-outline p-2 text-on-surface-variant active:bg-surface-low"
-            aria-label="More actions"
-          >
-            <CircleEllipsis size={16} />
-          </button>
-        )}
-      />
-
       <div className="flex-1 overflow-y-auto bg-[#f4f6f9] pb-2">
-        <div className="sticky top-0 z-10 border-b border-outline bg-surface-lowest">
+        <TopBar
+          title="Off-Shelf Opportunity Capture"
+          subtitle={`${store.name} | ${store.visitStatus} Visit`}
+          showBack
+          rightSlot={(
+            <button
+              type="button"
+              className="rounded-md border border-outline p-2 text-on-surface-variant active:bg-surface-low"
+              aria-label="More actions"
+            >
+              <CircleEllipsis size={16} />
+            </button>
+          )}
+        />
+
+        <div className="border-b border-outline bg-surface-lowest">
           <div className="px-4 py-3 space-y-3">
-            <div className="grid grid-cols-3 gap-2">
-              <BandMetric label="Complete" value={`${completionPercent}%`} />
-              <BandMetric label="Answered" value={`${answeredChecks} / ${totalChecks}`} />
-              <BandMetric label="Step" value={`${sectionNumber} of ${totalSections}`} />
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Progress</p>
+                <p className="text-[12px] text-on-surface-variant mt-1">
+                  {answeredChecks} / {totalChecks} answered • Step {sectionNumber} of {totalSections}
+                </p>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-right">
+                <BandMetric label="Done" value={`${completionPercent}%`} />
+                <BandMetric label="Score" value={currentOpportunityScore.toFixed(1)} />
+                <BandMetric label="Lift" value={`+${currentIncremental.toFixed(1)}`} />
+              </div>
             </div>
             <div>
               <div className="mb-1.5 flex items-center justify-between text-[11px] text-on-surface-variant">
-                <span>Step {sectionNumber} of {totalSections}: Off-Shelf Opportunity Capture</span>
+                <span>Off-Shelf Opportunity Capture</span>
                 <span>{completionPercent}%</span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-[#dde3ea]">
                 <div className="h-full rounded-full bg-primary" style={{ width: `${completionPercent}%` }} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2 border-t border-outline pt-3">
+          </div>
+        </div>
+
+        <div className="px-4 py-3 space-y-3">
+          <SectionCard title="Score Impact" subtitle="Current score state for this visit.">
+            <div className="grid grid-cols-2 gap-2">
               <ScoreCell label="Current Score" value={currentOpportunityScore.toFixed(1)} tone="neutral" />
               <ScoreCell label="Base Plan" value="100.0" tone="neutral" />
               <ScoreCell label="Incremental Off-Shelf" value={`+${currentIncremental.toFixed(1)}`} tone="positive" />
               <ScoreCell label="Potential Additional Gain" value={`+${potentialAdditionalGain.toFixed(1)}`} tone="positive" />
             </div>
-          </div>
-        </div>
+          </SectionCard>
 
-        <div className="px-4 py-3 space-y-3">
           {trellisEnabled && (
             <TrellisBot
               title={trellisContent.offShelf.title}
@@ -698,7 +699,7 @@ function SegmentGrid({
 
 function BandMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-outline bg-[#f7f9fb] px-3 py-2">
+    <div className="min-w-[64px] rounded-lg border border-outline bg-[#f7f9fb] px-2 py-2">
       <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">{label}</p>
       <p className="mt-1 text-[15px] font-semibold text-on-surface">{value}</p>
     </div>

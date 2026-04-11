@@ -80,37 +80,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   function setEvidencePhoto(itemId: string, file: File | null) {
-    setEvidence(prev => {
-      const current = prev[itemId]
-
-      if (current?.photoPreviewUrl) {
-        URL.revokeObjectURL(current.photoPreviewUrl)
-      }
-
-      if (!file) {
-        return {
-          ...prev,
-          [itemId]: {
-            ...current,
-            captured: false,
-            note: current?.note ?? '',
-            photoName: '',
-            photoPreviewUrl: '',
-          },
-        }
-      }
-
-      return {
+    if (!file) {
+      setEvidence(prev => ({
         ...prev,
         [itemId]: {
-          ...current,
-          captured: true,
-          note: current?.note || `Captured during active visit: ${file.name}`,
-          photoName: file.name,
-          photoPreviewUrl: URL.createObjectURL(file),
+          ...prev[itemId],
+          captured: false,
+          note: prev[itemId]?.note ?? '',
+          photoName: '',
+          photoPreviewUrl: '',
         },
-      }
-    })
+      }))
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : ''
+      setEvidence(prev => ({
+        ...prev,
+        [itemId]: {
+          ...prev[itemId],
+          captured: true,
+          note: prev[itemId]?.note || `Captured during active visit: ${file.name}`,
+          photoName: file.name,
+          photoPreviewUrl: result,
+        },
+      }))
+    }
+    reader.readAsDataURL(file)
   }
 
   function setEvidenceNote(itemId: string, note: string) {
