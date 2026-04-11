@@ -677,17 +677,17 @@ function SegmentGrid({
   columns: string
 }) {
   return (
-    <div className={clsx('grid gap-2 rounded-xl bg-[#eef2f6] p-1.5', columns)}>
+    <div className={clsx('grid gap-1 rounded-lg border border-[#d8dde6] bg-[#f7f9fb] p-1', columns)}>
       {values.map(value => (
         <button
           key={value}
           type="button"
           onClick={() => onSelect(value)}
           className={clsx(
-            'min-h-10 rounded-[0.7rem] border px-3 text-[12px] font-semibold shadow-[inset_0_-1px_0_rgba(0,0,0,0.04)] transition-colors',
+            'min-h-10 rounded-md border px-3 text-[12px] font-semibold transition-colors',
             selectedValue === value
-              ? 'border-[#0176d3] bg-[#0176d3] text-white shadow-[0_1px_3px_rgba(1,118,211,0.28)]'
-              : 'border-[#d8dde6] bg-[#fbfcfd] text-[#2e3a47]'
+              ? 'border-[#0176d3] bg-[#eaf5fe] text-[#014486]'
+              : 'border-transparent bg-white text-[#2e3a47]'
           )}
         >
           {value}

@@ -18,6 +18,7 @@ import {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [checklist, setChecklist] = useState<AppState['checklist']>({})
+  const [questionNotes, setQuestionNotes] = useState<AppState['questionNotes']>({})
   const [offShelf, setOffShelf] = useState<OffShelfEntry[]>([])
   const [offShelfConfirmed, setOffShelfConfirmed] = useState(false)
   const [evidence, setEvidence] = useState<AppState['evidence']>(() => createInitialEvidenceState())
@@ -30,6 +31,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   function setChecklistAnswer(itemId: string, answer: ChecklistAnswer) {
     setChecklist(prev => ({ ...prev, [itemId]: answer }))
+  }
+
+  function setQuestionNote(itemId: string, note: string) {
+    setQuestionNotes(prev => ({ ...prev, [itemId]: note }))
   }
 
   function addOffShelfEntry(entry: OffShelfEntry) {
@@ -136,6 +141,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const appState: AppState = {
     checklist,
+    questionNotes,
     offShelf,
     offShelfConfirmed,
     evidence,
@@ -162,6 +168,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider value={{
       checklist,
+      questionNotes,
       offShelf,
       offShelfConfirmed,
       evidence,
@@ -172,6 +179,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       submitted,
       trellisEnabled,
       setChecklistAnswer,
+      setQuestionNote,
       addOffShelfEntry,
       updateOffShelfEntry,
       duplicateOffShelfEntry,

@@ -1,3 +1,4 @@
+import { useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
 import { Camera, CheckCircle2, Circle, ClipboardCheck, FilePenLine, Layers3, ShieldAlert } from 'lucide-react'
@@ -6,7 +7,7 @@ import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
 import { TrellisBot } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
-import { scorecardSections, store, trellisContent } from '../data/mock'
+import { evidenceRequirements, scorecardSections, store, trellisContent } from '../data/mock'
 import {
   getChecklistQuestionsForSection,
   getChecklistSectionProgress,
@@ -28,8 +29,11 @@ export function ChecklistScreen() {
   const app = useApp()
   const {
     checklist,
+    questionNotes,
     evidence,
     setChecklistAnswer,
+    setQuestionNote,
+    setEvidencePhoto,
     executionScore,
     answeredChecks,
     totalChecks,
@@ -39,6 +43,7 @@ export function ChecklistScreen() {
     saveDraft,
     trellisEnabled,
   } = app
+  const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({})
 
   const checklistSections = scorecardSections.filter(section => section.kind === 'checklist')
   const activeSection =
@@ -48,6 +53,10 @@ export function ChecklistScreen() {
   const currentSectionNumber = getCurrentSectionNumber(app)
   const sectionProgress = getChecklistSectionProgress(activeSection.id, checklist)
   const helperText = lastSavedAt ? `Draft saved at ${lastSavedAt}` : 'Draft saves automatically inside the active visit.'
+
+  function toggleNote(questionId: string) {
+    setOpenNotes(prev => ({ ...prev, [questionId]: !prev[questionId] }))
+  }
 
   return (
     <PhoneShell>
@@ -124,6 +133,12 @@ export function ChecklistScreen() {
             const answer = checklist[question.id] ?? null
             const status = getQuestionStatus(answer)
             const evidenceLabel = getQuestionEvidenceLabel(question, evidence)
+            const relatedEvidence = evidenceRequirements.filter(item => item.linkedQuestionIds.includes(question.id))
+            const primaryEvidence = relatedEvidence.find(item => item.required) ?? relatedEvidence[0]
+            const currentNote = questionNotes[question.id] ?? ''
+            const noteOpen = Boolean(openNotes[question.id] || currentNote)
+            const currentEvidence = primaryEvidence ? evidence[primaryEvidence.id] : null
+            const quickPhotoCaptured = Boolean(currentEvidence?.captured)
 
             return (
               <div key={question.id} className="relative overflow-hidden rounded-lg border border-outline bg-surface-lowest">
@@ -177,17 +192,50 @@ export function ChecklistScreen() {
                   </div>
 
                   <div className="flex gap-2 mt-3">
-                    <button type="button" className="rounded-md border border-outline bg-surface-low px-2.5 py-1.5 text-[11px] font-medium text-on-surface-variant flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => toggleNote(question.id)}
+                      className="rounded-md border border-outline bg-surface-low px-2.5 py-1.5 text-[11px] font-medium text-on-surface-variant flex items-center gap-1.5"
+                    >
                       <FilePenLine size={12} />
-                      Add Note
+                      {currentNote ? 'Edit Note' : 'Add Note'}
                     </button>
-                    {evidenceLabel !== 'No photo required' && (
-                      <button type="button" className="rounded-md border border-outline bg-surface-low px-2.5 py-1.5 text-[11px] font-medium text-on-surface-variant flex items-center gap-1.5">
+                    {primaryEvidence && evidenceLabel !== 'No photo required' && (
+                      <label className={clsx(
+                        'rounded-md border px-2.5 py-1.5 text-[11px] font-medium flex items-center gap-1.5 cursor-pointer',
+                        quickPhotoCaptured
+                          ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
+                          : 'border-outline bg-surface-low text-on-surface-variant'
+                      )}>
                         <Camera size={12} />
-                        Capture Photo
-                      </button>
+                        {quickPhotoCaptured ? 'Retake Photo' : 'Capture Photo'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          className="hidden"
+                          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                            const file = event.target.files?.[0] ?? null
+                            setEvidencePhoto(primaryEvidence.id, file)
+                            event.target.value = ''
+                          }}
+                        />
+                      </label>
                     )}
                   </div>
+
+                  {noteOpen && (
+                    <div className="mt-3 rounded-lg border border-outline bg-[#f7f9fb] p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant mb-2">Question Note</p>
+                      <textarea
+                        value={currentNote}
+                        onChange={(event) => setQuestionNote(question.id, event.target.value)}
+                        placeholder="Add store-level context for this check."
+                        rows={3}
+                        className="w-full rounded-lg border border-outline bg-surface-lowest px-3 py-2.5 text-[13px] text-on-surface outline-none resize-none"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             )

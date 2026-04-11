@@ -83,6 +83,10 @@ export interface EvidenceState {
   [itemId: string]: EvidenceStateItem
 }
 
+export interface QuestionNotesState {
+  [itemId: string]: string
+}
+
 export interface TrellisPromptSet {
   title: string
   insight: string
@@ -91,6 +95,7 @@ export interface TrellisPromptSet {
 
 export interface AppState {
   checklist: ChecklistState
+  questionNotes: QuestionNotesState
   offShelf: OffShelfEntry[]
   offShelfConfirmed: boolean
   evidence: EvidenceState

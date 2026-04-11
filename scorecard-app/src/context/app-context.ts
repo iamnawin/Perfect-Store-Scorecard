@@ -3,6 +3,7 @@ import type { AppState, ChecklistAnswer, OffShelfEntry, ScorecardStatus } from '
 
 export interface AppContextValue extends AppState {
   setChecklistAnswer: (itemId: string, answer: ChecklistAnswer) => void
+  setQuestionNote: (itemId: string, note: string) => void
   addOffShelfEntry: (entry: OffShelfEntry) => void
   updateOffShelfEntry: (entry: OffShelfEntry) => void
   duplicateOffShelfEntry: (id: string) => void
