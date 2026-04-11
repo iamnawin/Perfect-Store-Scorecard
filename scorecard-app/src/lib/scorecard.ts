@@ -65,6 +65,10 @@ export function getChecklistQuestionsForSection(sectionId: string) {
   return checklistQuestions.filter(question => question.sectionId === sectionId)
 }
 
+export function getChecklistSectionValue(sectionId: string) {
+  return getChecklistQuestionsForSection(sectionId).reduce((total, question) => total + question.weight, 0)
+}
+
 export function getChecklistSectionProgress(sectionId: string, checklist: ChecklistState) {
   const questions = getChecklistQuestionsForSection(sectionId)
   const answered = questions.filter(question => checklist[question.id]).length
@@ -274,6 +278,24 @@ export function getExecutionScore(checklist: ChecklistState) {
   return Math.round((getYesCount(checklist) / getTotalChecks()) * 100)
 }
 
+export function getChecklistImpactValue(weight: number, answer: ChecklistAnswer) {
+  if (answer === 'yes') return weight
+  if (answer === 'no') return -weight
+  return 0
+}
+
+export function getChecklistBasePlanScore(checklist: ChecklistState) {
+  const delta = checklistQuestions.reduce((total, question) => (
+    total + getChecklistImpactValue(question.weight, checklist[question.id] ?? null)
+  ), 0)
+
+  return Math.max(0, +(100 + delta).toFixed(1))
+}
+
+export function getChecklistDecisionScore(checklist: ChecklistState, offShelf: OffShelfEntry[]) {
+  return +(getChecklistBasePlanScore(checklist) + getOffShelfIncrementalScore(offShelf)).toFixed(1)
+}
+
 export function getTotalScore(state: AppState) {
   const noCount = Object.values(state.checklist).filter(answer => answer === 'no').length
   const offShelfBonus = Math.min(getOffShelfIncrementalScore(state.offShelf), 24)
@@ -318,7 +340,7 @@ export function getQuestionStatus(answer: ChecklistAnswer) {
   }
 }
 
-export function getQuestionEvidenceLabel(question: ChecklistQuestion, evidence: EvidenceState) {
+export function getQuestionEvidenceLabel(question: ChecklistQuestion, evidence: EvidenceState, offShelf: OffShelfEntry[] = []) {
   const relatedEvidence = evidenceRequirements.filter(item => item.linkedQuestionIds.includes(question.id))
   const requiredEvidence = relatedEvidence.filter(item => item.required)
 
@@ -326,7 +348,7 @@ export function getQuestionEvidenceLabel(question: ChecklistQuestion, evidence: 
     return 'No photo required'
   }
 
-  const missing = requiredEvidence.some(item => !evidence[item.id]?.captured)
+  const missing = requiredEvidence.some(item => !isEvidenceCaptured(item.id, evidence, offShelf))
   return missing ? 'Photo required before submit' : 'Required photo captured'
 }
 

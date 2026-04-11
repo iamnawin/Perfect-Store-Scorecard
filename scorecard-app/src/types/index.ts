@@ -14,6 +14,7 @@ export interface ChecklistQuestion {
   category: string
   title: string
   guidance: string
+  businessWhy: string
   weight: number
   icon: 'shelf' | 'alert' | 'display' | 'camera'
 }
