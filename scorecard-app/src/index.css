@@ -25,15 +25,22 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);
   background: #e7ebf0;
+  overflow: hidden;
 }
 
 #root {
-  min-height: 100svh;
+  height: 100dvh;
   display: flex;
   align-items: flex-start;
   justify-content: center;
+  overflow: hidden;
 }

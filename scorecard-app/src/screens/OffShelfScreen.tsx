@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
 import {
   Camera,
+  ChevronDown,
+  ChevronUp,
   CircleEllipsis,
   Copy,
   Edit3,
@@ -91,6 +93,8 @@ export function OffShelfScreen() {
 
   const [draft, setDraft] = useState<DraftState>(createEmptyDraft())
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [showRecommendations, setShowRecommendations] = useState(false)
+  const [showCaptured, setShowCaptured] = useState(true)
 
   const sectionNumber = scorecardSections.findIndex(section => section.id === 'off-shelf-capture') + 1
   const selectedCategory = offShelfCategories.find(item => item.id === draft.category)
@@ -492,6 +496,8 @@ export function OffShelfScreen() {
           <SectionCard
             title="Top Opportunities for This Store"
             subtitle={store.motto}
+            open={showRecommendations}
+            onToggle={() => setShowRecommendations(prev => !prev)}
             utility={(
               <div className="inline-flex items-center gap-1 rounded-md border border-[#c9d8ea] bg-[#edf4ff] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
                 <Sparkles size={11} />
@@ -528,6 +534,8 @@ export function OffShelfScreen() {
               : offShelfConfirmed
                 ? 'No incremental off-shelf displays were confirmed for this visit.'
                 : 'No display records saved yet.'}
+            open={showCaptured}
+            onToggle={() => setShowCaptured(prev => !prev)}
           >
             <div className="space-y-2">
               {offShelf.map(entry => (
@@ -610,24 +618,44 @@ function SectionCard({
   subtitle,
   utility,
   children,
+  open = true,
+  onToggle,
 }: {
   title: string
   subtitle: string
   utility?: ReactNode
   children: ReactNode
+  open?: boolean
+  onToggle?: () => void
 }) {
   return (
     <div className="overflow-hidden rounded-lg border border-outline bg-surface-lowest">
       <div className="border-b border-outline px-4 py-3">
         <div className="flex items-start justify-between gap-3">
-          <div>
+          <button
+            type="button"
+            onClick={onToggle}
+            className={clsx('flex-1 min-w-0 text-left', onToggle ? 'cursor-pointer' : 'cursor-default')}
+          >
             <p className="text-[13px] font-semibold text-on-surface">{title}</p>
             <p className="mt-1 text-[11px] text-on-surface-variant">{subtitle}</p>
+          </button>
+          <div className="flex items-center gap-2">
+            {utility}
+            {onToggle && (
+              <button
+                type="button"
+                onClick={onToggle}
+                className="rounded-md border border-outline p-1.5 text-on-surface-variant"
+                aria-label={open ? `Collapse ${title}` : `Expand ${title}`}
+              >
+                {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+            )}
           </div>
-          {utility}
         </div>
       </div>
-      <div className="space-y-3 px-4 py-3">{children}</div>
+      {open && <div className="space-y-3 px-4 py-3">{children}</div>}
     </div>
   )
 }
@@ -648,17 +676,17 @@ function SegmentGrid({
   columns: string
 }) {
   return (
-    <div className={clsx('grid gap-2', columns)}>
+    <div className={clsx('grid gap-2 rounded-xl bg-[#eef2f6] p-1.5', columns)}>
       {values.map(value => (
         <button
           key={value}
           type="button"
           onClick={() => onSelect(value)}
           className={clsx(
-            'min-h-10 rounded-lg border px-3 text-[12px] font-semibold',
+            'min-h-10 rounded-[0.7rem] border px-3 text-[12px] font-semibold shadow-[inset_0_-1px_0_rgba(0,0,0,0.04)] transition-colors',
             selectedValue === value
-              ? 'border-[#b7d5f6] bg-[#edf4ff] text-primary'
-              : 'border-outline bg-[#f7f9fb] text-on-surface-variant'
+              ? 'border-[#0176d3] bg-[#0176d3] text-white shadow-[0_1px_3px_rgba(1,118,211,0.28)]'
+              : 'border-[#d8dde6] bg-[#fbfcfd] text-[#2e3a47]'
           )}
         >
           {value}
