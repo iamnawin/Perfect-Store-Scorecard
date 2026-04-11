@@ -26,7 +26,6 @@ export function EntryScreen() {
 
   const currentSection = getCurrentSection(app)
   const currentSectionNumber = getCurrentSectionNumber(app)
-  const estimatedTime = Math.max(6, Math.ceil(totalChecks * 1.2))
   const trendDelta = totalScore - previousSnapshot.score
   const prioritySection = scorecardStatus === 'completed' ? 'Review and Submit' : currentSection.title
 
@@ -44,8 +43,7 @@ export function EntryScreen() {
   const readinessItems = [
     { label: 'Sections', value: String(totalSections) },
     { label: 'Checks', value: String(totalChecks) },
-    { label: 'Photos', value: `${capturedRequiredPhotos}/${requiredPhotos}` },
-    { label: 'Est. Time', value: `${estimatedTime} min` },
+    { label: 'Status', value: scorecardStatus === 'not-started' ? 'Ready' : `${completionPercent}%` },
   ]
 
   const statusMeta = {
@@ -101,7 +99,7 @@ export function EntryScreen() {
               </span>
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-2 px-4 py-3 bg-[#f7f9fb]">
+          <div className="grid grid-cols-3 gap-2 px-4 py-3 bg-[#f7f9fb]">
             {readinessItems.map(item => (
               <ReadinessCell key={item.label} label={item.label} value={item.value} />
             ))}
