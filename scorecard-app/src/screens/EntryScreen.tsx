@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { CheckCircle2, ChevronRight, CircleDot, ClipboardCheck, LockKeyhole, MapPin, TrendingUp } from 'lucide-react'
+import { CheckCircle2, ChevronRight, CircleDot, ClipboardCheck, LockKeyhole, TrendingUp } from 'lucide-react'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
 import { TrellisAskButton, TrellisInsightCard } from '../components/TrellisBot'
@@ -17,7 +17,6 @@ export function EntryScreen() {
     totalSections,
     requiredPhotos,
     capturedRequiredPhotos,
-    completionPercent,
     scorecardStatus,
     totalScore,
     submitted,
@@ -28,50 +27,37 @@ export function EntryScreen() {
   const currentSection = getCurrentSection(app)
   const currentSectionNumber = getCurrentSectionNumber(app)
   const trendDelta = totalScore - previousSnapshot.score
-  const prioritySection = scorecardStatus === 'completed' ? 'Review and Submit' : currentSection.title
   const briefing = getEntryVisitBriefing(app)
-
-  const ctaLabel = {
-    'not-started': 'Start Scorecard',
-    'in-progress': 'Resume Scorecard',
-    'ready-for-review': 'Review Scorecard',
-    'completed': 'Scorecard Completed',
-  }[scorecardStatus]
+  const shouldShowProgressCard = scorecardStatus === 'in-progress' || scorecardStatus === 'ready-for-review' || submitted
 
   const ctaRoute = scorecardStatus === 'ready-for-review' || scorecardStatus === 'completed'
     ? '/summary'
     : currentSection.route
 
-  const readinessItems = [
-    { label: 'Sections', value: String(totalSections) },
-    { label: 'Checks', value: String(totalChecks) },
-    { label: 'Status', value: scorecardStatus === 'not-started' ? 'Ready' : `${completionPercent}%` },
-  ]
-
   const statusMeta = {
     'not-started': {
-      label: 'Not Started',
+      label: 'Start Scorecard',
       tone: 'text-[#52606d] bg-[#f4f6f9] border-[#dde3ea]',
-      detail: `${totalSections} sections • ${totalChecks} checks • ${requiredPhotos} required photos`,
-      continueFrom: `Starts with ${currentSection.title}.`,
+      detail: 'Begin with Base Plan validation',
+      continueFrom: 'Complete MAP & POG before adding displays.',
     },
     'in-progress': {
-      label: `${completionPercent}% Complete`,
+      label: 'Continue Scorecard',
       tone: 'text-primary bg-[#edf4ff] border-[#c9d8ea]',
-      detail: `${answeredChecks} of ${totalChecks} checks answered`,
-      continueFrom: `Continue from ${currentSection.title} • Section ${currentSectionNumber} of ${totalSections}.`,
+      detail: 'Resume where you left off',
+      continueFrom: `Progress: ${answeredChecks} / ${totalChecks} checks • Section ${currentSectionNumber} of ${totalSections}.`,
     },
     'ready-for-review': {
-      label: 'Ready for Review',
+      label: 'Continue Scorecard',
       tone: 'text-[#1f5f33] bg-[#edf7ee] border-[#cde8d3]',
-      detail: `All checks answered • ${capturedRequiredPhotos}/${requiredPhotos} required photos captured`,
-      continueFrom: 'Continue to Review and Submit.',
+      detail: 'Resume where you left off',
+      continueFrom: `All checks answered • ${capturedRequiredPhotos}/${requiredPhotos} required photos captured.`,
     },
     'completed': {
-      label: 'Completed',
+      label: 'Scorecard Completed',
       tone: 'text-[#1f5f33] bg-[#edf7ee] border-[#cde8d3]',
-      detail: `Submitted from active visit • Final score ${totalScore}`,
-      continueFrom: 'Scorecard is submitted for this visit. Review the summary or return to the visit.',
+      detail: 'Review the submitted visit summary',
+      continueFrom: `Final score ${totalScore} • Return to the summary when needed.`,
     },
   }[scorecardStatus]
 
@@ -83,136 +69,106 @@ export function EntryScreen() {
           subtitle={`${store.visitStatus} Visit • ${store.city}`}
         />
 
-        <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
-          <div className="px-4 py-3 border-b border-outline flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Visit Context</p>
-              <p className="text-[13px] font-semibold text-on-surface mt-1">{store.scorecard}</p>
-              <p className="text-[11px] text-on-surface-variant mt-1">{store.banner} • Rep {store.rep}</p>
-            </div>
-            <div className="flex flex-col items-end gap-2">
-              <span className="rounded-md border border-[#cde8d3] bg-[#edf7ee] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#1f5f33]">
-                {store.visitStatus}
-              </span>
-              <span className="inline-flex items-center gap-1 text-[11px] text-on-surface-variant">
-                <MapPin size={12} className="text-primary" />
-                {store.city}
-              </span>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2 px-4 py-3 bg-[#f7f9fb]">
-            {readinessItems.map(item => (
-              <ReadinessCell key={item.label} label={item.label} value={item.value} />
-            ))}
-          </div>
+        <div className="px-1">
+          <p className="text-[11px] font-medium text-on-surface-variant">{store.scorecard}</p>
         </div>
 
         <TrellisInsightCard
-          title="Visit briefing"
-          summary={briefing.focusReason}
-          metrics={[
-            { label: 'Last Visit Score', value: String(briefing.lastVisitScore) },
-            { label: 'Region Avg', value: String(briefing.regionAverage) },
-          ]}
+          title="What matters now"
           items={[
-            { label: 'Repeated Gap', value: briefing.repeatedGap, tone: 'warning' },
-            { label: 'Top Opportunity', value: briefing.topOpportunity, tone: 'success' },
-            { label: 'Suggested Focus', value: briefing.suggestedFocus },
+            { label: 'Repeated Gap', value: 'Garden Door missing for 2 visits', tone: 'warning' },
+            { label: 'Top Opportunity', value: 'Scotts Turf Builder 20 lb at Endcap (+12 pts)', tone: 'success' },
+            { label: 'Suggested Focus', value: 'Fix Garden Door first, then add incremental displays' },
           ]}
-          footer="Trellis stays practical here: it briefs the rep on the repeated issue, biggest upside, and what to focus on first."
         />
 
         <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
           <div className="px-4 py-3 border-b border-outline flex items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Launch</p>
-              <p className="text-[15px] font-semibold text-on-surface mt-1">{ctaLabel}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Primary Action</p>
+              <p className="text-[17px] font-semibold text-on-surface mt-1">{statusMeta.label}</p>
+              <p className="text-[12px] text-on-surface-variant mt-1">{statusMeta.detail}</p>
               <p className="text-[12px] text-on-surface-variant mt-1">{statusMeta.continueFrom}</p>
             </div>
             <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${statusMeta.tone}`}>
-              {statusMeta.label}
+              {scorecardStatus === 'not-started' ? 'Not Started' : scorecardStatus === 'in-progress' ? 'In Progress' : scorecardStatus === 'ready-for-review' ? 'Ready' : 'Completed'}
             </span>
           </div>
           <div className="px-4 py-3">
-            <div className="min-w-0">
-              <p className="text-[12px] font-semibold text-on-surface">{statusMeta.detail}</p>
-              <p className="text-[11px] text-on-surface-variant mt-1">{store.motto}</p>
-            </div>
-            <div className="mt-3 flex items-center justify-between gap-3">
-              <div className="rounded-md border border-outline bg-[#f7f9fb] px-3 py-2">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Progress</p>
-                <p className="text-[13px] font-semibold text-on-surface mt-1">{scorecardStatus === 'not-started' ? 'Not Started' : `${completionPercent}% Complete`}</p>
-              </div>
-              {submitted ? (
-                <div className="rounded-md border border-[#cde8d3] bg-[#edf7ee] px-3 py-2 text-right shrink-0">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#1f5f33]">Final Score</p>
-                  <p className="text-[15px] font-semibold text-[#1f5f33] mt-1">{totalScore}</p>
-                </div>
-              ) : null}
-            </div>
             {submitted ? null : (
               <button
                 type="button"
                 onClick={() => navigate(ctaRoute)}
-                className="mt-4 mx-auto min-h-11 rounded-md bg-primary px-6 text-[13px] font-semibold text-white flex items-center justify-center gap-2"
+                className="mt-1 w-full min-h-11 rounded-md bg-primary px-6 text-[13px] font-semibold text-white flex items-center justify-center gap-2"
               >
-                {ctaLabel}
+                {scorecardStatus === 'not-started' ? 'Start Scorecard' : 'Continue'}
                 <ChevronRight size={15} />
               </button>
             )}
           </div>
         </div>
 
-        <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
-          <div className="px-4 py-3 border-b border-outline">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Previous Snapshot</p>
-          </div>
-          <div className="px-4 py-3">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-              <SnapshotField label="Last Score" value={String(previousSnapshot.score)} />
-              <SnapshotField label="Last Submitted" value={previousSnapshot.date} />
-              <SnapshotField label="Repeated Gap" value="Garden Doors" />
-              <SnapshotField label="Top Opportunity" value="Weed and Feed Endcap" />
+        {shouldShowProgressCard ? (
+          <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
+            <div className="px-4 py-3 border-b border-outline">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Current Progress</p>
             </div>
-            <div className="mt-4 space-y-1.5">
-              <p className="text-[12px] text-on-surface-variant leading-snug">{previousSnapshot.gap}</p>
-              <p className="text-[12px] text-on-surface-variant leading-snug">{previousSnapshot.opportunity}</p>
+            <div className="px-4 py-3 space-y-3">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                <SnapshotField label="Progress" value={`${answeredChecks} / ${totalChecks} checks`} />
+                <SnapshotField label="Section" value={`${currentSectionNumber} of ${totalSections}`} />
+                <SnapshotField label="Score So Far" value={totalScore.toFixed(0)} />
+                <SnapshotField label="Evidence" value={`${capturedRequiredPhotos} / ${requiredPhotos} photos`} />
+              </div>
+              <div className="rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
+                <p className="text-[12px] text-on-surface-variant">Resume point</p>
+                <p className="mt-1 text-[13px] font-semibold text-on-surface">{currentSection.title}</p>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
+            <div className="px-4 py-3 border-b border-outline">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Last Visit Snapshot</p>
+            </div>
+            <div className="px-4 py-3">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                <SnapshotField label="Last Score" value={String(previousSnapshot.score)} />
+                <SnapshotField label="Last Submitted" value={previousSnapshot.date} />
+                <SnapshotField label="Repeated Gap" value="Garden Doors" />
+                <SnapshotField label="Top Opportunity" value="Weed and Feed Endcap" />
+              </div>
+              <div className="mt-4 space-y-1.5">
+                <p className="text-[12px] text-on-surface-variant leading-snug">Garden Doors gap repeated two visits.</p>
+                <p className="text-[12px] text-on-surface-variant leading-snug">Fixing this can recover ~10 pts.</p>
+              </div>
+            </div>
+          </div>
+        )}
 
-        <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
-          <div className="px-4 py-3 border-b border-outline">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Today’s Focus</p>
-          </div>
-          <div className="px-4 py-3 space-y-2">
-            <p className="text-[12px] text-on-surface-variant">Repeated gap: {previousSnapshot.gap}</p>
-            <p className="text-[12px] text-on-surface-variant">Top opportunity: {previousSnapshot.opportunity}</p>
-            <p className="text-[12px] text-on-surface-variant">Priority section: {prioritySection}</p>
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
-          <div className="px-4 py-3 border-b border-outline flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Trend</p>
-              <p className="text-[13px] font-semibold text-on-surface mt-1">Score trend</p>
+        {scorecardStatus !== 'not-started' && (
+          <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
+            <div className="px-4 py-3 border-b border-outline flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Trend</p>
+                <p className="text-[13px] font-semibold text-on-surface mt-1">Score trend</p>
+              </div>
+              <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${trendDelta >= 0 ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : 'border-[#dde3ea] bg-[#f4f6f9] text-[#52606d]'}`}>
+                {trendDelta >= 0 ? 'Improving' : 'Below Last'}
+              </span>
             </div>
-            <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${trendDelta >= 0 ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : 'border-[#dde3ea] bg-[#f4f6f9] text-[#52606d]'}`}>
-              {trendDelta >= 0 ? 'Improving' : 'Below Last'}
-            </span>
-          </div>
-          <div className="px-4 py-3 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[12px] text-on-surface-variant">Last score {previousSnapshot.score}</p>
-              <p className="text-[12px] text-on-surface-variant mt-1">Current score {totalScore}</p>
-            </div>
-            <div className={`inline-flex items-center gap-1 rounded-md border px-3 py-2 text-[12px] font-semibold ${trendDelta >= 0 ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : 'border-[#dde3ea] bg-[#f4f6f9] text-[#52606d]'}`}>
-              <TrendingUp size={13} />
-              {trendDelta >= 0 ? '+' : ''}{trendDelta} pts
+            <div className="px-4 py-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[12px] text-on-surface-variant">Last score {previousSnapshot.score}</p>
+                <p className="text-[12px] text-on-surface-variant mt-1">Current score {totalScore}</p>
+              </div>
+              <div className={`inline-flex items-center gap-1 rounded-md border px-3 py-2 text-[12px] font-semibold ${trendDelta >= 0 ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : 'border-[#dde3ea] bg-[#f4f6f9] text-[#52606d]'}`}>
+                <TrendingUp size={13} />
+                {trendDelta >= 0 ? '+' : ''}{trendDelta} pts
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {scorecardStatus !== 'not-started' && !submitted && (
           <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
@@ -273,15 +229,6 @@ function SnapshotField({ label, value }: { label: string; value: string }) {
     <div>
       <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">{label}</p>
       <p className="mt-1 text-[14px] font-semibold text-on-surface">{value}</p>
-    </div>
-  )
-}
-
-function ReadinessCell({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md border border-outline bg-white px-2 py-2">
-      <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">{label}</p>
-      <p className="text-[12px] font-semibold text-on-surface mt-1">{value}</p>
     </div>
   )
 }
