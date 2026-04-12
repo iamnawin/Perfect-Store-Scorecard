@@ -4,14 +4,18 @@ import { AlertTriangle, Camera, CheckCircle2, FileText, Flag, Image, RotateCcw }
 import { BottomActionBar } from '../components/BottomActionBar'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
-import { TrellisBot } from '../components/TrellisBot'
+import { TrellisAskButton, TrellisInsightCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
-import { evidenceRequirements, scorecardSections, store, trellisContent } from '../data/mock'
+import { evidenceRequirements, scorecardSections, store } from '../data/mock'
 import { getLinkedQuestionTitles, getMissingRequiredEvidence } from '../lib/scorecard'
+import { getPhotoInsight } from '../lib/trellis'
 
 export function PhotoScreen() {
   const navigate = useNavigate()
+  const app = useApp()
   const {
+    checklist,
+    questionNotes,
     evidence,
     offShelf,
     notes,
@@ -27,16 +31,30 @@ export function PhotoScreen() {
     lastSavedAt,
     saveDraft,
     trellisEnabled,
-  } = useApp()
+    toggleTrellis,
+  } = app
 
   const missingEvidence = getMissingRequiredEvidence(evidence, offShelf)
   const sectionNumber = scorecardSections.findIndex(section => section.id === 'photo-evidence') + 1
   const helperText = lastSavedAt ? `Draft saved at ${lastSavedAt}` : 'Missing required evidence will block submission.'
+  const trellisInsight = getPhotoInsight({
+    checklist,
+    questionNotes,
+    offShelf,
+    offShelfConfirmed: offShelf.length > 0,
+    evidence,
+    notes,
+    revisitRequired,
+    shelfResetNeeded,
+    lastSavedAt,
+    submitted: false,
+    trellisEnabled,
+  })
 
   return (
     <PhoneShell>
       <div className="flex-1 overflow-y-auto bg-[#f4f6f9]">
-        <TopBar title="Photo Evidence" subtitle={`${store.name} | ${store.visitStatus} Visit`} showBack showTrellisToggle />
+        <TopBar title="Photo Evidence" subtitle={`${store.name} | ${store.visitStatus} Visit`} showBack />
 
         <div className="border-b border-outline bg-surface-lowest px-4 py-3">
           <div className="flex items-center justify-between gap-3">
@@ -67,10 +85,12 @@ export function PhotoScreen() {
           )}
 
           {trellisEnabled && (
-            <TrellisBot
-              title={trellisContent.photo.title}
-              insight={trellisContent.photo.insight}
-              prompts={trellisContent.photo.prompts}
+            <TrellisInsightCard
+              title={trellisInsight.title}
+              summary={trellisInsight.summary}
+              tone={trellisInsight.tone}
+              metrics={trellisInsight.metrics}
+              footer="Trellis uses this evidence set to explain score movement and manager accountability on the summary screen."
             />
           )}
 
@@ -190,6 +210,8 @@ export function PhotoScreen() {
               </div>
             </div>
           </div>
+
+          <TrellisAskButton active={trellisEnabled} onClick={toggleTrellis} />
         </div>
       </div>
 

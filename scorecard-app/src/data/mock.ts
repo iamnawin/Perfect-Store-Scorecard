@@ -1,6 +1,7 @@
 import type {
   ChecklistQuestion,
   EvidenceRequirement,
+  LeaderboardEntry,
   OffShelfProduct,
   OffShelfRecommendation,
   ScorecardSection,
@@ -24,6 +25,17 @@ export const previousSnapshot = {
   gap: 'Garden Doors display gap repeated two visits in a row.',
   opportunity: 'Weed and Feed endcap with 80+ units remained the top incremental opportunity.',
 }
+
+export const regionBenchmark = {
+  name: 'Columbus North',
+  averageScore: 151,
+}
+
+export const leaderboardSeed: Omit<LeaderboardEntry, 'rank'>[] = [
+  { store: 'Home Depot #1881', rep: 'Marcus T.', score: 163, delta: 11 },
+  { store: 'Lowe\'s #441', rep: 'Angela R.', score: 157, delta: 8 },
+  { store: 'Menards #225', rep: 'Victor P.', score: 149, delta: 5 },
+]
 
 export const scorecardSections: ScorecardSection[] = [
   {

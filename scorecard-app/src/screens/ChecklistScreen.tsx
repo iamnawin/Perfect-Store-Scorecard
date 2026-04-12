@@ -5,9 +5,13 @@ import { Camera, ClipboardCheck, FilePenLine, Layers3, ShieldAlert } from 'lucid
 import { BottomActionBar } from '../components/BottomActionBar'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
-import { TrellisBot } from '../components/TrellisBot'
+import {
+  TrellisAskButton,
+  TrellisInsightCard,
+  TrellisSuggestionCard,
+} from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
-import { checklistQuestions, evidenceRequirements, store, trellisContent } from '../data/mock'
+import { checklistQuestions, evidenceRequirements, store } from '../data/mock'
 import {
   getChecklistBasePlanScore,
   getChecklistDecisionScore,
@@ -16,6 +20,7 @@ import {
   getQuestionEvidenceLabel,
   getQuestionStatus,
 } from '../lib/scorecard'
+import { getChecklistHeaderInsight, getChecklistSuggestion } from '../lib/trellis'
 import type { ChecklistAnswer, ChecklistQuestion } from '../types'
 
 const OPTIONS: { value: ChecklistAnswer; label: string }[] = [
@@ -47,6 +52,7 @@ const CHECKLIST_GROUPS = [
 
 export function ChecklistScreen() {
   const navigate = useNavigate()
+  const app = useApp()
   const {
     checklist,
     questionNotes,
@@ -60,7 +66,8 @@ export function ChecklistScreen() {
     saveDraft,
     lastSavedAt,
     trellisEnabled,
-  } = useApp()
+    toggleTrellis,
+  } = app
 
   const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({})
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({})
@@ -70,6 +77,7 @@ export function ChecklistScreen() {
   const basePlanScore = getChecklistBasePlanScore(checklist)
   const incrementalScore = getOffShelfIncrementalScore(offShelf)
   const projectedTotalScore = getChecklistDecisionScore(checklist, offShelf)
+  const trellisInsight = getChecklistHeaderInsight(app)
 
   const groups = useMemo(() => {
     return CHECKLIST_GROUPS.map(group => {
@@ -121,7 +129,6 @@ export function ChecklistScreen() {
           title={store.name}
           subtitle={`${store.visitStatus} Visit | ${store.scorecard}`}
           showBack
-          showTrellisToggle
         />
 
         <div className="border-b border-outline bg-surface-lowest px-4 py-3">
@@ -149,14 +156,16 @@ export function ChecklistScreen() {
 
         <div className="px-4 py-3 space-y-3">
           {trellisEnabled && (
-            <TrellisBot
-              title={trellisContent.checklist.title}
-              insight={trellisContent.checklist.insight}
-              prompts={trellisContent.checklist.prompts}
+            <TrellisInsightCard
+              title={trellisInsight.title}
+              summary={trellisInsight.summary}
+              tone={trellisInsight.tone}
+              items={trellisInsight.items}
+              footer="Trellis reacts to live answers so missed checks convert into concrete recovery actions instead of static warnings."
             />
           )}
 
-          {groups.map((group) => (
+          {groups.map(group => (
             <div key={group.id} className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
               <div className="px-4 py-3 border-b border-outline">
                 <div className="flex items-start justify-between gap-3">
@@ -202,19 +211,22 @@ export function ChecklistScreen() {
                         setOpenEvidence(prev => ({ ...prev, [question.id]: false }))
                       }
                     }}
-                    onAddOffShelf={() => navigate('/off-shelf')}
+                    onFollowSuggestion={(route) => navigate(route)}
+                    onOpenPhoto={() => navigate('/photo')}
                   />
                 ))}
               </div>
             </div>
           ))}
+
+          <TrellisAskButton active={trellisEnabled} onClick={toggleTrellis} />
         </div>
       </div>
 
       <BottomActionBar
         secondaryLabel="Save Draft"
         onSecondary={saveDraft}
-        primaryLabel="Next Section →"
+        primaryLabel="Next Section"
         onPrimary={() => navigate('/off-shelf')}
         helperText={helperText}
       />
@@ -239,7 +251,8 @@ function QuestionCard({
   onSaveNote,
   onCancelNote,
   onCapturePhoto,
-  onAddOffShelf,
+  onFollowSuggestion,
+  onOpenPhoto,
 }: {
   question: ChecklistQuestion
   answer: ChecklistAnswer
@@ -257,7 +270,8 @@ function QuestionCard({
   onSaveNote: () => void
   onCancelNote: () => void
   onCapturePhoto: (file: File | null) => void
-  onAddOffShelf: () => void
+  onFollowSuggestion: (route: string) => void
+  onOpenPhoto: () => void
 }) {
   const status = getQuestionStatus(answer)
   const evidenceLabel = getQuestionEvidenceLabel(question, evidence, [])
@@ -272,12 +286,13 @@ function QuestionCard({
     ? 'text-[#8b5d00] bg-[#f9f2e7] border-[#ead7b1]'
     : status.statusClass
   const scoreFeedback = answer === 'yes'
-    ? 'Good execution — contributes to score'
+    ? 'Good execution | contributes to score'
     : answer === 'no'
-      ? 'Missed opportunity — reduces score'
+      ? 'Missed opportunity | reduces score'
       : answer === 'na'
-        ? 'Marked N/A — excluded from score impact'
+        ? 'Marked N/A | excluded from score impact'
         : 'Awaiting response'
+  const trellisSuggestion = getChecklistSuggestion(question, answer)
 
   return (
     <div className="relative overflow-hidden bg-surface-lowest">
@@ -350,26 +365,19 @@ function QuestionCard({
           </div>
         )}
 
-        {answer === 'no' && (
-          <div className="mt-3 rounded-lg border border-[#f9d6d0] bg-[#fef1ee] px-3 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8e030f]">Action Required</p>
-            <p className="text-[12px] text-[#8e030f] mt-2">
-              {question.group === 'map'
-                ? 'Missing required MAP location'
-                : question.group === 'pog'
-                  ? 'Category not aligned to planogram'
-                  : 'Missing display / poor execution'}
-            </p>
-            <p className="text-[12px] text-[#8e030f] mt-1">Impact: {impactValue} pts</p>
-            {question.group === 'display' && (
-              <button
-                type="button"
-                onClick={onAddOffShelf}
-                className="mt-3 min-h-10 rounded-md bg-primary px-3 text-[12px] font-semibold text-white"
-              >
-                Add Off-Shelf Display
-              </button>
-            )}
+        {trellisSuggestion && (
+          <div className="mt-3">
+            <TrellisSuggestionCard
+              issue={trellisSuggestion.issue}
+              impactLabel={trellisSuggestion.impactLabel}
+              suggestedFix={trellisSuggestion.suggestedFix}
+              estimatedGainLabel={trellisSuggestion.estimatedGainLabel}
+              supportingText={trellisSuggestion.supportingText}
+              actionLabel={trellisSuggestion.action.label}
+              onAction={() => onFollowSuggestion(trellisSuggestion.route)}
+              secondaryActionLabel={question.group === 'display' ? 'Capture Evidence' : undefined}
+              onSecondaryAction={question.group === 'display' ? onOpenPhoto : undefined}
+            />
           </div>
         )}
 

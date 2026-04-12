@@ -95,6 +95,70 @@ export interface TrellisPromptSet {
   prompts: string[]
 }
 
+export type TrellisTone = 'info' | 'success' | 'warning'
+export type TrellisActionIntent = 'primary' | 'secondary' | 'warning'
+
+export interface TrellisMetric {
+  label: string
+  value: string
+  detail?: string
+}
+
+export interface TrellisDetailItem {
+  label: string
+  value: string
+  tone?: TrellisTone
+}
+
+export interface TrellisAction {
+  label: string
+  intent?: TrellisActionIntent
+}
+
+export interface TrellisVisitBriefing {
+  lastVisitScore: number
+  regionAverage: number
+  repeatedGap: string
+  topOpportunity: string
+  suggestedFocus: string
+  focusReason: string
+}
+
+export interface TrellisChecklistSuggestion {
+  issue: string
+  impactLabel: string
+  suggestedFix: string
+  estimatedGainLabel: string
+  action: TrellisAction
+  route: string
+  supportingText?: string
+}
+
+export interface TrellisOffShelfInsight {
+  title: string
+  impactLabel: string
+  lgorLabel: string
+  suggestedNextMove: string
+  supportingText: string
+  tone: TrellisTone
+}
+
+export interface TrellisSummaryInsight {
+  scoreDelta: number
+  mainPositiveDriver: string
+  biggestMissedOpportunity: string
+  nextVisitFocus: string
+  narrative: string
+}
+
+export interface LeaderboardEntry {
+  rank: number
+  store: string
+  rep: string
+  score: number
+  delta: number
+}
+
 export interface AppState {
   checklist: ChecklistState
   questionNotes: QuestionNotesState
