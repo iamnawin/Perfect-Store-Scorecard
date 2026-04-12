@@ -1,17 +1,5 @@
-import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  BarChart3,
-  CheckCircle2,
-  ChevronRight,
-  CircleDot,
-  ClipboardCheck,
-  Image,
-  Layers3,
-  LockKeyhole,
-  MapPin,
-  TrendingUp,
-} from 'lucide-react'
+import { CheckCircle2, ChevronRight, CircleDot, ClipboardCheck, LockKeyhole, MapPin, TrendingUp } from 'lucide-react'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
 import { TrellisAskButton, TrellisInsightCard } from '../components/TrellisBot'
@@ -40,43 +28,50 @@ export function EntryScreen() {
   const currentSection = getCurrentSection(app)
   const currentSectionNumber = getCurrentSectionNumber(app)
   const trendDelta = totalScore - previousSnapshot.score
+  const prioritySection = scorecardStatus === 'completed' ? 'Review and Submit' : currentSection.title
   const briefing = getEntryVisitBriefing(app)
 
   const ctaLabel = {
     'not-started': 'Start Scorecard',
     'in-progress': 'Resume Scorecard',
     'ready-for-review': 'Review Scorecard',
-    completed: 'Scorecard Completed',
+    'completed': 'Scorecard Completed',
   }[scorecardStatus]
 
   const ctaRoute = scorecardStatus === 'ready-for-review' || scorecardStatus === 'completed'
     ? '/summary'
     : currentSection.route
 
+  const readinessItems = [
+    { label: 'Sections', value: String(totalSections) },
+    { label: 'Checks', value: String(totalChecks) },
+    { label: 'Status', value: scorecardStatus === 'not-started' ? 'Ready' : `${completionPercent}%` },
+  ]
+
   const statusMeta = {
     'not-started': {
       label: 'Not Started',
       tone: 'text-[#52606d] bg-[#f4f6f9] border-[#dde3ea]',
-      detail: `${totalSections} sections | ${totalChecks} checks | ${requiredPhotos} required photos`,
+      detail: `${totalSections} sections • ${totalChecks} checks • ${requiredPhotos} required photos`,
       continueFrom: `Starts with ${currentSection.title}.`,
     },
     'in-progress': {
       label: `${completionPercent}% Complete`,
       tone: 'text-primary bg-[#edf4ff] border-[#c9d8ea]',
       detail: `${answeredChecks} of ${totalChecks} checks answered`,
-      continueFrom: `Continue from ${currentSection.title} | Section ${currentSectionNumber} of ${totalSections}.`,
+      continueFrom: `Continue from ${currentSection.title} • Section ${currentSectionNumber} of ${totalSections}.`,
     },
     'ready-for-review': {
       label: 'Ready for Review',
       tone: 'text-[#1f5f33] bg-[#edf7ee] border-[#cde8d3]',
-      detail: `All checks answered | ${capturedRequiredPhotos}/${requiredPhotos} required photos captured`,
+      detail: `All checks answered • ${capturedRequiredPhotos}/${requiredPhotos} required photos captured`,
       continueFrom: 'Continue to Review and Submit.',
     },
-    completed: {
+    'completed': {
       label: 'Completed',
       tone: 'text-[#1f5f33] bg-[#edf7ee] border-[#cde8d3]',
-      detail: `Submitted from active visit | Final score ${totalScore}`,
-      continueFrom: 'Review the summary or return to the visit context.',
+      detail: `Submitted from active visit • Final score ${totalScore}`,
+      continueFrom: 'Scorecard is submitted for this visit. Review the summary or return to the visit.',
     },
   }[scorecardStatus]
 
@@ -85,7 +80,7 @@ export function EntryScreen() {
       <div className="flex-1 overflow-y-auto bg-[#f4f6f9] px-4 py-4 space-y-3">
         <TopBar
           title={store.name}
-          subtitle={`${store.visitStatus} Visit | ${store.city}`}
+          subtitle={`${store.visitStatus} Visit • ${store.city}`}
         />
 
         <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
@@ -93,7 +88,7 @@ export function EntryScreen() {
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Visit Context</p>
               <p className="text-[13px] font-semibold text-on-surface mt-1">{store.scorecard}</p>
-              <p className="text-[11px] text-on-surface-variant mt-1">{store.banner} | Rep {store.rep}</p>
+              <p className="text-[11px] text-on-surface-variant mt-1">{store.banner} • Rep {store.rep}</p>
             </div>
             <div className="flex flex-col items-end gap-2">
               <span className="rounded-md border border-[#cde8d3] bg-[#edf7ee] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#1f5f33]">
@@ -106,32 +101,26 @@ export function EntryScreen() {
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 px-4 py-3 bg-[#f7f9fb]">
-            <ReadinessCell label="Sections" value={String(totalSections)} />
-            <ReadinessCell label="Checks" value={String(totalChecks)} />
-            <ReadinessCell label="Status" value={scorecardStatus === 'not-started' ? 'Ready' : `${completionPercent}%`} />
+            {readinessItems.map(item => (
+              <ReadinessCell key={item.label} label={item.label} value={item.value} />
+            ))}
           </div>
         </div>
 
-        {trellisEnabled && (
-          <TrellisInsightCard
-            title="Visit briefing for this store"
-            summary={briefing.focusReason}
-            metrics={[
-              { label: 'Last Visit Score', value: String(briefing.lastVisitScore) },
-              { label: 'Region Average', value: String(briefing.regionAverage) },
-            ]}
-            items={[
-              { label: 'Repeated Gap', value: briefing.repeatedGap, tone: 'warning' },
-              { label: 'Top Opportunity', value: briefing.topOpportunity, tone: 'success' },
-              { label: 'Suggested Focus', value: briefing.suggestedFocus },
-            ]}
-            actionLabel={ctaLabel}
-            onAction={() => navigate(ctaRoute)}
-            secondaryActionLabel="View Summary"
-            onSecondaryAction={() => navigate('/summary')}
-            footer="Trellis is prioritizing repeated execution gaps and the fastest point recovery path before the visit begins."
-          />
-        )}
+        <TrellisInsightCard
+          title="Visit briefing"
+          summary={briefing.focusReason}
+          metrics={[
+            { label: 'Last Visit Score', value: String(briefing.lastVisitScore) },
+            { label: 'Region Avg', value: String(briefing.regionAverage) },
+          ]}
+          items={[
+            { label: 'Repeated Gap', value: briefing.repeatedGap, tone: 'warning' },
+            { label: 'Top Opportunity', value: briefing.topOpportunity, tone: 'success' },
+            { label: 'Suggested Focus', value: briefing.suggestedFocus },
+          ]}
+          footer="Trellis stays practical here: it briefs the rep on the repeated issue, biggest upside, and what to focus on first."
+        />
 
         <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
           <div className="px-4 py-3 border-b border-outline flex items-start justify-between gap-3">
@@ -152,16 +141,16 @@ export function EntryScreen() {
             <div className="mt-3 flex items-center justify-between gap-3">
               <div className="rounded-md border border-outline bg-[#f7f9fb] px-3 py-2">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Progress</p>
-                <p className="text-[13px] font-semibold text-on-surface mt-1">
-                  {scorecardStatus === 'not-started' ? 'Not Started' : `${completionPercent}% Complete`}
-                </p>
+                <p className="text-[13px] font-semibold text-on-surface mt-1">{scorecardStatus === 'not-started' ? 'Not Started' : `${completionPercent}% Complete`}</p>
               </div>
-              <div className={`inline-flex items-center gap-1 rounded-md border px-3 py-2 text-[12px] font-semibold ${trendDelta >= 0 ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'}`}>
-                <TrendingUp size={13} />
-                {trendDelta >= 0 ? '+' : ''}{trendDelta} pts vs last
-              </div>
+              {submitted ? (
+                <div className="rounded-md border border-[#cde8d3] bg-[#edf7ee] px-3 py-2 text-right shrink-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#1f5f33]">Final Score</p>
+                  <p className="text-[15px] font-semibold text-[#1f5f33] mt-1">{totalScore}</p>
+                </div>
+              ) : null}
             </div>
-            {!submitted && (
+            {submitted ? null : (
               <button
                 type="button"
                 onClick={() => navigate(ctaRoute)}
@@ -174,81 +163,116 @@ export function EntryScreen() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <MetricCell label="Last Visit" value={`${previousSnapshot.score} pts`} />
-          <MetricCell label="Current Score" value={`${totalScore} pts`} tone={trendDelta >= 0 ? 'success' : 'warning'} />
-          <MetricCell label="Priority Section" value={currentSection.title} />
-          <MetricCell label="Evidence" value={`${capturedRequiredPhotos}/${requiredPhotos} photos`} />
+        <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
+          <div className="px-4 py-3 border-b border-outline">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Previous Snapshot</p>
+          </div>
+          <div className="px-4 py-3">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+              <SnapshotField label="Last Score" value={String(previousSnapshot.score)} />
+              <SnapshotField label="Last Submitted" value={previousSnapshot.date} />
+              <SnapshotField label="Repeated Gap" value="Garden Doors" />
+              <SnapshotField label="Top Opportunity" value="Weed and Feed Endcap" />
+            </div>
+            <div className="mt-4 space-y-1.5">
+              <p className="text-[12px] text-on-surface-variant leading-snug">{previousSnapshot.gap}</p>
+              <p className="text-[12px] text-on-surface-variant leading-snug">{previousSnapshot.opportunity}</p>
+            </div>
+          </div>
         </div>
 
         <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
           <div className="px-4 py-3 border-b border-outline">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Scorecard Flow</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Today’s Focus</p>
           </div>
-          <div className="divide-y divide-outline">
-            {scorecardSections.map((section, index) => {
-              const state = getStepState(section.id, app)
-              return (
-                <div key={section.id} className="flex items-start gap-3 px-4 py-3">
-                  <div className={`mt-0.5 h-7 w-7 rounded-md border flex items-center justify-center ${iconTone(state)}`}>
-                    {stepIcon(state)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-[13px] font-semibold text-on-surface">
-                        {index + 1}. {section.title}
-                      </p>
-                      <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${stepTone(state)}`}>
-                        {stepLabel(state)}
-                      </span>
+          <div className="px-4 py-3 space-y-2">
+            <p className="text-[12px] text-on-surface-variant">Repeated gap: {previousSnapshot.gap}</p>
+            <p className="text-[12px] text-on-surface-variant">Top opportunity: {previousSnapshot.opportunity}</p>
+            <p className="text-[12px] text-on-surface-variant">Priority section: {prioritySection}</p>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
+          <div className="px-4 py-3 border-b border-outline flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Trend</p>
+              <p className="text-[13px] font-semibold text-on-surface mt-1">Score trend</p>
+            </div>
+            <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${trendDelta >= 0 ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : 'border-[#dde3ea] bg-[#f4f6f9] text-[#52606d]'}`}>
+              {trendDelta >= 0 ? 'Improving' : 'Below Last'}
+            </span>
+          </div>
+          <div className="px-4 py-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[12px] text-on-surface-variant">Last score {previousSnapshot.score}</p>
+              <p className="text-[12px] text-on-surface-variant mt-1">Current score {totalScore}</p>
+            </div>
+            <div className={`inline-flex items-center gap-1 rounded-md border px-3 py-2 text-[12px] font-semibold ${trendDelta >= 0 ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : 'border-[#dde3ea] bg-[#f4f6f9] text-[#52606d]'}`}>
+              <TrendingUp size={13} />
+              {trendDelta >= 0 ? '+' : ''}{trendDelta} pts
+            </div>
+          </div>
+        </div>
+
+        {scorecardStatus !== 'not-started' && !submitted && (
+          <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
+            <div className="px-4 py-3 border-b border-outline">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Scorecard Flow</p>
+            </div>
+            <div className="divide-y divide-outline">
+              {scorecardSections.map((section, index) => {
+                const state = getStepState(section.id, app)
+                return (
+                  <div key={section.id} className="flex items-start gap-3 px-4 py-3">
+                    <div className={`mt-0.5 h-7 w-7 rounded-md border flex items-center justify-center ${iconTone(state)}`}>
+                      {stepIcon(state)}
                     </div>
-                    <p className="text-[12px] text-on-surface-variant mt-1">{section.description}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-[13px] font-semibold text-on-surface">
+                          {index + 1}. {section.title}
+                        </p>
+                        <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${stepTone(state)}`}>
+                          {stepLabel(state)}
+                        </span>
+                      </div>
+                      <p className="text-[12px] text-on-surface-variant mt-1">{section.description}</p>
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
-          <div className="px-4 py-3 border-b border-outline">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Quick Navigation</p>
+        {submitted && (
+          <div className="border border-[#cde8d3] bg-[#edf7ee] rounded-lg px-4 py-3">
+            <p className="text-[12px] font-semibold text-[#1f5f33]">Scorecard submitted from active visit.</p>
+            <p className="text-[12px] text-[#25523b] mt-1">Open Summary to review manager-facing actions, score snapshot, and post-submit sharing.</p>
           </div>
-          <div className="px-4 py-3 flex flex-wrap gap-2">
-            <QuickChip icon={<ClipboardCheck size={13} />} label="Checklist" onClick={() => navigate('/checklist')} />
-            <QuickChip icon={<Layers3 size={13} />} label="Off-Shelf" onClick={() => navigate('/off-shelf')} />
-            <QuickChip icon={<Image size={13} />} label="Photos" onClick={() => navigate('/photo')} />
-            <QuickChip icon={<BarChart3 size={13} />} label="Summary" onClick={() => navigate('/summary')} />
-          </div>
-        </div>
+        )}
 
-        <TrellisAskButton active={trellisEnabled} onClick={toggleTrellis} />
+        <TrellisAskButton
+          active={trellisEnabled}
+          onClick={toggleTrellis}
+          title="Before you start"
+          summary="This is Trellis as a lightweight field coach. It does not change the page, it just surfaces what matters now."
+          items={[
+            `Repeated gap: ${briefing.repeatedGap}`,
+            `Top opportunity: ${briefing.topOpportunity}`,
+            `Suggested focus: ${briefing.suggestedFocus}`,
+          ]}
+        />
       </div>
     </PhoneShell>
   )
 }
 
-function MetricCell({
-  label,
-  value,
-  tone = 'neutral',
-}: {
-  label: string
-  value: string
-  tone?: 'neutral' | 'success' | 'warning'
-}) {
+function SnapshotField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-outline bg-surface-lowest px-3 py-3">
+    <div>
       <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">{label}</p>
-      <p className={`mt-1 text-[14px] font-semibold ${
-        tone === 'success'
-          ? 'text-[#1f5f33]'
-          : tone === 'warning'
-            ? 'text-[#8e030f]'
-            : 'text-on-surface'
-      }`}>
-        {value}
-      </p>
+      <p className="mt-1 text-[14px] font-semibold text-on-surface">{value}</p>
     </div>
   )
 }
@@ -259,27 +283,6 @@ function ReadinessCell({ label, value }: { label: string; value: string }) {
       <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">{label}</p>
       <p className="text-[12px] font-semibold text-on-surface mt-1">{value}</p>
     </div>
-  )
-}
-
-function QuickChip({
-  icon,
-  label,
-  onClick,
-}: {
-  icon: ReactNode
-  label: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-md border border-outline bg-[#f7f9fb] px-3 py-2 text-[12px] font-semibold text-on-surface"
-    >
-      {icon}
-      {label}
-    </button>
   )
 }
 

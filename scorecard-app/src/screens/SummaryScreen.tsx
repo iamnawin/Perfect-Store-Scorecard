@@ -190,17 +190,15 @@ export function SummaryScreen() {
             </p>
           </div>
 
-          {trellisEnabled && (
-            <TrellisSummaryCard
-              summary={summaryInsight.narrative}
-              highlights={[
-                { label: 'Main positive driver', value: summaryInsight.mainPositiveDriver, tone: 'success' },
-                { label: 'Biggest missed opportunity', value: summaryInsight.biggestMissedOpportunity, tone: 'warning' },
-                { label: 'Next visit focus', value: summaryInsight.nextVisitFocus },
-              ]}
-              footer="Trellis explains why the score changed, what still needs to be fixed, and where the next points will come from."
-            />
-          )}
+          <TrellisSummaryCard
+            summary={summaryInsight.narrative}
+            highlights={[
+              { label: 'Main positive driver', value: summaryInsight.mainPositiveDriver, tone: 'success' },
+              { label: 'Biggest missed opportunity', value: summaryInsight.biggestMissedOpportunity, tone: 'warning' },
+              { label: 'Next visit focus', value: summaryInsight.nextVisitFocus },
+            ]}
+            footer="Trellis explains why the score changed, what still needs to be fixed, and where the next points will come from."
+          />
 
           <InfoBlock title="Final Score Block" subtitle="Final score, component scores, and improvement against last visit.">
             <div className="grid grid-cols-2 gap-2">
@@ -315,7 +313,17 @@ export function SummaryScreen() {
             </div>
           </InfoBlock>
 
-          <TrellisAskButton active={trellisEnabled} onClick={toggleTrellis} />
+          <TrellisAskButton
+            active={trellisEnabled}
+            onClick={toggleTrellis}
+            title="Summary coach"
+            summary="Trellis is not changing the summary page. It is just giving the rep a quick AI-style interpretation of the visit."
+            items={[
+              `Driver: ${summaryInsight.mainPositiveDriver}`,
+              `Missed opportunity: ${summaryInsight.biggestMissedOpportunity}`,
+              `Next focus: ${summaryInsight.nextVisitFocus}`,
+            ]}
+          />
         </div>
       </div>
 

@@ -155,15 +155,13 @@ export function ChecklistScreen() {
         </div>
 
         <div className="px-4 py-3 space-y-3">
-          {trellisEnabled && (
-            <TrellisInsightCard
-              title={trellisInsight.title}
-              summary={trellisInsight.summary}
-              tone={trellisInsight.tone}
-              items={trellisInsight.items}
-              footer="Trellis reacts to live answers so missed checks convert into concrete recovery actions instead of static warnings."
-            />
-          )}
+          <TrellisInsightCard
+            title={trellisInsight.title}
+            summary={trellisInsight.summary}
+            tone={trellisInsight.tone}
+            items={trellisInsight.items}
+            footer="Trellis reacts to live answers so missed checks convert into concrete recovery actions instead of static warnings."
+          />
 
           {groups.map(group => (
             <div key={group.id} className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
@@ -219,7 +217,17 @@ export function ChecklistScreen() {
             </div>
           ))}
 
-          <TrellisAskButton active={trellisEnabled} onClick={toggleTrellis} />
+          <TrellisAskButton
+            active={trellisEnabled}
+            onClick={toggleTrellis}
+            title="Checklist coach"
+            summary="Trellis can clarify what matters on this screen without reworking the page layout."
+            items={[
+              trellisInsight.summary,
+              'If a high-impact check fails, Trellis will suggest the best recovery move.',
+              'Use the question-level Trellis card as the immediate action guide.',
+            ]}
+          />
         </div>
       </div>
 

@@ -349,22 +349,27 @@ export function OffShelfScreen() {
             </div>
           </SectionCard>
 
-          {trellisEnabled && (
-            <TrellisInsightCard
-              title={trellisRecommendation.title}
-              summary={trellisRecommendation.supportingText}
-              badge="TRELLIS RECOMMENDATION"
-              tone={trellisRecommendation.tone}
-              metrics={[
-                { label: 'Impact', value: trellisRecommendation.impactLabel },
-                { label: 'LGOR', value: trellisRecommendation.lgorLabel },
-              ]}
-              items={[
-                { label: 'Suggested Next Move', value: trellisRecommendation.suggestedNextMove, tone: 'success' },
-              ]}
-              footer="Trellis is optimizing this off-shelf entry using store-specific point upside, preferred locations, and remaining opportunity."
-            />
-          )}
+          <SectionCard title="Incremental Summary" subtitle="Displays are counted automatically as you add them.">
+            <div className="grid grid-cols-2 gap-2">
+              <ScoreCell label="Total Displays Added" value={String(offShelf.length)} tone="neutral" />
+              <ScoreCell label="Total Incremental Contribution" value={`+${currentIncremental.toFixed(1)} pts`} tone="positive" />
+            </div>
+          </SectionCard>
+
+          <TrellisInsightCard
+            title={trellisRecommendation.title}
+            summary={trellisRecommendation.supportingText}
+            badge="TRELLIS RECOMMENDATION"
+            tone={trellisRecommendation.tone}
+            metrics={[
+              { label: 'Impact', value: trellisRecommendation.impactLabel },
+              { label: 'LGOR', value: trellisRecommendation.lgorLabel },
+            ]}
+            items={[
+              { label: 'Suggested Next Move', value: trellisRecommendation.suggestedNextMove, tone: 'success' },
+            ]}
+            footer="Trellis is optimizing this off-shelf entry using store-specific point upside, preferred locations, and remaining opportunity."
+          />
 
           <SectionCard
             title={editingId ? 'Edit Off-Shelf Display' : 'Add Off-Shelf Display'}
@@ -549,6 +554,34 @@ export function OffShelfScreen() {
             />
           </SectionCard>
 
+          <SectionCard title="Live Impact Panel" subtitle="Real-time score feedback from the current entry.">
+            {draftImpact && selectedProduct ? (
+              <div className="space-y-2.5">
+                <div className="rounded-lg border border-[#c9d8ea] bg-[#edf4ff] px-3 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">Impact Preview</p>
+                  <div className="mt-3 space-y-2">
+                    <PreviewRow label="Location" value={draft.location} />
+                    <PreviewRow label="SKU" value={selectedProduct.name} />
+                    <PreviewRow label="Quantity" value={quantityLabel || String(draft.quantity)} />
+                    <PreviewRow label="LGOR Contribution" value={`+${draftImpact.estimatedLgor}%`} positive />
+                    <PreviewRow label="Score Impact" value={`+${draftImpact.impactPoints} pts`} positive />
+                    <PreviewRow label="Projected Score" value={projectedScore.toFixed(1)} positive />
+                  </div>
+                </div>
+                <ImpactRow label="Selected SKU + location" value={`${selectedProduct.name} • ${draft.location}`} />
+                <ImpactRow label="Quantity" value={`${draft.quantity}`} />
+                <ImpactRow label="Estimated LGOR Lift" value={`+${draftImpact.estimatedLgor}%`} positive />
+                <ImpactRow label="Points Added" value={`+${draftImpact.impactPoints} pts`} positive />
+                <ImpactRow label="Multiplier Applied" value={`${draftImpact.multiplier.toFixed(2)}x • ${draftImpact.multiplierLabel}`} />
+                <ImpactRow label="Projected New Score" value={projectedScore.toFixed(1)} positive />
+              </div>
+            ) : (
+              <p className="text-[12px] text-on-surface-variant">
+                Select location, category, SKU, quantity, and classification to calculate projected score impact.
+              </p>
+            )}
+          </SectionCard>
+
           <SectionCard
             title="Top Opportunities for This Store"
             subtitle={`You can gain +${potentialAdditionalGain.toFixed(1)} points from the best remaining actions.`}
@@ -634,7 +667,17 @@ export function OffShelfScreen() {
             </div>
           </SectionCard>
 
-          <TrellisAskButton active={trellisEnabled} onClick={toggleTrellis} />
+          <TrellisAskButton
+            active={trellisEnabled}
+            onClick={toggleTrellis}
+            title="Off-shelf assistant"
+            summary="Trellis behaves like a floating coach here: it explains the likely score lift and the next best move."
+            items={[
+              `Impact now: ${trellisRecommendation.impactLabel}`,
+              `LGOR signal: ${trellisRecommendation.lgorLabel}`,
+              trellisRecommendation.suggestedNextMove,
+            ]}
+          />
         </div>
       </div>
 
@@ -891,6 +934,23 @@ function PreviewRow({
   return (
     <div className="flex items-center justify-between gap-3">
       <p className="text-[12px] text-[#014486]">{label}</p>
+      <p className={clsx('text-[12px] font-semibold', positive ? 'text-[#1f5f33]' : 'text-on-surface')}>{value}</p>
+    </div>
+  )
+}
+
+function ImpactRow({
+  label,
+  value,
+  positive = false,
+}: {
+  label: string
+  value: string
+  positive?: boolean
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-outline/80 pb-2 last:border-b-0 last:pb-0">
+      <p className="text-[12px] text-on-surface-variant">{label}</p>
       <p className={clsx('text-[12px] font-semibold', positive ? 'text-[#1f5f33]' : 'text-on-surface')}>{value}</p>
     </div>
   )

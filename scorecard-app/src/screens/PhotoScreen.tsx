@@ -84,15 +84,13 @@ export function PhotoScreen() {
             </div>
           )}
 
-          {trellisEnabled && (
-            <TrellisInsightCard
-              title={trellisInsight.title}
-              summary={trellisInsight.summary}
-              tone={trellisInsight.tone}
-              metrics={trellisInsight.metrics}
-              footer="Trellis uses this evidence set to explain score movement and manager accountability on the summary screen."
-            />
-          )}
+          <TrellisInsightCard
+            title={trellisInsight.title}
+            summary={trellisInsight.summary}
+            tone={trellisInsight.tone}
+            metrics={trellisInsight.metrics}
+            footer="Trellis uses this evidence set to explain score movement and manager accountability on the summary screen."
+          />
 
           {evidenceRequirements.map(requirement => {
             const evidenceItem = evidence[requirement.id]
@@ -211,7 +209,16 @@ export function PhotoScreen() {
             </div>
           </div>
 
-          <TrellisAskButton active={trellisEnabled} onClick={toggleTrellis} />
+          <TrellisAskButton
+            active={trellisEnabled}
+            onClick={toggleTrellis}
+            title="Evidence coach"
+            summary="Trellis is a compact assistant here. It highlights what proof is still missing and why it matters."
+            items={[
+              trellisInsight.summary,
+              'Required photos protect accountability and explain score movement later.',
+            ]}
+          />
         </div>
       </div>
 

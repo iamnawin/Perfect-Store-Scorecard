@@ -81,6 +81,23 @@ interface TrellisSummaryCardProps {
   }>
 }
 
+interface LegacyTrellisBotProps {
+  title: string
+  insight: string
+  prompts?: string[]
+}
+
+export function TrellisBot({ title, insight, prompts = [] }: LegacyTrellisBotProps) {
+  return (
+    <TrellisInsightCard
+      title={title}
+      summary={insight}
+      items={prompts.slice(0, 2).map(prompt => ({ label: 'Prompt', value: prompt }))}
+      footer={prompts.length > 2 ? prompts.slice(2).join(' | ') : undefined}
+    />
+  )
+}
+
 export function TrellisInsightCard({
   title,
   summary,
@@ -223,12 +240,43 @@ export function TrellisSummaryCard({
 export function TrellisAskButton({
   active,
   onClick,
+  title,
+  summary,
+  items = [],
 }: {
   active: boolean
   onClick: () => void
+  title?: string
+  summary?: string
+  items?: string[]
 }) {
   return (
     <div className="sticky bottom-4 z-20 flex justify-end pr-1">
+      <div className="relative">
+        {active && (title || summary || items.length > 0) && (
+          <div className="absolute bottom-14 right-0 w-[280px] rounded-2xl border border-[#c9d8ea] bg-white p-3 shadow-[0_20px_40px_rgba(15,23,42,0.2)]">
+            <div className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[linear-gradient(90deg,#0b5cab,#0176d3)] text-white">
+                <Bot size={14} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Trellis Live</p>
+                {title && <p className="text-[13px] font-semibold text-on-surface">{title}</p>}
+              </div>
+            </div>
+            {summary && <p className="mt-2 text-[12px] leading-snug text-on-surface-variant">{summary}</p>}
+            {items.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {items.map(item => (
+                  <div key={item} className="rounded-lg border border-outline bg-[#f7f9fb] px-3 py-2 text-[12px] text-on-surface">
+                    {item}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
       <button
         type="button"
         onClick={onClick}
@@ -244,6 +292,7 @@ export function TrellisAskButton({
         </span>
         {active ? 'Trellis Active' : 'Ask Trellis'}
       </button>
+      </div>
     </div>
   )
 }
