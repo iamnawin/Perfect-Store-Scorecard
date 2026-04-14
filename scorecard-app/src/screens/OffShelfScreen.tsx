@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
-import { TrellisAskButton, TrellisInsightCard } from '../components/TrellisBot'
+import { TrellisInsightCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
 import {
   offShelfCategories,
@@ -88,8 +88,7 @@ export function OffShelfScreen() {
     totalChecks,
     totalSections,
     lastSavedAt,
-    trellisEnabled,
-    toggleTrellis,
+    agentforceEnabled,
   } = app
 
   const [draft, setDraft] = useState<DraftState>(createEmptyDraft())
@@ -109,8 +108,8 @@ export function OffShelfScreen() {
       return `${product.name} ${product.subtitle}`.toLowerCase().includes(query)
     })
     .sort((left, right) => {
-      const leftRecommended = draft.location && left.recommendedLocations.includes(draft.location) ? 1 : 0
-      const rightRecommended = draft.location && right.recommendedLocations.includes(draft.location) ? 1 : 0
+      const leftRecommended = agentforceEnabled && draft.location && left.recommendedLocations.includes(draft.location) ? 1 : 0
+      const rightRecommended = agentforceEnabled && draft.location && right.recommendedLocations.includes(draft.location) ? 1 : 0
       if (leftRecommended !== rightRecommended) return rightRecommended - leftRecommended
       return right.basePoints - left.basePoints
     })
@@ -341,11 +340,13 @@ export function OffShelfScreen() {
               <ScoreCell label="Current Score" value={projectedScore.toFixed(1)} tone="neutral" />
               <ScoreCell label="Base Plan" value="100.0" tone="neutral" />
               <ScoreCell label="Incremental Off-Shelf" value={`+${liveIncremental.toFixed(1)}`} tone="positive" />
-              <InsightCell
-                label="You Can Gain"
-                value={`+${potentialAdditionalGain.toFixed(1)} pts`}
-                lines={remainingRecommendations.slice(0, 3).map(item => `Add ${item.location} display | +${item.potentialPoints.toFixed(1)} pts`)}
-              />
+              {agentforceEnabled && (
+                <InsightCell
+                  label="You Can Gain"
+                  value={`+${potentialAdditionalGain.toFixed(1)} pts`}
+                  lines={remainingRecommendations.slice(0, 3).map(item => `Add ${item.location} display | +${item.potentialPoints.toFixed(1)} pts`)}
+                />
+              )}
             </div>
           </SectionCard>
 
@@ -356,20 +357,22 @@ export function OffShelfScreen() {
             </div>
           </SectionCard>
 
-          <TrellisInsightCard
-            title={trellisRecommendation.title}
-            summary={trellisRecommendation.supportingText}
-            badge="TRELLIS RECOMMENDATION"
-            tone={trellisRecommendation.tone}
-            metrics={[
-              { label: 'Impact', value: trellisRecommendation.impactLabel },
-              { label: 'LGOR', value: trellisRecommendation.lgorLabel },
-            ]}
-            items={[
-              { label: 'Suggested Next Move', value: trellisRecommendation.suggestedNextMove, tone: 'success' },
-            ]}
-            footer="Trellis is optimizing this off-shelf entry using store-specific point upside, preferred locations, and remaining opportunity."
-          />
+          {agentforceEnabled && (
+            <TrellisInsightCard
+              title={trellisRecommendation.title}
+              summary={trellisRecommendation.supportingText}
+              badge="Agentforce Recommendation"
+              tone={trellisRecommendation.tone}
+              metrics={[
+                { label: 'Impact', value: trellisRecommendation.impactLabel },
+                { label: 'LGOR', value: trellisRecommendation.lgorLabel },
+              ]}
+              items={[
+                { label: 'Suggested Next Move', value: trellisRecommendation.suggestedNextMove, tone: 'success' },
+              ]}
+              footer="Agentforce ranks the best next display using mock store history, score upside, and preferred placements."
+            />
+          )}
 
           <SectionCard
             title={editingId ? 'Edit Off-Shelf Display' : 'Add Off-Shelf Display'}
@@ -417,7 +420,7 @@ export function OffShelfScreen() {
             </div>
             <div className="space-y-2">
               {filteredProducts.slice(0, 4).map(product => {
-                const recommended = draft.location && product.recommendedLocations.includes(draft.location)
+                const recommended = agentforceEnabled && draft.location && product.recommendedLocations.includes(draft.location)
                 return (
                   <button
                     key={product.id}
@@ -582,39 +585,41 @@ export function OffShelfScreen() {
             )}
           </SectionCard>
 
-          <SectionCard
-            title="Top Opportunities for This Store"
-            subtitle={`You can gain +${potentialAdditionalGain.toFixed(1)} points from the best remaining actions.`}
-            open={showRecommendations}
-            onToggle={() => setShowRecommendations(prev => !prev)}
-            utility={(
-              <div className="inline-flex items-center gap-1 rounded-md border border-[#c9d8ea] bg-[#edf4ff] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
-                <Sparkles size={11} />
-                Prior-year informed
-              </div>
-            )}
-          >
-            <div className="space-y-2">
-              {remainingRecommendations.map(item => (
-                <div key={`${item.skuId}:${item.location}`} className="flex items-start justify-between gap-3 rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
-                  <div>
-                    <p className="text-[13px] font-semibold text-on-surface">
-                      {item.product?.name} to {item.location}
-                    </p>
-                    <p className="mt-1 text-[11px] text-on-surface-variant">{item.rationale}</p>
-                    <p className="mt-1 text-[11px] font-medium text-[#1f5f33]">Add {item.location} display to gain +{item.potentialPoints.toFixed(1)} pts</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => applyRecommendation(item)}
-                    className="rounded-md bg-primary px-3 py-1.5 text-[11px] font-semibold text-white"
-                  >
-                    Add
-                  </button>
+          {agentforceEnabled && (
+            <SectionCard
+              title="Top Opportunities for This Store"
+              subtitle={`You can gain +${potentialAdditionalGain.toFixed(1)} points from the best remaining actions.`}
+              open={showRecommendations}
+              onToggle={() => setShowRecommendations(prev => !prev)}
+              utility={(
+                <div className="inline-flex items-center gap-1 rounded-md border border-[#c9d8ea] bg-[#edf4ff] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
+                  <Sparkles size={11} />
+                  Agentforce ranked
                 </div>
-              ))}
-            </div>
-          </SectionCard>
+              )}
+            >
+              <div className="space-y-2">
+                {remainingRecommendations.map(item => (
+                  <div key={`${item.skuId}:${item.location}`} className="flex items-start justify-between gap-3 rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
+                    <div>
+                      <p className="text-[13px] font-semibold text-on-surface">
+                        {item.product?.name} to {item.location}
+                      </p>
+                      <p className="mt-1 text-[11px] text-on-surface-variant">{item.rationale}</p>
+                      <p className="mt-1 text-[11px] font-medium text-[#1f5f33]">Add {item.location} display to gain +{item.potentialPoints.toFixed(1)} pts</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => applyRecommendation(item)}
+                      className="rounded-md bg-primary px-3 py-1.5 text-[11px] font-semibold text-white"
+                    >
+                      Add
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+          )}
 
           <SectionCard
             title="Added in This Visit"
@@ -667,17 +672,6 @@ export function OffShelfScreen() {
             </div>
           </SectionCard>
 
-          <TrellisAskButton
-            active={trellisEnabled}
-            onClick={toggleTrellis}
-            title="Off-shelf assistant"
-            summary="Trellis behaves like a floating coach here: it explains the likely score lift and the next best move."
-            items={[
-              `Impact now: ${trellisRecommendation.impactLabel}`,
-              `LGOR signal: ${trellisRecommendation.lgorLabel}`,
-              trellisRecommendation.suggestedNextMove,
-            ]}
-          />
         </div>
       </div>
 

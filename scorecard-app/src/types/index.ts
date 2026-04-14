@@ -170,5 +170,5 @@ export interface AppState {
   shelfResetNeeded: boolean
   lastSavedAt: string | null
   submitted: boolean
-  trellisEnabled: boolean
+  agentforceEnabled: boolean
 }

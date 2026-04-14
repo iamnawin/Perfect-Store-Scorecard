@@ -4,7 +4,7 @@ import { AlertTriangle, Camera, CheckCircle2, FileText, Flag, Image, RotateCcw }
 import { BottomActionBar } from '../components/BottomActionBar'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
-import { TrellisAskButton, TrellisInsightCard } from '../components/TrellisBot'
+import { TrellisInsightCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
 import { evidenceRequirements, scorecardSections, store } from '../data/mock'
 import { getLinkedQuestionTitles, getMissingRequiredEvidence } from '../lib/scorecard'
@@ -30,8 +30,7 @@ export function PhotoScreen() {
     totalSections,
     lastSavedAt,
     saveDraft,
-    trellisEnabled,
-    toggleTrellis,
+    agentforceEnabled,
   } = app
 
   const missingEvidence = getMissingRequiredEvidence(evidence, offShelf)
@@ -48,7 +47,15 @@ export function PhotoScreen() {
     shelfResetNeeded,
     lastSavedAt,
     submitted: false,
-    trellisEnabled,
+    agentforceEnabled,
+  })
+  const agentforceDraft = buildAgentforceDraft({
+    missingEvidenceCount: missingEvidence.length,
+    missingTitle: missingEvidence[0]?.title,
+    offShelfCount: offShelf.length,
+    notes,
+    revisitRequired,
+    shelfResetNeeded,
   })
 
   return (
@@ -84,13 +91,16 @@ export function PhotoScreen() {
             </div>
           )}
 
-          <TrellisInsightCard
-            title={trellisInsight.title}
-            summary={trellisInsight.summary}
-            tone={trellisInsight.tone}
-            metrics={trellisInsight.metrics}
-            footer="Trellis uses this evidence set to explain score movement and manager accountability on the summary screen."
-          />
+          {agentforceEnabled && (
+            <TrellisInsightCard
+              badge="Agentforce Draft"
+              title="Suggested visit note"
+              summary={agentforceDraft}
+              tone={trellisInsight.tone}
+              metrics={trellisInsight.metrics}
+              footer="Agentforce turns the captured proof into a manager-ready visit note using mock local logic only."
+            />
+          )}
 
           {evidenceRequirements.map(requirement => {
             const evidenceItem = evidence[requirement.id]
@@ -208,17 +218,6 @@ export function PhotoScreen() {
               </div>
             </div>
           </div>
-
-          <TrellisAskButton
-            active={trellisEnabled}
-            onClick={toggleTrellis}
-            title="Evidence coach"
-            summary="Trellis is a compact assistant here. It highlights what proof is still missing and why it matters."
-            items={[
-              trellisInsight.summary,
-              'Required photos protect accountability and explain score movement later.',
-            ]}
-          />
         </div>
       </div>
 
@@ -231,6 +230,41 @@ export function PhotoScreen() {
       />
     </PhoneShell>
   )
+}
+
+function buildAgentforceDraft({
+  missingEvidenceCount,
+  missingTitle,
+  offShelfCount,
+  notes,
+  revisitRequired,
+  shelfResetNeeded,
+}: {
+  missingEvidenceCount: number
+  missingTitle?: string
+  offShelfCount: number
+  notes: string
+  revisitRequired: boolean
+  shelfResetNeeded: boolean
+}) {
+  const noteSeed = notes.trim()
+
+  if (missingEvidenceCount > 0) {
+    return `Capture ${missingTitle ?? 'required evidence'} before closing the visit. ${offShelfCount > 0 ? `${offShelfCount} incremental display record${offShelfCount > 1 ? 's are' : ' is'} already attached for review.` : 'No incremental display records have been attached yet.'}`
+  }
+
+  const statusLine = offShelfCount > 0
+    ? `${offShelfCount} incremental display record${offShelfCount > 1 ? 's' : ''} captured with required proof complete.`
+    : 'Required base-plan evidence is complete for this visit.'
+  const followUpLine = revisitRequired
+    ? 'Follow-up visit remains flagged.'
+    : shelfResetNeeded
+      ? 'Shelf reset remains flagged before the next visit.'
+      : 'No follow-up flag is currently set.'
+
+  return noteSeed
+    ? `${noteSeed} ${statusLine} ${followUpLine}`
+    : `${statusLine} ${followUpLine}`
 }
 
 function Toggle({

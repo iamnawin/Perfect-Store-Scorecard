@@ -6,7 +6,6 @@ import { BottomActionBar } from '../components/BottomActionBar'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
 import {
-  TrellisAskButton,
   TrellisInsightCard,
   TrellisSuggestionCard,
 } from '../components/TrellisBot'
@@ -65,8 +64,7 @@ export function ChecklistScreen() {
     totalChecks,
     saveDraft,
     lastSavedAt,
-    trellisEnabled,
-    toggleTrellis,
+    agentforceEnabled,
   } = app
 
   const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({})
@@ -155,13 +153,16 @@ export function ChecklistScreen() {
         </div>
 
         <div className="px-4 py-3 space-y-3">
-          <TrellisInsightCard
-            title={trellisInsight.title}
-            summary={trellisInsight.summary}
-            tone={trellisInsight.tone}
-            items={trellisInsight.items}
-            footer="Trellis reacts to live answers so missed checks convert into concrete recovery actions instead of static warnings."
-          />
+          {agentforceEnabled && (
+            <TrellisInsightCard
+              badge="Agentforce Guidance"
+              title={trellisInsight.title}
+              summary={trellisInsight.summary}
+              tone={trellisInsight.tone}
+              items={trellisInsight.items}
+              footer="Agentforce translates live checklist answers into the most useful recovery focus for the current aisle."
+            />
+          )}
 
           {groups.map(group => (
             <div key={group.id} className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
@@ -191,6 +192,7 @@ export function ChecklistScreen() {
                     evidence={evidence}
                     offShelfCount={offShelf.length}
                     projectedTotalScore={projectedTotalScore}
+                    agentforceEnabled={agentforceEnabled}
                     onAnswer={(value) => setChecklistAnswer(question.id, value)}
                     onToggleNote={() => toggleNote(question.id)}
                     onToggleEvidence={() => toggleEvidence(question.id)}
@@ -216,18 +218,6 @@ export function ChecklistScreen() {
               </div>
             </div>
           ))}
-
-          <TrellisAskButton
-            active={trellisEnabled}
-            onClick={toggleTrellis}
-            title="Checklist coach"
-            summary="Trellis can clarify what matters on this screen without reworking the page layout."
-            items={[
-              trellisInsight.summary,
-              'If a high-impact check fails, Trellis will suggest the best recovery move.',
-              'Use the question-level Trellis card as the immediate action guide.',
-            ]}
-          />
         </div>
       </div>
 
@@ -252,6 +242,7 @@ function QuestionCard({
   evidence,
   offShelfCount,
   projectedTotalScore,
+  agentforceEnabled,
   onAnswer,
   onToggleNote,
   onToggleEvidence,
@@ -271,6 +262,7 @@ function QuestionCard({
   evidence: Record<string, { captured: boolean; note: string; photoName: string; photoPreviewUrl: string }>
   offShelfCount: number
   projectedTotalScore: number
+  agentforceEnabled: boolean
   onAnswer: (value: ChecklistAnswer) => void
   onToggleNote: () => void
   onToggleEvidence: () => void
@@ -300,7 +292,7 @@ function QuestionCard({
       : answer === 'na'
         ? 'Marked N/A | excluded from score impact'
         : 'Awaiting response'
-  const trellisSuggestion = getChecklistSuggestion(question, answer)
+  const trellisSuggestion = agentforceEnabled ? getChecklistSuggestion(question, answer) : null
 
   return (
     <div className="relative overflow-hidden bg-surface-lowest">
@@ -376,6 +368,7 @@ function QuestionCard({
         {trellisSuggestion && (
           <div className="mt-3">
             <TrellisSuggestionCard
+              title="Agentforce Recommendation"
               issue={trellisSuggestion.issue}
               impactLabel={trellisSuggestion.impactLabel}
               suggestedFix={trellisSuggestion.suggestedFix}

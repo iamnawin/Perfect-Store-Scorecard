@@ -2,11 +2,10 @@ import { useNavigate } from 'react-router-dom'
 import { CheckCircle2, ChevronRight, CircleDot, ClipboardCheck, LockKeyhole, TrendingUp } from 'lucide-react'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
-import { TrellisAskButton, TrellisInsightCard } from '../components/TrellisBot'
+import { TrellisInsightCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
 import { previousSnapshot, scorecardSections, store } from '../data/mock'
 import { getCurrentSection, getCurrentSectionNumber, getStepState } from '../lib/scorecard'
-import { getEntryVisitBriefing } from '../lib/trellis'
 
 export function EntryScreen() {
   const navigate = useNavigate()
@@ -20,14 +19,12 @@ export function EntryScreen() {
     scorecardStatus,
     totalScore,
     submitted,
-    trellisEnabled,
-    toggleTrellis,
+    agentforceEnabled,
   } = app
 
   const currentSection = getCurrentSection(app)
   const currentSectionNumber = getCurrentSectionNumber(app)
   const trendDelta = totalScore - previousSnapshot.score
-  const briefing = getEntryVisitBriefing(app)
   const shouldShowProgressCard = scorecardStatus === 'in-progress' || scorecardStatus === 'ready-for-review' || submitted
 
   const ctaRoute = scorecardStatus === 'ready-for-review' || scorecardStatus === 'completed'
@@ -73,14 +70,18 @@ export function EntryScreen() {
           <p className="text-[11px] font-medium text-on-surface-variant">{store.scorecard}</p>
         </div>
 
-        <TrellisInsightCard
-          title="What matters now"
-          items={[
-            { label: 'Repeated Gap', value: 'Garden Door missing for 2 visits', tone: 'warning' },
-            { label: 'Top Opportunity', value: 'Scotts Turf Builder 20 lb at Endcap (+12 pts)', tone: 'success' },
-            { label: 'Suggested Focus', value: 'Fix Garden Door first, then add incremental displays' },
-          ]}
-        />
+        {agentforceEnabled && (
+          <TrellisInsightCard
+            badge="Agentforce Insight"
+            title="What matters now"
+            summary="Agentforce is reading prior visit history and current score state to point the rep at the fastest recovery path."
+            items={[
+              { label: 'Repeated Gap', value: 'Garden Door missing for 2 visits', tone: 'warning' },
+              { label: 'Top Opportunity', value: 'Scotts Turf Builder 20 lb at Endcap (+12 pts)', tone: 'success' },
+              { label: 'Suggested Focus', value: 'Fix Garden Door first, then add incremental displays' },
+            ]}
+          />
+        )}
 
         <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
           <div className="px-4 py-3 border-b border-outline flex items-start justify-between gap-3">
@@ -137,10 +138,6 @@ export function EntryScreen() {
                 <SnapshotField label="Last Submitted" value={previousSnapshot.date} />
                 <SnapshotField label="Repeated Gap" value="Garden Doors" />
                 <SnapshotField label="Top Opportunity" value="Weed and Feed Endcap" />
-              </div>
-              <div className="mt-4 space-y-1.5">
-                <p className="text-[12px] text-on-surface-variant leading-snug">Garden Doors gap repeated two visits.</p>
-                <p className="text-[12px] text-on-surface-variant leading-snug">Fixing this can recover ~10 pts.</p>
               </div>
             </div>
           </div>
@@ -207,18 +204,6 @@ export function EntryScreen() {
             <p className="text-[12px] text-[#25523b] mt-1">Open Summary to review manager-facing actions, score snapshot, and post-submit sharing.</p>
           </div>
         )}
-
-        <TrellisAskButton
-          active={trellisEnabled}
-          onClick={toggleTrellis}
-          title="Before you start"
-          summary="This is Trellis as a lightweight field coach. It does not change the page, it just surfaces what matters now."
-          items={[
-            `Repeated gap: ${briefing.repeatedGap}`,
-            `Top opportunity: ${briefing.topOpportunity}`,
-            `Suggested focus: ${briefing.suggestedFocus}`,
-          ]}
-        />
       </div>
     </PhoneShell>
   )

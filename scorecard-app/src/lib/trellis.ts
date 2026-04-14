@@ -38,14 +38,14 @@ const suggestionConfig: Record<string, SuggestionConfig> = {
   endcap: {
     fix: 'Add Turf Builder display near the front entrance to recover premium feature visibility.',
     estimatedGain: 10,
-    supportingText: 'Endcap is a top-weighted display, so Trellis routes the rep directly into off-shelf capture.',
+    supportingText: 'Endcap is a top-weighted display, so Agentforce routes the rep directly into off-shelf capture.',
     route: '/off-shelf',
     actionLabel: 'Add Off-Shelf Display',
   },
   'garden-doors': {
     fix: 'Build a Garden Door stack with Potting Mix or EZ Seed to close the repeated outdoor gap.',
     estimatedGain: 6,
-    supportingText: 'This store has missed Garden Door execution for consecutive visits, so Trellis keeps it prominent.',
+    supportingText: 'This store has missed Garden Door execution for consecutive visits, so Agentforce keeps it prominent.',
     route: '/off-shelf',
     actionLabel: 'Add Off-Shelf Display',
   },
@@ -148,7 +148,7 @@ export function getChecklistHeaderInsight(state: AppState) {
 
   if (failedHighImpact) {
     return {
-      title: 'Trellis is watching the highest-value misses',
+      title: 'Highest-value misses need attention first',
       summary: `${failedHighImpact.title} is dragging score and should be corrected before the rep leaves the aisle.`,
       tone: 'warning' as const,
       items: [
@@ -160,19 +160,19 @@ export function getChecklistHeaderInsight(state: AppState) {
 
   if (unansweredHighImpact) {
     return {
-      title: 'Trellis focus for this section',
+      title: 'Best focus for this section',
       summary: `Answer ${unansweredHighImpact.title} next. It is one of the highest-impact checks in the visit.`,
       tone: 'info' as const,
       items: [
         { label: 'Current objective', value: 'Protect base plan first, then recover score through secondary displays.' },
-        { label: 'Manager lens', value: 'Trellis will call out repeated display misses in the final summary if they remain open.' },
+        { label: 'Manager lens', value: 'Repeated display misses will stand out in the final summary if they remain open.' },
       ],
     }
   }
 
   return {
     title: 'Checklist is in a strong place',
-    summary: 'Continue capturing high-impact execution details so Trellis can explain the score change at submit.',
+    summary: 'Continue capturing high-impact execution details so the visit summary reflects the strongest wins and remaining gaps.',
     tone: 'success' as const,
     items: [
       { label: 'What is working', value: 'Completed checks are already feeding score impact and accountability logic.', tone: 'success' as const },
@@ -196,7 +196,7 @@ export function getChecklistSuggestion(question: ChecklistQuestion, answer: Chec
       intent: question.group === 'display' ? 'primary' : 'secondary',
     },
     route: config?.route ?? '/checklist',
-    supportingText: config?.supportingText ?? 'Trellis only surfaces actions that can materially change the visit outcome.',
+    supportingText: config?.supportingText ?? 'This action can materially change the visit outcome before submission.',
   }
 }
 
@@ -223,7 +223,7 @@ export function getOffShelfInsight({
       suggestedNextMove: topRemaining?.product
         ? `Start with ${topRemaining.product.name} at ${topRemaining.location}.`
         : 'Start with a Weed and Feed Fence Line display.',
-      supportingText: topRemaining?.rationale ?? 'Trellis ranks the next display based on store history and remaining point upside.',
+      supportingText: topRemaining?.rationale ?? 'Agentforce ranks the next display based on store history and remaining point upside.',
       tone: 'info',
     }
   }
@@ -247,8 +247,8 @@ export function getOffShelfInsight({
       title: 'This looks like base plan coverage',
       impactLabel: '+0 pts incremental',
       lgorLabel: `+${impact.estimatedLgor.toFixed(1)}% LGOR`,
-      suggestedNextMove: `If you can add a second display at ${secondaryLocation}, Trellis can unlock about +${nextMoveImpact} pts.`,
-      supportingText: 'Base plan entries protect execution credibility, but Trellis only credits incremental gain after the core set is covered.',
+      suggestedNextMove: `If you can add a second display at ${secondaryLocation}, Agentforce projects about +${nextMoveImpact} pts.`,
+      supportingText: 'Base plan entries protect execution credibility, but incremental gain only starts after the core set is covered.',
       tone: 'warning',
     }
   }
@@ -261,8 +261,8 @@ export function getOffShelfInsight({
     lgorLabel: `+${impact.estimatedLgor.toFixed(1)}% LGOR`,
     suggestedNextMove: `Add one more display near ${secondaryLocation} for about +${nextMoveImpact} pts.`,
     supportingText: product.recommendedLocations.includes(location)
-      ? `${location} is a Trellis-preferred location for ${product.name} in this banner.`
-      : `${product.name} still adds value here, but Trellis likes ${product.recommendedLocations.join(' or ')} even more.`,
+      ? `${location} is an Agentforce-preferred location for ${product.name} in this banner.`
+      : `${product.name} still adds value here, but Agentforce likes ${product.recommendedLocations.join(' or ')} even more.`,
     tone: product.recommendedLocations.includes(location) ? 'success' : 'info',
   }
 }
@@ -274,7 +274,7 @@ export function getPhotoInsight(state: AppState) {
 
   if (missingEvidence.length > 0) {
     return {
-      title: 'Trellis evidence watch',
+      title: 'Evidence watch',
       summary: `${missingEvidence[0]?.title} is still missing. Submission stays blocked until required proof is captured.`,
       tone: 'warning' as const,
       metrics: [
@@ -286,7 +286,7 @@ export function getPhotoInsight(state: AppState) {
 
   return {
     title: 'Evidence is ready for manager review',
-    summary: 'Required photo proof is in place, so Trellis can attribute the score change with confidence.',
+    summary: 'Required photo proof is in place, so the visit outcome can be reviewed with confidence.',
     tone: 'success' as const,
     metrics: [
       { label: 'Captured', value: `${capturedPhotos}/${requiredPhotoCount}` },
@@ -318,7 +318,7 @@ export function getSummaryInsight(state: AppState): TrellisSummaryInsight {
     nextVisitFocus,
     narrative: scoreDelta >= 0
       ? `You improved score by ${formatSigned(scoreDelta)}. ${capitalize(mainPositiveDriver)} created the biggest lift. The next unlock is ${biggestMissedOpportunity.toLowerCase()}.`
-      : `Score is down ${Math.abs(scoreDelta)} points. ${capitalize(biggestMissedOpportunity)} is the main drag, so Trellis is pushing ${nextVisitFocus.toLowerCase()}.`,
+      : `Score is down ${Math.abs(scoreDelta)} points. ${capitalize(biggestMissedOpportunity)} is the main drag, so the next visit should focus on ${nextVisitFocus.toLowerCase()}.`,
   }
 }
 
@@ -360,7 +360,7 @@ export function getSummaryRisks(state: AppState) {
   }
 
   if (risks.length === 0) {
-    risks.push({ label: 'Execution risk', value: 'No material Trellis risk flags remain', tone: 'success' as const })
+    risks.push({ label: 'Execution risk', value: 'No material risk flags remain', tone: 'success' as const })
   }
 
   return risks

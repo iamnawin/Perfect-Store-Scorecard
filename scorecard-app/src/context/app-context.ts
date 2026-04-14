@@ -17,7 +17,7 @@ export interface AppContextValue extends AppState {
   setShelfResetNeeded: (v: boolean) => void
   saveDraft: () => void
   submitScorecard: () => void
-  toggleTrellis: () => void
+  setAgentforceEnabled: (value: boolean) => void
   answeredChecks: number
   totalChecks: number
   totalSections: number

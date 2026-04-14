@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertTriangle,
@@ -8,15 +8,11 @@ import {
   Mail,
   Send,
   Share2,
-  Trophy,
 } from 'lucide-react'
 import { BottomActionBar } from '../components/BottomActionBar'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
-import {
-  TrellisAskButton,
-  TrellisSummaryCard,
-} from '../components/TrellisBot'
+import { TrellisSummaryCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
 import { checklistQuestions, previousSnapshot, scorecardSections, store } from '../data/mock'
 import {
@@ -26,11 +22,7 @@ import {
   getRemainingOffShelfRecommendations,
   parseOffShelfQuantity,
 } from '../lib/scorecard'
-import {
-  getLeaderboardPreview,
-  getSummaryInsight,
-  getSummaryKpis,
-} from '../lib/trellis'
+import { getSummaryInsight } from '../lib/trellis'
 
 export function SummaryScreen() {
   const navigate = useNavigate()
@@ -43,9 +35,9 @@ export function SummaryScreen() {
     notes,
     revisitRequired,
     shelfResetNeeded,
-    trellisEnabled,
-    toggleTrellis,
+    agentforceEnabled,
     totalScore,
+    executionScore,
     lgorPct,
     completionPercent,
     totalSections,
@@ -54,33 +46,41 @@ export function SummaryScreen() {
     submitScorecard,
     submitted,
   } = app
-  const [showLeaderboard, setShowLeaderboard] = useState(false)
 
   const basePlanScore = getChecklistBasePlanScore(checklist)
   const incrementalScore = getOffShelfIncrementalScore(offShelf)
-  const scoreDelta = totalScore - previousSnapshot.score
-  const summaryInsight = getSummaryInsight(app)
-  const kpis = getSummaryKpis(app)
   const missingEvidence = getMissingRequiredEvidence(evidence, offShelf)
-  const unansweredCount = Object.values(checklist).filter(answer => !answer).length
+  const unansweredCount = checklistQuestions.filter(question => !checklist[question.id]).length
   const sectionNumber = scorecardSections.findIndex(section => section.id === 'review-submit') + 1
-  const leaderboard = getLeaderboardPreview(totalScore)
-  const remainingRecommendations = getRemainingOffShelfRecommendations(offShelf)
-  const managerOutcome = getManagerOutcome({
-    checklist,
-    offShelf,
+  const scoreDelta = +(totalScore - previousSnapshot.score).toFixed(1)
+  const mapMisses = checklistQuestions.filter(question => question.group === 'map' && checklist[question.id] !== 'yes').length
+  const missingTopItems = checklistQuestions.filter(question => question.group === 'pog' && checklist[question.id] !== 'yes').length
+  const displayMisses = checklistQuestions.filter(question => question.group === 'display' && checklist[question.id] === 'no').length
+  const lightDisplays = offShelf.filter(entry => parseOffShelfQuantity(entry.quantity) < 80).length
+  const notEnough = displayMisses + lightDisplays
+  const emptyCalories = offShelf.filter(entry => entry.classification !== 'incremental').length
+  const riskValue = calculateRiskValue({
+    mapMisses,
+    missingTopItems,
+    notEnough,
+    emptyCalories,
     missingEvidenceCount: missingEvidence.length,
-    summaryInsight,
-    remainingRecommendations,
-    revisitRequired,
-    shelfResetNeeded,
   })
+  const previousLgorPct = +(Math.max(0, lgorPct - 1.3)).toFixed(1)
+  const previousRiskValue = Math.max(0, riskValue + (scoreDelta >= 0 ? 420 : -260))
+  const lgorDelta = +(lgorPct - previousLgorPct).toFixed(1)
+  const riskDelta = riskValue - previousRiskValue
+  const comparisonRepeatedGap = mapMisses > 0
+    ? `${mapMisses} MAP location${mapMisses > 1 ? 's' : ''} still unresolved`
+    : previousSnapshot.gap
+  const remainingRecommendations = getRemainingOffShelfRecommendations(offShelf)
+  const summaryInsight = getSummaryInsight(app)
   const blockerCards = [
     ...(missingEvidence.length > 0
       ? [{
           key: 'missing-evidence',
           title: `${missingEvidence.length} required photo${missingEvidence.length > 1 ? 's' : ''} missing`,
-          detail: 'Capture required proof before the summary can be sent to a manager.',
+          detail: 'Capture required proof before the visit summary can be submitted.',
           route: '/photo',
           actionLabel: 'Open Photo Evidence',
         }]
@@ -89,7 +89,7 @@ export function SummaryScreen() {
       ? [{
           key: 'unanswered-checks',
           title: `${unansweredCount} checklist question${unansweredCount > 1 ? 's' : ''} still unanswered`,
-          detail: 'Finish the checklist so Trellis can explain score movement with confidence.',
+          detail: 'Finish the checklist so the score summary reflects the full visit.',
           route: '/checklist',
           actionLabel: 'Return to Checklist',
         }]
@@ -97,8 +97,8 @@ export function SummaryScreen() {
     ...(!offShelfConfirmed && offShelf.length === 0
       ? [{
           key: 'off-shelf-review',
-          title: 'Off-Shelf Capture is not reviewed yet',
-          detail: 'Save at least one display or confirm there was no incremental opportunity.',
+          title: 'Off-shelf capture is not reviewed yet',
+          detail: 'Save at least one display or confirm that no incremental opportunity was found.',
           route: '/off-shelf',
           actionLabel: 'Open Off-Shelf',
         }]
@@ -108,40 +108,63 @@ export function SummaryScreen() {
     ? `Next required action: ${blockerCards[0]?.actionLabel}`
     : lastSavedAt
       ? `Draft saved at ${lastSavedAt}`
-      : 'Review Trellis outputs, then submit the visit when ready.'
+      : 'Review the visit summary and submit when ready.'
 
   function openEmailSnapshot() {
-    const briefTitle = `Visit Outcome & Next Actions - ${getShareStoreLabel(store.name, store.banner)}`
-    const subject = encodeURIComponent(briefTitle)
+    const subject = encodeURIComponent(`Store Scorecard Snapshot - ${store.name}`)
     const body = encodeURIComponent(buildShareText({
+      agentforceEnabled,
       totalScore,
+      executionScore,
+      basePlanScore,
+      incrementalScore,
       lgorPct,
-      leaderboard,
-      checklist,
-      offShelf,
-      managerOutcome,
+      riskValue,
+      mapMisses,
+      missingTopItems,
+      notEnough,
+      emptyCalories,
+      scoreDelta,
+      lgorDelta,
+      riskDelta,
+      comparisonRepeatedGap,
+      notes,
+      revisitRequired,
+      shelfResetNeeded,
       summaryInsight,
-      remainingRecommendations,
+      nextBestAction: buildNextBestAction(remainingRecommendations[0], summaryInsight.nextVisitFocus),
     }))
+
     window.open(`mailto:?subject=${subject}&body=${body}`, '_self')
   }
 
   async function shareToTeamFeed() {
     const shareText = buildShareText({
+      agentforceEnabled,
       totalScore,
+      executionScore,
+      basePlanScore,
+      incrementalScore,
       lgorPct,
-      leaderboard,
-      checklist,
-      offShelf,
-      managerOutcome,
+      riskValue,
+      mapMisses,
+      missingTopItems,
+      notEnough,
+      emptyCalories,
+      scoreDelta,
+      lgorDelta,
+      riskDelta,
+      comparisonRepeatedGap,
+      notes,
+      revisitRequired,
+      shelfResetNeeded,
       summaryInsight,
-      remainingRecommendations,
+      nextBestAction: buildNextBestAction(remainingRecommendations[0], summaryInsight.nextVisitFocus),
     })
-    const briefTitle = `Visit Outcome & Next Actions - ${getShareStoreLabel(store.name, store.banner)}`
 
     if (navigator.share) {
       await navigator.share({
-        title: briefTitle,
+        title: `Store Scorecard Snapshot - ${store.name}`,
         text: shareText,
       })
       return
@@ -149,7 +172,7 @@ export function SummaryScreen() {
 
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(shareText)
-      window.alert('Visit outcome summary copied. Paste it into Chatter.')
+      window.alert('Visit snapshot copied. Paste it into Chatter.')
       return
     }
 
@@ -190,9 +213,11 @@ export function SummaryScreen() {
           <div className="rounded-xl border border-[#c9d8ea] bg-[#f7fbff] px-4 py-4 shadow-[0_8px_22px_rgba(15,23,42,0.06)]">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">KPI Insight</p>
-                <p className="text-[22px] font-semibold text-on-surface mt-1">{totalScore}</p>
-                <p className="text-[12px] text-on-surface-variant mt-1">{scoreDelta >= 0 ? '+' : ''}{scoreDelta} pts vs last visit | {lgorPct.toFixed(1)}% LGOR</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Total Score</p>
+                <p className="text-[26px] font-semibold text-on-surface mt-1">{totalScore.toFixed(1)}</p>
+                <p className="text-[12px] text-on-surface-variant mt-1">
+                  {scoreDelta >= 0 ? '+' : ''}{scoreDelta.toFixed(1)} pts vs last submission
+                </p>
               </div>
               <div className={`rounded-lg border px-3 py-2 text-right ${
                 scoreDelta >= 0 ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'
@@ -201,120 +226,76 @@ export function SummaryScreen() {
                 <p className="text-[14px] font-semibold mt-1">{submitted ? 'Closed' : blockerCards.length === 0 ? 'Ready' : 'Action Needed'}</p>
               </div>
             </div>
-            <p className="mt-3 text-[12px] text-[#014486]">
-              Trellis is converting this visit into KPI insight, accountability, and next-step actions instead of a raw score dump.
-            </p>
           </div>
 
-          <TrellisSummaryCard
-            summary={summaryInsight.narrative}
-            highlights={[
-              { label: 'Main positive driver', value: summaryInsight.mainPositiveDriver, tone: 'success' },
-              { label: 'Biggest missed opportunity', value: summaryInsight.biggestMissedOpportunity, tone: 'warning' },
-              { label: 'Next visit focus', value: summaryInsight.nextVisitFocus },
-            ]}
-            footer="Trellis explains why the score changed, what still needs to be fixed, and where the next points will come from."
-          />
+          {agentforceEnabled && (
+            <TrellisSummaryCard
+              title="Agentforce Summary"
+              summary={summaryInsight.narrative}
+              highlights={[
+                { label: 'Main positive driver', value: summaryInsight.mainPositiveDriver, tone: 'success' },
+                { label: 'Top missed opportunity', value: summaryInsight.biggestMissedOpportunity, tone: 'warning' },
+                { label: 'Next best action', value: buildNextBestAction(remainingRecommendations[0], summaryInsight.nextVisitFocus) },
+              ]}
+              footer="Agentforce adds mock interpretation and next-step guidance on top of the same core scorecard summary."
+            />
+          )}
 
-          <InfoBlock title="Final Score Block" subtitle="Final score, component scores, and improvement against last visit.">
+          <InfoBlock title="Score Breakdown" subtitle="Lightning-style summary of this visit outcome.">
             <div className="grid grid-cols-2 gap-2">
-              <SummaryMetric label="Base Plan Score" value={basePlanScore.toFixed(1)} />
-              <SummaryMetric label="Incremental Score" value={`+${incrementalScore.toFixed(1)}`} tone="success" />
-              <SummaryMetric label="Final Score" value={totalScore.toFixed(1)} tone={scoreDelta >= 0 ? 'success' : 'warning'} />
-              <SummaryMetric label="Improvement vs Last" value={`${scoreDelta >= 0 ? '+' : ''}${scoreDelta} pts`} tone={scoreDelta >= 0 ? 'success' : 'warning'} />
+              <MetricTile label="Execution" value={`${executionScore}%`} />
+              <MetricTile label="Base Plan" value={basePlanScore.toFixed(1)} />
+              <MetricTile label="Above & Beyond" value={`+${incrementalScore.toFixed(1)}`} tone="success" />
+              <MetricTile label="LGOR %" value={`${lgorPct.toFixed(1)}%`} />
+              <MetricTile label="Risk $" value={formatCurrency(riskValue)} tone={riskValue > previousRiskValue ? 'warning' : 'neutral'} />
             </div>
           </InfoBlock>
 
-          <InfoBlock title="KPI Block" subtitle="Compact score breakdown aligned to the business view on slide 9.">
-            <div className="grid grid-cols-2 gap-2">
-              {kpis.map(item => (
-                <SummaryMetric key={item.label} label={item.label} value={item.value} />
-              ))}
-            </div>
-          </InfoBlock>
-
-          <InfoBlock title="Visit Outcome & Next Actions" subtitle="Manager-facing recap of execution, next actions, and follow-up flags.">
-            <div className="space-y-3">
-              <div className="rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
-                <p className="text-[12px] font-semibold text-on-surface">Execution Summary</p>
-                <div className="mt-2 space-y-2">
-                  {managerOutcome.executionSummary.map(item => (
-                    <ListRow
-                      key={item.text}
-                      icon={
-                        item.tone === 'warning'
-                          ? <AlertTriangle size={13} className="text-[#8b5d00]" />
-                          : <CheckCircle2 size={13} className="text-[#2e844a]" />
-                      }
-                      text={item.text}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
-                <p className="text-[12px] font-semibold text-on-surface">Next Actions</p>
-                <div className="mt-2 space-y-2">
-                  {managerOutcome.nextActions.map(action => (
-                    <ListRow key={action} icon={<ClipboardCheck size={13} className="text-primary" />} text={action} />
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <FlagCard
-                  title="Revisit Required"
-                  description="Flag this store for a follow-up visit."
-                  enabled={revisitRequired}
-                />
-                <FlagCard
-                  title="Shelf Reset Needed"
-                  description="Use when the planogram needs to be reset before the next visit."
-                  enabled={shelfResetNeeded}
-                />
-              </div>
-            </div>
-          </InfoBlock>
-
-          <InfoBlock title="Output Actions" subtitle="Manager handoff, team visibility, and leaderboard context from the visit summary.">
-            <div className="grid grid-cols-1 gap-2">
-              <ActionButton label="Send Email" icon={<Mail size={14} />} onClick={openEmailSnapshot} />
-              <ActionButton label="Post to Chatter" icon={<Share2 size={14} />} tone="secondary" onClick={() => { void shareToTeamFeed() }} />
-              <ActionButton
-                label="View Leaderboard"
-                icon={<Trophy size={14} />}
-                tone="secondary"
-                onClick={() => setShowLeaderboard(prev => !prev)}
+          <InfoBlock title="Current Gaps" subtitle="Business risks that still need attention from the field or next visit.">
+            <div className="space-y-2">
+              <GapRow
+                title="Missing MAP"
+                detail={mapMisses > 0 ? `${mapMisses} base plan location${mapMisses > 1 ? 's' : ''} not fully set.` : 'No MAP locations are currently missing.'}
+                value={mapMisses > 0 ? `${mapMisses} open` : 'Clear'}
+                tone={mapMisses > 0 ? 'warning' : 'success'}
+              />
+              <GapRow
+                title="Missing Top Items"
+                detail={missingTopItems > 0 ? `${missingTopItems} top-item or POG standard${missingTopItems > 1 ? 's are' : ' is'} still unresolved.` : 'Top item coverage is currently in place.'}
+                value={missingTopItems > 0 ? `${missingTopItems} open` : 'Clear'}
+                tone={missingTopItems > 0 ? 'warning' : 'success'}
+              />
+              <GapRow
+                title="Not Enough"
+                detail={notEnough > 0 ? `${notEnough} display or quantity signal${notEnough > 1 ? 's' : ''} still looks underbuilt.` : 'Display quantity looks healthy for this visit.'}
+                value={notEnough > 0 ? `${notEnough} flags` : 'Clear'}
+                tone={notEnough > 0 ? 'warning' : 'success'}
+              />
+              <GapRow
+                title="Empty Calories"
+                detail={emptyCalories > 0 ? `${emptyCalories} captured display${emptyCalories > 1 ? 's are' : ' is'} not counted as true incremental lift.` : 'All captured displays are contributing as incremental value.'}
+                value={emptyCalories > 0 ? `${emptyCalories} flagged` : 'Clear'}
+                tone={emptyCalories > 0 ? 'warning' : 'success'}
               />
             </div>
           </InfoBlock>
 
-          {showLeaderboard && (
-            <InfoBlock title="Leaderboard" subtitle="Mock district ranking with this visit injected into the current board.">
-              <div className="space-y-2">
-                {leaderboard.map(item => (
-                  <div key={`${item.rank}-${item.store}`} className="rounded-lg border border-outline bg-[#f7f9fb] px-3 py-2">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Rank {item.rank}</p>
-                        <p className="text-[13px] font-semibold text-on-surface mt-1">{item.store}</p>
-                        <p className="text-[11px] text-on-surface-variant mt-1">{item.rep}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[15px] font-semibold text-on-surface">{item.score}</p>
-                        <p className={`text-[11px] font-semibold mt-1 ${item.delta >= 0 ? 'text-[#1f5f33]' : 'text-[#8e030f]'}`}>
-                          {item.delta >= 0 ? '+' : ''}{item.delta} pts
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </InfoBlock>
-          )}
+          <InfoBlock title="Compared to Last Submission" subtitle="Historical business comparison without AI interpretation.">
+            <div className="grid grid-cols-2 gap-2">
+              <MetricTile label="Last Score" value={String(previousSnapshot.score)} />
+              <MetricTile label="Score Trend" value={`${scoreDelta >= 0 ? '+' : ''}${scoreDelta.toFixed(1)} pts`} tone={scoreDelta >= 0 ? 'success' : 'warning'} />
+              <MetricTile label="LGOR Trend" value={`${lgorDelta >= 0 ? '+' : ''}${lgorDelta.toFixed(1)}%`} tone={lgorDelta >= 0 ? 'success' : 'warning'} />
+              <MetricTile label="Risk Trend" value={formatCurrencyDelta(riskDelta)} tone={riskDelta <= 0 ? 'success' : 'warning'} />
+            </div>
+            <div className="mt-3 rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Repeated Gap</p>
+              <p className="mt-1 text-[13px] font-semibold text-on-surface">{comparisonRepeatedGap}</p>
+              <p className="mt-2 text-[12px] text-on-surface-variant">Last submitted {previousSnapshot.date} by {previousSnapshot.submittedBy}</p>
+            </div>
+          </InfoBlock>
 
           {(notes || revisitRequired || shelfResetNeeded) && (
-            <InfoBlock title="Visit Flags" subtitle="Field context Trellis will include in the handoff narrative.">
+            <InfoBlock title="Visit Flags" subtitle="Field notes and follow-up markers captured during this visit.">
               <div className="space-y-2">
                 {notes && <ListRow icon={<ClipboardCheck size={13} className="text-primary" />} text={`Field note: ${notes}`} />}
                 {revisitRequired && <ListRow icon={<Flag size={13} className="text-[#8b5d00]" />} text="Revisit Required is flagged for this store." />}
@@ -322,6 +303,18 @@ export function SummaryScreen() {
               </div>
             </InfoBlock>
           )}
+
+          <InfoBlock title="Submission Actions" subtitle="Share or submit the visit summary from the field.">
+            <div className="grid grid-cols-1 gap-2">
+              <ActionButton label="Email Snapshot" icon={<Mail size={14} />} tone="secondary" onClick={openEmailSnapshot} />
+              <ActionButton label="Post to Chatter" icon={<Share2 size={14} />} tone="secondary" onClick={() => { void shareToTeamFeed() }} />
+              <ActionButton
+                label={submitted ? 'Visit Submitted' : blockerCards.length === 0 ? 'Submit Visit' : blockerCards[0]?.actionLabel ?? 'Resolve Blocker'}
+                icon={submitted ? <CheckCircle2 size={14} /> : blockerCards.length === 0 ? <Send size={14} /> : <AlertTriangle size={14} />}
+                onClick={submitted ? () => navigate('/') : blockerCards.length === 0 ? submitScorecard : () => navigate(blockerCards[0].route)}
+              />
+            </div>
+          </InfoBlock>
 
           <InfoBlock title="Required Before Submit" subtitle="Resolve these blockers before the visit can be closed.">
             <div className="space-y-2">
@@ -339,24 +332,12 @@ export function SummaryScreen() {
                 </div>
               )) : (
                 <div className="rounded-lg border border-[#cde8d3] bg-[#edf7ee] px-3 py-3">
-                  <p className="text-[12px] font-semibold text-[#1f5f33]">No Trellis blockers remain.</p>
-                  <p className="text-[12px] text-[#1f5f33] mt-1">This visit is ready for manager review and submission.</p>
+                  <p className="text-[12px] font-semibold text-[#1f5f33]">No submission blockers remain.</p>
+                  <p className="text-[12px] text-[#1f5f33] mt-1">This visit is ready for review and final submission.</p>
                 </div>
               )}
             </div>
           </InfoBlock>
-
-          <TrellisAskButton
-            active={trellisEnabled}
-            onClick={toggleTrellis}
-            title="Summary coach"
-            summary="Trellis is not changing the summary page. It is just giving the rep a quick AI-style interpretation of the visit."
-            items={[
-              `Driver: ${summaryInsight.mainPositiveDriver}`,
-              `Missed opportunity: ${summaryInsight.biggestMissedOpportunity}`,
-              `Next focus: ${summaryInsight.nextVisitFocus}`,
-            ]}
-          />
         </div>
       </div>
 
@@ -392,7 +373,7 @@ function InfoBlock({
   )
 }
 
-function SummaryMetric({
+function MetricTile({
   label,
   value,
   tone = 'neutral',
@@ -413,6 +394,34 @@ function SummaryMetric({
       }`}>
         {value}
       </p>
+    </div>
+  )
+}
+
+function GapRow({
+  title,
+  detail,
+  value,
+  tone,
+}: {
+  title: string
+  detail: string
+  value: string
+  tone: 'success' | 'warning'
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3 rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
+      <div>
+        <p className="text-[12px] font-semibold text-on-surface">{title}</p>
+        <p className="mt-1 text-[12px] text-on-surface-variant">{detail}</p>
+      </div>
+      <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+        tone === 'success'
+          ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
+          : 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'
+      }`}>
+        {value}
+      </span>
     </div>
   )
 }
@@ -453,235 +462,118 @@ function ActionButton({
   )
 }
 
-function FlagCard({
-  title,
-  description,
-  enabled,
+function calculateRiskValue({
+  mapMisses,
+  missingTopItems,
+  notEnough,
+  emptyCalories,
+  missingEvidenceCount,
 }: {
-  title: string
-  description: string
-  enabled: boolean
+  mapMisses: number
+  missingTopItems: number
+  notEnough: number
+  emptyCalories: number
+  missingEvidenceCount: number
 }) {
   return (
-    <div className={`rounded-lg border px-3 py-3 ${enabled ? 'border-[#c9d8ea] bg-[#edf4ff]' : 'border-outline bg-[#f7f9fb]'}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[12px] font-semibold text-on-surface">{title}</p>
-          <p className="mt-1 text-[12px] text-on-surface-variant">{description}</p>
-        </div>
-        <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] ${
-          enabled
-            ? 'border-[#c9d8ea] bg-white text-primary'
-            : 'border-outline bg-white text-on-surface-variant'
-        }`}>
-          {enabled ? 'On' : 'Off'}
-        </span>
-      </div>
-    </div>
+    mapMisses * 180 +
+    missingTopItems * 140 +
+    notEnough * 120 +
+    emptyCalories * 90 +
+    missingEvidenceCount * 160
   )
+}
+
+function buildNextBestAction(
+  topOpportunity: ReturnType<typeof getRemainingOffShelfRecommendations>[number] | undefined,
+  fallback: string,
+) {
+  if (!topOpportunity?.product) {
+    return fallback
+  }
+
+  return `Expand ${topOpportunity.location} placement for ${topOpportunity.product.name}.`
 }
 
 function buildShareText({
+  agentforceEnabled,
   totalScore,
+  executionScore,
+  basePlanScore,
+  incrementalScore,
   lgorPct,
-  leaderboard,
-  checklist,
-  offShelf,
-  managerOutcome,
-  summaryInsight,
-  remainingRecommendations,
-}: {
-  totalScore: number
-  lgorPct: number
-  leaderboard: ReturnType<typeof getLeaderboardPreview>
-  checklist: ReturnType<typeof useApp>['checklist']
-  offShelf: ReturnType<typeof useApp>['offShelf']
-  managerOutcome: ReturnType<typeof getManagerOutcome>
-  summaryInsight: ReturnType<typeof getSummaryInsight>
-  remainingRecommendations: ReturnType<typeof getRemainingOffShelfRecommendations>
-}) {
-  const topWorkedItems = getWorkedItems(offShelf, checklist, summaryInsight)
-  const topOpportunity = remainingRecommendations[0]
-  const riskRecommendation = remainingRecommendations[1]
-  const performanceBand = getPerformanceBandLabel(leaderboard)
-  const actionForNextVisit = buildNextVisitAction(topOpportunity, summaryInsight.nextVisitFocus)
-
-  return [
-    `Visit Outcome & Next Actions - ${getShareStoreLabel(store.name, store.banner)}`,
-    '',
-    `Score: ${totalScore.toFixed(1)} (${performanceBand})`,
-    `LGOR: ${lgorPct.toFixed(1)}%`,
-    '',
-    'Execution Summary:',
-    ...managerOutcome.executionSummary.map(item => `* ${item.text}`),
-    '',
-    'What worked:',
-    ...topWorkedItems.map(item => `* ${item.label} - ${item.value}`),
-    '',
-    'Biggest Opportunity:',
-    topOpportunity?.product?.name ?? summaryInsight.biggestMissedOpportunity,
-    `Potential: ${formatCurrency(estimateBusinessImpact(topOpportunity, 'opportunity', 8200))}`,
-    '',
-    'Risk:',
-    riskRecommendation?.product?.name ?? summaryInsight.biggestMissedOpportunity,
-    `Risk: ${formatCurrency(estimateBusinessImpact(riskRecommendation, 'risk', 7600))}`,
-    '',
-    'Action for next visit:',
-    actionForNextVisit,
-    '',
-    'Next Actions:',
-    ...managerOutcome.nextActions.map(item => `* ${item}`),
-    '',
-    `Revisit Required: ${managerOutcome.revisitRequired ? 'On' : 'Off'}`,
-    `Shelf Reset Needed: ${managerOutcome.shelfResetNeeded ? 'On' : 'Off'}`,
-  ].join('\n')
-}
-
-function getManagerOutcome({
-  checklist,
-  offShelf,
-  missingEvidenceCount,
-  summaryInsight,
-  remainingRecommendations,
+  riskValue,
+  mapMisses,
+  missingTopItems,
+  notEnough,
+  emptyCalories,
+  scoreDelta,
+  lgorDelta,
+  riskDelta,
+  comparisonRepeatedGap,
+  notes,
   revisitRequired,
   shelfResetNeeded,
+  summaryInsight,
+  nextBestAction,
 }: {
-  checklist: ReturnType<typeof useApp>['checklist']
-  offShelf: ReturnType<typeof useApp>['offShelf']
-  missingEvidenceCount: number
-  summaryInsight: ReturnType<typeof getSummaryInsight>
-  remainingRecommendations: ReturnType<typeof getRemainingOffShelfRecommendations>
+  agentforceEnabled: boolean
+  totalScore: number
+  executionScore: number
+  basePlanScore: number
+  incrementalScore: number
+  lgorPct: number
+  riskValue: number
+  mapMisses: number
+  missingTopItems: number
+  notEnough: number
+  emptyCalories: number
+  scoreDelta: number
+  lgorDelta: number
+  riskDelta: number
+  comparisonRepeatedGap: string
+  notes: string
   revisitRequired: boolean
   shelfResetNeeded: boolean
+  summaryInsight: ReturnType<typeof getSummaryInsight>
+  nextBestAction: string
 }) {
-  const failedBasePlanQuestions = checklistQuestions.filter(
-    question => (question.group === 'map' || question.group === 'pog') && checklist[question.id] === 'no',
-  )
-  const topRecommendation = remainingRecommendations[0]
-  const nextActions = [
-    topRecommendation?.product
-      ? `Expand ${topRecommendation.location} placement for ${topRecommendation.product.name}.`
-      : summaryInsight.nextVisitFocus,
-    offShelf.length > 0
-      ? 'Maintain winning display strategy.'
-      : 'Add at least one incremental display on the next visit.',
-    missingEvidenceCount > 0
-      ? 'Capture missing photo evidence before closing the next visit.'
-      : 'Capture photo evidence earlier in the next visit.',
+  const lines = [
+    `Store Scorecard Snapshot - ${store.name}`,
+    '',
+    `Total Score: ${totalScore.toFixed(1)}`,
+    `Execution: ${executionScore}%`,
+    `Base Plan: ${basePlanScore.toFixed(1)}`,
+    `Above & Beyond: +${incrementalScore.toFixed(1)}`,
+    `LGOR %: ${lgorPct.toFixed(1)}%`,
+    `Risk $: ${formatCurrency(riskValue)}`,
+    '',
+    `Missing MAP: ${mapMisses}`,
+    `Missing Top Items: ${missingTopItems}`,
+    `Not Enough: ${notEnough}`,
+    `Empty Calories: ${emptyCalories}`,
+    '',
+    `Score Trend: ${scoreDelta >= 0 ? '+' : ''}${scoreDelta.toFixed(1)} pts`,
+    `LGOR Trend: ${lgorDelta >= 0 ? '+' : ''}${lgorDelta.toFixed(1)}%`,
+    `Risk Trend: ${formatCurrencyDelta(riskDelta)}`,
+    `Repeated Gap: ${comparisonRepeatedGap}`,
   ]
 
-  return {
-    executionSummary: [
-      {
-        text: failedBasePlanQuestions.length === 0
-          ? 'Base plan fully achieved.'
-          : `Base plan partly achieved (${failedBasePlanQuestions.length} issue${failedBasePlanQuestions.length > 1 ? 's' : ''} still open).`,
-        tone: failedBasePlanQuestions.length === 0 ? 'success' : 'warning',
-      },
-      {
-        text: offShelf.length > 0
-          ? `Incremental display added (+${getOffShelfIncrementalScore(offShelf).toFixed(1)} pts impact).`
-          : 'No incremental display added on this visit.',
-        tone: offShelf.length > 0 ? 'success' : 'warning',
-      },
-      {
-        text: topRecommendation?.product
-          ? `Missed high-value ${topRecommendation.location.toLowerCase()} opportunity with ${topRecommendation.product.name} (+${Math.round(topRecommendation.potentialPoints)} pts potential).`
-          : `Main remaining risk: ${summaryInsight.biggestMissedOpportunity}.`,
-        tone: 'warning' as const,
-      },
-    ],
-    nextActions,
-    revisitRequired,
-    shelfResetNeeded,
-  }
-}
-
-function getWorkedItems(
-  offShelf: ReturnType<typeof useApp>['offShelf'],
-  checklist: ReturnType<typeof useApp>['checklist'],
-  summaryInsight: ReturnType<typeof getSummaryInsight>,
-) {
-  const displayWins = [...offShelf]
-    .sort((left, right) => right.impactPoints - left.impactPoints)
-    .slice(0, 2)
-    .map(entry => ({
-      label: entry.product,
-      value: `${entry.impactPoints.toFixed(1)} pts`,
-    }))
-
-  if (displayWins.length >= 2) {
-    return displayWins
+  if (agentforceEnabled) {
+    lines.push('', `Agentforce Summary: ${summaryInsight.narrative}`, `Next Best Action: ${nextBestAction}`)
   }
 
-  const checklistWins = checklistQuestions
-    .filter(question => checklist[question.id] === 'yes')
-    .sort((left, right) => right.weight - left.weight)
-    .slice(0, 2 - displayWins.length)
-    .map(question => ({
-      label: question.title,
-      value: `${question.weight.toFixed(1)} pts`,
-    }))
-
-  const fallbackWins = displayWins.length + checklistWins.length > 0
-    ? []
-    : [{ label: summaryInsight.mainPositiveDriver, value: 'In play' }]
-
-  return [...displayWins, ...checklistWins, ...fallbackWins]
-}
-
-function getShareStoreLabel(storeName: string, banner: string) {
-  const digits = storeName.match(/\d+/)?.[0]
-  const bannerCode = banner
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(word => word[0]?.toUpperCase() ?? '')
-    .join('')
-
-  return digits ? `${bannerCode} ${digits}` : storeName
-}
-
-function getPerformanceBandLabel(leaderboard: ReturnType<typeof getLeaderboardPreview>) {
-  const rank = leaderboard.find(item => item.store === store.name)?.rank ?? leaderboard.length
-  const totalEntries = Math.max(1, leaderboard.length)
-  const percentile = Math.min(100, Math.max(25, Math.ceil((rank / totalEntries) * 100)))
-  return `Top ${percentile}%`
-}
-
-function estimateBusinessImpact(
-  recommendation: ReturnType<typeof getRemainingOffShelfRecommendations>[number] | undefined,
-  mode: 'opportunity' | 'risk' = 'opportunity',
-  fallbackValue = 0,
-) {
-  if (!recommendation?.product) return fallbackValue
-
-  const locationFactor = {
-    Endcap: 1,
-    'Fence Line': 1.12,
-    'Garden Door': 1.03,
-    'Drive Aisle': 1.05,
-    Racetrack: 1.07,
-    Other: 0.96,
-  }[recommendation.location] ?? 1
-  const quantityBias = Math.max(0.9, Math.min(1.12, parseOffShelfQuantity(recommendation.quantity) / 120))
-  const baseValue =
-    recommendation.potentialPoints * 540 +
-    recommendation.product.basePoints * 220 +
-    recommendation.product.baseLgor * 380
-  const modeFactor = mode === 'risk' ? 0.94 : 1
-
-  return Math.round(baseValue * locationFactor * quantityBias * modeFactor)
-}
-
-function buildNextVisitAction(
-  topOpportunity: ReturnType<typeof getRemainingOffShelfRecommendations>[number] | undefined,
-  nextVisitFocus: string,
-) {
-  if (!topOpportunity?.location) {
-    return nextVisitFocus
+  if (notes.trim()) {
+    lines.push('', `Field Note: ${notes.trim()}`)
   }
 
-  return `Focus on ${topOpportunity.location} + Increase Quantity on Top SKUs`
+  lines.push(
+    '',
+    `Revisit Required: ${revisitRequired ? 'On' : 'Off'}`,
+    `Shelf Reset Needed: ${shelfResetNeeded ? 'On' : 'Off'}`
+  )
+
+  return lines.join('\n')
 }
 
 function formatCurrency(value: number) {
@@ -690,4 +582,11 @@ function formatCurrency(value: number) {
     currency: 'USD',
     maximumFractionDigits: 0,
   }).format(value)
+}
+
+function formatCurrencyDelta(value: number) {
+  const formatted = formatCurrency(Math.abs(value))
+  if (value > 0) return `+${formatted}`
+  if (value < 0) return `-${formatted}`
+  return formatted
 }

@@ -101,7 +101,7 @@ export function TrellisBot({ title, insight, prompts = [] }: LegacyTrellisBotPro
 export function TrellisInsightCard({
   title,
   summary,
-  badge = 'TRELLIS INSIGHT',
+  badge = 'Agentforce Insight',
   tone = 'info',
   metrics = [],
   items = [],
@@ -158,7 +158,7 @@ export function TrellisInsightCard({
 }
 
 export function TrellisSuggestionCard({
-  title = 'Trellis Suggestion',
+  title = 'Agentforce Recommendation',
   issue,
   impactLabel,
   suggestedFix,
@@ -198,7 +198,7 @@ export function TrellisSuggestionCard({
 }
 
 export function TrellisSummaryCard({
-  title = 'TRELLIS SUMMARY',
+  title = 'Agentforce Summary',
   summary,
   highlights,
   tone = 'info',
@@ -260,7 +260,7 @@ export function TrellisAskButton({
                 <Bot size={14} />
               </span>
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Trellis Live</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Agentforce Live</p>
                 {title && <p className="text-[13px] font-semibold text-on-surface">{title}</p>}
               </div>
             </div>
@@ -290,7 +290,7 @@ export function TrellisAskButton({
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-[#0b5cab]">
           {active ? <Bot size={13} /> : <Sparkles size={13} />}
         </span>
-        {active ? 'Trellis Active' : 'Ask Trellis'}
+        {active ? 'Agentforce Active' : 'Ask Agentforce'}
       </button>
       </div>
     </div>
@@ -321,7 +321,7 @@ function CardHeader({
             <span className={clsx('rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]', styles.badge)}>
               {badge}
             </span>
-            <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-on-surface-variant">Visit Intelligence Agent</span>
+            <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-on-surface-variant">Agentforce</span>
           </div>
           <div className="mt-2">{children}</div>
         </div>

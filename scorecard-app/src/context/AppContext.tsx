@@ -27,7 +27,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [shelfResetNeeded, setShelfResetNeeded] = useState(false)
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
-  const [trellisEnabled, setTrellisEnabled] = useState(false)
+  const [agentforceEnabled, setAgentforceEnabled] = useState(false)
 
   function setChecklistAnswer(itemId: string, answer: ChecklistAnswer) {
     setChecklist(prev => ({ ...prev, [itemId]: answer }))
@@ -135,10 +135,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     saveDraft()
   }
 
-  function toggleTrellis() {
-    setTrellisEnabled(prev => !prev)
-  }
-
   const appState: AppState = {
     checklist,
     questionNotes,
@@ -150,7 +146,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     shelfResetNeeded,
     lastSavedAt,
     submitted,
-    trellisEnabled,
+    agentforceEnabled,
   }
 
   const answeredChecks = getAnsweredChecks(checklist)
@@ -177,7 +173,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       shelfResetNeeded,
       lastSavedAt,
       submitted,
-      trellisEnabled,
+      agentforceEnabled,
       setChecklistAnswer,
       setQuestionNote,
       addOffShelfEntry,
@@ -193,7 +189,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setShelfResetNeeded,
       saveDraft,
       submitScorecard,
-      toggleTrellis,
+      setAgentforceEnabled,
       answeredChecks,
       totalChecks,
       totalSections,
