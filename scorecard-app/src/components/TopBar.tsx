@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { DemoModeToggle } from './DemoModeToggle'
 
 interface TopBarProps {
   title: string
@@ -29,6 +30,9 @@ export function TopBar({ title, subtitle, showBack = false, rightSlot }: TopBarP
           {subtitle && <p className="text-[11px] text-on-surface-variant mt-0.5">{subtitle}</p>}
         </div>
         {rightSlot}
+      </div>
+      <div className="mt-2 flex justify-end">
+        <DemoModeToggle />
       </div>
     </div>
   )

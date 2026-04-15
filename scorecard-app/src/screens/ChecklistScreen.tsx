@@ -4,8 +4,10 @@ import clsx from 'clsx'
 import { Camera, ClipboardCheck, FilePenLine, Layers3, ShieldAlert } from 'lucide-react'
 import { BottomActionBar } from '../components/BottomActionBar'
 import { PhoneShell } from '../components/PhoneShell'
+import { StandardGuidanceCard } from '../components/StandardGuidanceCard'
 import { TopBar } from '../components/TopBar'
 import {
+  TrellisAskButton,
   TrellisInsightCard,
   TrellisSuggestionCard,
 } from '../components/TrellisBot'
@@ -70,6 +72,7 @@ export function ChecklistScreen() {
   const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({})
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({})
   const [openEvidence, setOpenEvidence] = useState<Record<string, boolean>>({})
+  const [trellisOpen, setTrellisOpen] = useState(false)
 
   const checklistCompletionPercent = Math.round((answeredChecks / totalChecks) * 100)
   const basePlanScore = getChecklistBasePlanScore(checklist)
@@ -163,6 +166,13 @@ export function ChecklistScreen() {
               footer="Agentforce translates live checklist answers into the most useful recovery focus for the current aisle."
             />
           )}
+          {!agentforceEnabled && (
+            <StandardGuidanceCard
+              title="Complete all required checks to proceed"
+              summary="Complete base plan checks before moving to incremental displays."
+              detail="High-impact gaps and missing photos reduce score. Suggested action: capture required photo before submit."
+            />
+          )}
 
           {groups.map(group => (
             <div key={group.id} className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
@@ -218,6 +228,15 @@ export function ChecklistScreen() {
               </div>
             </div>
           ))}
+          {agentforceEnabled && (
+            <TrellisAskButton
+              active={trellisOpen}
+              onClick={() => setTrellisOpen(prev => !prev)}
+              title={trellisInsight.title}
+              summary={trellisInsight.summary}
+              items={trellisInsight.items.map(item => `${item.label}: ${item.value}`)}
+            />
+          )}
         </div>
       </div>
 

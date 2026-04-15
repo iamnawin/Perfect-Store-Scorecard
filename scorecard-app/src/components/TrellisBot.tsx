@@ -261,6 +261,7 @@ export function TrellisAskButton({
               </span>
               <div className="min-w-0">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Agentforce Live</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Trellis</p>
                 {title && <p className="text-[13px] font-semibold text-on-surface">{title}</p>}
               </div>
             </div>
@@ -286,11 +287,11 @@ export function TrellisAskButton({
             ? 'bg-[linear-gradient(90deg,#0b5cab,#0176d3)]'
             : 'bg-[linear-gradient(90deg,#1b4fd6,#0176d3)]'
         )}
-      >
+        >
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-[#0b5cab]">
           {active ? <Bot size={13} /> : <Sparkles size={13} />}
         </span>
-        {active ? 'Agentforce Active' : 'Ask Agentforce'}
+        {active ? 'Trellis Active' : 'Ask Trellis'}
       </button>
       </div>
     </div>

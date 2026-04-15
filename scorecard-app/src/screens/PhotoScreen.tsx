@@ -1,10 +1,11 @@
-import type { ChangeEvent, ReactNode } from 'react'
+import { useState, type ChangeEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Camera, CheckCircle2, FileText, Flag, Image, RotateCcw } from 'lucide-react'
 import { BottomActionBar } from '../components/BottomActionBar'
 import { PhoneShell } from '../components/PhoneShell'
+import { StandardGuidanceCard } from '../components/StandardGuidanceCard'
 import { TopBar } from '../components/TopBar'
-import { TrellisInsightCard } from '../components/TrellisBot'
+import { TrellisAskButton, TrellisInsightCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
 import { evidenceRequirements, scorecardSections, store } from '../data/mock'
 import { getLinkedQuestionTitles, getMissingRequiredEvidence } from '../lib/scorecard'
@@ -13,6 +14,7 @@ import { getPhotoInsight } from '../lib/trellis'
 export function PhotoScreen() {
   const navigate = useNavigate()
   const app = useApp()
+  const [trellisOpen, setTrellisOpen] = useState(false)
   const {
     checklist,
     questionNotes,
@@ -99,6 +101,13 @@ export function PhotoScreen() {
               tone={trellisInsight.tone}
               metrics={trellisInsight.metrics}
               footer="Agentforce turns the captured proof into a manager-ready visit note using mock local logic only."
+            />
+          )}
+          {!agentforceEnabled && (
+            <StandardGuidanceCard
+              title="Evidence is required before submission"
+              summary="Required photos must be captured before submission."
+              detail="Suggested action: capture required photo before submit."
             />
           )}
 
@@ -218,6 +227,15 @@ export function PhotoScreen() {
               </div>
             </div>
           </div>
+          {agentforceEnabled && (
+            <TrellisAskButton
+              active={trellisOpen}
+              onClick={() => setTrellisOpen(prev => !prev)}
+              title="Suggested visit note"
+              summary={agentforceDraft}
+              items={trellisInsight.metrics.map(metric => `${metric.label}: ${metric.value}`)}
+            />
+          )}
         </div>
       </div>
 

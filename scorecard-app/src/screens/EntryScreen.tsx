@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { CheckCircle2, ChevronRight, CircleDot, ClipboardCheck, LockKeyhole, TrendingUp } from 'lucide-react'
 import { PhoneShell } from '../components/PhoneShell'
+import { StandardGuidanceCard } from '../components/StandardGuidanceCard'
 import { TopBar } from '../components/TopBar'
 import { TrellisInsightCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
@@ -80,6 +81,13 @@ export function EntryScreen() {
               { label: 'Top Opportunity', value: 'Scotts Turf Builder 20 lb at Endcap (+12 pts)', tone: 'success' },
               { label: 'Suggested Focus', value: 'Fix Garden Door first, then add incremental displays' },
             ]}
+          />
+        )}
+        {!agentforceEnabled && (
+          <StandardGuidanceCard
+            title="Use the visit snapshot to guide execution"
+            summary="Use the previous visit snapshot and score breakdown to guide execution."
+            detail="Standard mode keeps the same checklist, scoring, evidence, and summary flow without Trellis guidance."
           />
         )}
 

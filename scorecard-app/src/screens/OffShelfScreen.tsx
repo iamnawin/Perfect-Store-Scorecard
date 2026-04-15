@@ -14,8 +14,9 @@ import {
   Trash2,
 } from 'lucide-react'
 import { PhoneShell } from '../components/PhoneShell'
+import { StandardGuidanceCard } from '../components/StandardGuidanceCard'
 import { TopBar } from '../components/TopBar'
-import { TrellisInsightCard } from '../components/TrellisBot'
+import { TrellisAskButton, TrellisInsightCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
 import {
   offShelfCategories,
@@ -95,6 +96,7 @@ export function OffShelfScreen() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showRecommendations, setShowRecommendations] = useState(false)
   const [showCaptured, setShowCaptured] = useState(true)
+  const [trellisOpen, setTrellisOpen] = useState(false)
 
   const sectionNumber = scorecardSections.findIndex(section => section.id === 'off-shelf-capture') + 1
   const selectedCategory = offShelfCategories.find(item => item.id === draft.category)
@@ -347,6 +349,16 @@ export function OffShelfScreen() {
                   lines={remainingRecommendations.slice(0, 3).map(item => `Add ${item.location} display | +${item.potentialPoints.toFixed(1)} pts`)}
                 />
               )}
+              {!agentforceEnabled && (
+                <InsightCell
+                  label="Standard Guidance"
+                  value="Rule-based"
+                  lines={[
+                    'Add displays based on store opportunity and business priorities.',
+                    'Impact values and projected score stay the same in both modes.',
+                  ]}
+                />
+              )}
             </div>
           </SectionCard>
 
@@ -371,6 +383,13 @@ export function OffShelfScreen() {
                 { label: 'Suggested Next Move', value: trellisRecommendation.suggestedNextMove, tone: 'success' },
               ]}
               footer="Agentforce ranks the best next display using mock store history, score upside, and preferred placements."
+            />
+          )}
+          {!agentforceEnabled && (
+            <StandardGuidanceCard
+              title="Capture displays with score impact"
+              summary="Add displays based on store opportunity and business priorities."
+              detail="Suggested action: save each display with photo evidence so the projected score stays review-ready."
             />
           )}
 
@@ -671,6 +690,19 @@ export function OffShelfScreen() {
               )}
             </div>
           </SectionCard>
+          {agentforceEnabled && (
+            <TrellisAskButton
+              active={trellisOpen}
+              onClick={() => setTrellisOpen(prev => !prev)}
+              title={trellisRecommendation.title}
+              summary={trellisRecommendation.supportingText}
+              items={[
+                `Impact: ${trellisRecommendation.impactLabel}`,
+                `LGOR: ${trellisRecommendation.lgorLabel}`,
+                `Next move: ${trellisRecommendation.suggestedNextMove}`,
+              ]}
+            />
+          )}
 
         </div>
       </div>

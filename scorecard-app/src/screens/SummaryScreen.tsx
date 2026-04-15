@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertTriangle,
@@ -11,8 +11,9 @@ import {
 } from 'lucide-react'
 import { BottomActionBar } from '../components/BottomActionBar'
 import { PhoneShell } from '../components/PhoneShell'
+import { StandardGuidanceCard } from '../components/StandardGuidanceCard'
 import { TopBar } from '../components/TopBar'
-import { TrellisSummaryCard } from '../components/TrellisBot'
+import { TrellisAskButton, TrellisSummaryCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
 import { checklistQuestions, previousSnapshot, scorecardSections, store } from '../data/mock'
 import {
@@ -27,6 +28,7 @@ import { getSummaryInsight } from '../lib/trellis'
 export function SummaryScreen() {
   const navigate = useNavigate()
   const app = useApp()
+  const [trellisOpen, setTrellisOpen] = useState(false)
   const {
     checklist,
     offShelf,
@@ -240,6 +242,13 @@ export function SummaryScreen() {
               footer="Agentforce adds mock interpretation and next-step guidance on top of the same core scorecard summary."
             />
           )}
+          {!agentforceEnabled && (
+            <StandardGuidanceCard
+              title="Review completed actions and follow-ups"
+              summary="Review completed actions, missed items, and required follow-ups."
+              detail={`Suggested action: ${blockerCards.length > 0 ? blockerCards[0].actionLabel : buildNextBestAction(remainingRecommendations[0], summaryInsight.nextVisitFocus)}`}
+            />
+          )}
 
           <InfoBlock title="Score Breakdown" subtitle="Lightning-style summary of this visit outcome.">
             <div className="grid grid-cols-2 gap-2">
@@ -338,6 +347,19 @@ export function SummaryScreen() {
               )}
             </div>
           </InfoBlock>
+          {agentforceEnabled && (
+            <TrellisAskButton
+              active={trellisOpen}
+              onClick={() => setTrellisOpen(prev => !prev)}
+              title="Visit summary"
+              summary={summaryInsight.narrative}
+              items={[
+                `Main driver: ${summaryInsight.mainPositiveDriver}`,
+                `Top missed opportunity: ${summaryInsight.biggestMissedOpportunity}`,
+                `Next best action: ${buildNextBestAction(remainingRecommendations[0], summaryInsight.nextVisitFocus)}`,
+              ]}
+            />
+          )}
         </div>
       </div>
 
