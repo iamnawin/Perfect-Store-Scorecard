@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AppProvider } from './context/AppContext'
 import { EntryScreen } from './screens/EntryScreen'
 import { ChecklistScreen } from './screens/ChecklistScreen'
@@ -6,10 +7,21 @@ import { OffShelfScreen } from './screens/OffShelfScreen'
 import { PhotoScreen } from './screens/PhotoScreen'
 import { SummaryScreen } from './screens/SummaryScreen'
 
+function ScrollToTop() {
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [pathname])
+
+  return null
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AppProvider>
+        <ScrollToTop />
         <Routes>
           <Route path="/" element={<EntryScreen />} />
           <Route path="/checklist" element={<ChecklistScreen />} />
