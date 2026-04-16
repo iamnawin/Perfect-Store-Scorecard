@@ -332,7 +332,7 @@ function QuestionCard({
   const primaryEvidence = relatedEvidence.find(item => item.required) ?? relatedEvidence[0]
   const quickPhotoCaptured = Boolean(primaryEvidence && evidence[primaryEvidence.id]?.captured)
   const impactValue = getChecklistImpactValue(question.weight, answer)
-  const priority = question.weight >= 15 ? 'HIGH IMPACT' : 'MEDIUM IMPACT'
+  const priority = question.weight >= 15 ? 'High' : 'Med'
   const evidenceMissing = evidenceLabel === 'Photo required before submit'
   const statusLabel = evidenceMissing && answer !== null ? 'Photo Missing' : status.label
   const statusClassName = evidenceMissing && answer !== null
@@ -362,7 +362,7 @@ function QuestionCard({
                 <p className="text-[15px] font-semibold text-on-surface mt-1">{question.title}</p>
               </div>
               <div className="text-right">
-                <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${priorityTone(question.weight)}`}>
+                <span className={`whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] ${priorityTone(question.weight)}`}>
                   {priority}
                 </span>
                 <p className="text-[11px] font-semibold text-on-surface mt-1">{question.weight} pts</p>
