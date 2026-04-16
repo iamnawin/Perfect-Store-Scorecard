@@ -21,13 +21,13 @@ export function DemoModeToggle() {
         Trellis AI
       </span>
       <span
-        className={`relative h-3.5 w-6 rounded-full transition-colors ${
+        className={`relative h-4 w-7 rounded-full overflow-hidden transition-colors ${
           agentforceEnabled ? 'bg-[#2e844a]' : 'bg-[#c9d2dc]'
         }`}
       >
         <span
-          className={`absolute top-[2px] h-2.5 w-2.5 rounded-full bg-white transition-transform ${
-            agentforceEnabled ? 'translate-x-[11px]' : 'translate-x-[2px]'
+          className={`absolute left-[2px] top-[2px] h-3 w-3 rounded-full bg-white transition-transform ${
+            agentforceEnabled ? 'translate-x-[12px]' : 'translate-x-0'
           }`}
         />
       </span>
