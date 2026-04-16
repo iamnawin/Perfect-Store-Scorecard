@@ -37,7 +37,7 @@ import {
   getRemainingOffShelfRecommendations,
   getVisitTypeLabel,
 } from '../lib/scorecard'
-import { getOffShelfInsight } from '../lib/trellis'
+import { getOffShelfInsight, getRevisitIntelligence, getTopRecommendation } from '../lib/trellis'
 import type { OffShelfClassification, OffShelfEntry } from '../types'
 
 interface DraftState {
@@ -152,6 +152,8 @@ export function OffShelfScreen() {
     classification: draft.classification,
     product: selectedProduct,
   })
+  const topRecommendation = getTopRecommendation(app)
+  const revisitIntelligence = visitType === 'follow-up' ? getRevisitIntelligence(app) : null
 
   const canSaveEntry = Boolean(
     draft.location &&
@@ -489,20 +491,49 @@ export function OffShelfScreen() {
           </SectionCard>
 
           {agentforceEnabled && (
-            <TrellisInsightCard
-              title={trellisRecommendation.title}
-              summary={trellisRecommendation.supportingText}
-              badge="Agentforce Recommendation"
-              tone={trellisRecommendation.tone}
-              metrics={[
-                { label: 'Impact', value: trellisRecommendation.impactLabel },
-                { label: 'LGOR', value: trellisRecommendation.lgorLabel },
-              ]}
-              items={[
-                { label: 'Suggested Next Move', value: trellisRecommendation.suggestedNextMove, tone: 'success' },
-              ]}
-              footer="Agentforce ranks the best next display using mock store history, score upside, and preferred placements."
-            />
+            <>
+              <TrellisInsightCard
+                title={topRecommendation.title}
+                summary={topRecommendation.summary}
+                badge="Top Recommendation"
+                tone={topRecommendation.tone}
+                metrics={[
+                  { label: 'Impact', value: topRecommendation.impactLabel },
+                ]}
+                items={[
+                  { label: 'Why this matters', value: topRecommendation.reason, tone: topRecommendation.tone },
+                ]}
+                actionLabel={topRecommendation.actionLabel}
+                onAction={() => navigate(topRecommendation.route)}
+              />
+              {visitType === 'follow-up' && revisitIntelligence && (
+                <TrellisInsightCard
+                  title={revisitIntelligence.title}
+                  summary={revisitIntelligence.summary}
+                  badge="Revisit Intelligence"
+                  tone={revisitIntelligence.tone}
+                  metrics={[
+                    { label: 'Status', value: revisitIntelligence.statusLabel },
+                  ]}
+                  items={revisitIntelligence.items}
+                  footer={revisitIntelligence.footer}
+                />
+              )}
+              <TrellisInsightCard
+                title={trellisRecommendation.title}
+                summary={trellisRecommendation.supportingText}
+                badge="Agentforce Recommendation"
+                tone={trellisRecommendation.tone}
+                metrics={[
+                  { label: 'Impact', value: trellisRecommendation.impactLabel },
+                  { label: 'LGOR', value: trellisRecommendation.lgorLabel },
+                ]}
+                items={[
+                  { label: 'Suggested Next Move', value: trellisRecommendation.suggestedNextMove, tone: 'success' },
+                ]}
+                footer="Agentforce ranks the best next display using mock store history, score upside, and preferred placements."
+              />
+            </>
           )}
 
           <SectionCard

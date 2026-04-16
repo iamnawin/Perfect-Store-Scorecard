@@ -7,6 +7,7 @@ import { TrellisInsightCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
 import { previousSnapshot, store } from '../data/mock'
 import { getActiveScorecardSections, getCurrentSection, getCurrentSectionNumber, getPendingFollowUpEntries, getStepState } from '../lib/scorecard'
+import { getRevisitIntelligence, getTopRecommendation } from '../lib/trellis'
 
 export function EntryScreen() {
   const navigate = useNavigate()
@@ -39,6 +40,8 @@ export function EntryScreen() {
   const ctaRoute = scorecardStatus === 'ready-for-review' || scorecardStatus === 'completed'
     ? '/summary'
     : currentSection.route
+  const topRecommendation = getTopRecommendation(app)
+  const revisitIntelligence = visitType === 'follow-up' ? getRevisitIntelligence(app) : null
 
   const followUpPrimaryCopy = {
     'not-started': {
@@ -174,14 +177,48 @@ export function EntryScreen() {
 
         {visitType === 'follow-up' && agentforceEnabled && (
           <TrellisInsightCard
-            badge="Agentforce Insight"
-            title="What matters in this follow-up"
-            summary="Agentforce is treating this as a new change-tracking scorecard run based on the last completed visit."
-            items={[
-              { label: 'Loaded Displays', value: `${previousEntryCount} previous display ${previousEntryCount === 1 ? 'record' : 'records'} ready for review`, tone: 'info' },
-              { label: 'Reviewed So Far', value: `${reviewedFollowUpEntries} reviewed | ${pendingFollowUpEntries.length} remaining`, tone: reviewedFollowUpEntries > 0 ? 'success' : 'info' },
-              { label: 'Suggested Focus', value: 'Review prior displays first, then update evidence for what changed' },
+            badge="Top Recommendation"
+            title={topRecommendation.title}
+            summary={topRecommendation.summary}
+            tone={topRecommendation.tone}
+            metrics={[
+              { label: 'Impact', value: topRecommendation.impactLabel },
             ]}
+            items={[
+              { label: 'Why this matters', value: topRecommendation.reason, tone: topRecommendation.tone },
+            ]}
+            actionLabel={topRecommendation.actionLabel}
+            onAction={() => navigate(topRecommendation.route)}
+          />
+        )}
+        {visitType === 'follow-up' && agentforceEnabled && revisitIntelligence && (
+          <TrellisInsightCard
+            badge="Revisit Intelligence"
+            title={revisitIntelligence.title}
+            summary={revisitIntelligence.summary}
+            tone={revisitIntelligence.tone}
+            metrics={[
+              { label: 'Status', value: revisitIntelligence.statusLabel },
+              { label: 'Reviewed', value: `${reviewedFollowUpEntries}/${previousEntryCount}` },
+            ]}
+            items={revisitIntelligence.items}
+            footer={revisitIntelligence.footer}
+          />
+        )}
+        {visitType === 'initial' && agentforceEnabled && (
+          <TrellisInsightCard
+            badge="Top Recommendation"
+            title={topRecommendation.title}
+            summary={topRecommendation.summary}
+            tone={topRecommendation.tone}
+            metrics={[
+              { label: 'Impact', value: topRecommendation.impactLabel },
+            ]}
+            items={[
+              { label: 'Why this matters', value: topRecommendation.reason, tone: topRecommendation.tone },
+            ]}
+            actionLabel={topRecommendation.actionLabel}
+            onAction={() => navigate(topRecommendation.route)}
           />
         )}
         <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">

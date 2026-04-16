@@ -33,10 +33,13 @@ import {
   getFeedbackLoopRows,
   getIncrementalOutputRows,
   getLeaderboardPreview,
+  getManagerSummaryDraft,
   getOpportunityTable,
   getRegionalOutcomeSummary,
+  getRevisitIntelligence,
   getRiskTable,
   getSummaryInsight,
+  getTopRecommendation,
 } from '../lib/trellis'
 
 export function SummaryScreen() {
@@ -100,6 +103,9 @@ export function SummaryScreen() {
   const leaderboardPreview = getLeaderboardPreview(totalScore)
   const accountabilityRows = getAccountabilityRows(app)
   const feedbackLoopRows = getFeedbackLoopRows(app)
+  const topRecommendation = getTopRecommendation(app)
+  const revisitIntelligence = visitType === 'follow-up' ? getRevisitIntelligence(app) : null
+  const managerSummaryDraft = getManagerSummaryDraft(app)
   const blockerCards = [
     ...(missingEvidence.length > 0
       ? [{
@@ -269,16 +275,43 @@ export function SummaryScreen() {
           </div>
 
           {agentforceEnabled && (
-            <TrellisSummaryCard
-              title="Execution Summary"
-              summary={summaryInsight.narrative}
-              highlights={[
-                { label: 'Main positive driver', value: summaryInsight.mainPositiveDriver, tone: 'success' },
-                { label: 'Top missed opportunity', value: summaryInsight.biggestMissedOpportunity, tone: 'warning' },
-                { label: 'Next best action', value: buildNextBestAction(remainingRecommendations[0], summaryInsight.nextVisitFocus) },
-              ]}
-              footer="Agentforce adds mock interpretation and next-step guidance on top of the same core scorecard summary."
-            />
+            <>
+              <TrellisSummaryCard
+                title="Execution Summary"
+                summary={summaryInsight.narrative}
+                highlights={[
+                  { label: 'Main positive driver', value: summaryInsight.mainPositiveDriver, tone: 'success' },
+                  { label: 'Top missed opportunity', value: summaryInsight.biggestMissedOpportunity, tone: 'warning' },
+                  { label: 'Next best action', value: buildNextBestAction(remainingRecommendations[0], summaryInsight.nextVisitFocus) },
+                ]}
+                footer="Agentforce adds mock interpretation and next-step guidance on top of the same core scorecard summary."
+              />
+              <TrellisSummaryCard
+                title={managerSummaryDraft.title}
+                summary={managerSummaryDraft.narrative}
+                highlights={managerSummaryDraft.highlights}
+                footer={managerSummaryDraft.summary}
+                actions={[{
+                  label: 'Email Snapshot',
+                  onClick: openEmailSnapshot,
+                  intent: 'secondary',
+                }]}
+              />
+              <TrellisSummaryCard
+                title="Top Recommendation"
+                summary={topRecommendation.summary}
+                highlights={[
+                  { label: 'Impact', value: topRecommendation.impactLabel, tone: topRecommendation.tone },
+                  { label: 'Why this matters', value: topRecommendation.reason, tone: topRecommendation.tone },
+                ]}
+                footer="Agentforce keeps one clear next move in front of the rep and manager."
+                actions={[{
+                  label: topRecommendation.actionLabel,
+                  onClick: () => navigate(topRecommendation.route),
+                  intent: 'primary',
+                }]}
+              />
+            </>
           )}
           {!agentforceEnabled && (
             <StandardGuidanceCard
@@ -306,6 +339,15 @@ export function SummaryScreen() {
                 <p className="mt-2 text-[12px] text-on-surface-variant">Last submitted {previousSnapshot.date} by {previousSnapshot.submittedBy}</p>
               </div>
             </InfoBlock>
+          )}
+          {visitType === 'follow-up' && agentforceEnabled && revisitIntelligence && (
+            <TrellisSummaryCard
+              title="Revisit Intelligence"
+              summary={revisitIntelligence.summary}
+              highlights={revisitIntelligence.items}
+              tone={revisitIntelligence.tone}
+              footer={revisitIntelligence.footer}
+            />
           )}
 
           {visitType === 'initial' && (

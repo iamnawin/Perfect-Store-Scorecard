@@ -369,6 +369,11 @@ Recommended labels:
 - Agentforce Draft
 - Agentforce Summary
 
+Stronger demo layer now expected:
+- **Top Recommendation**: one clear next-best action with reason and impact
+- **Revisit Intelligence**: compact revisit delta view for kept / updated / removed / added displays
+- **Manager Summary Draft**: short business-facing summary for manager review
+
 This keeps the Salesforce mobile feel intact and avoids turning the prototype into a chatbot-heavy concept.
 
 ---

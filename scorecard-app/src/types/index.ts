@@ -158,6 +158,32 @@ export interface TrellisOffShelfInsight {
   tone: TrellisTone
 }
 
+export interface TrellisTopRecommendation {
+  title: string
+  summary: string
+  impactLabel: string
+  reason: string
+  actionLabel: string
+  route: string
+  tone: TrellisTone
+}
+
+export interface TrellisRevisitIntelligence {
+  title: string
+  summary: string
+  statusLabel: string
+  tone: TrellisTone
+  items: TrellisDetailItem[]
+  footer: string
+}
+
+export interface TrellisManagerSummaryDraft {
+  title: string
+  summary: string
+  narrative: string
+  highlights: TrellisDetailItem[]
+}
+
 export interface TrellisSummaryInsight {
   scoreDelta: number
   mainPositiveDriver: string

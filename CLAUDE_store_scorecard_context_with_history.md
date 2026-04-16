@@ -621,6 +621,26 @@ Agentforce should remain:
 - secondary
 - integrated into page layout
 
+## Stronger Agentforce demo pieces
+
+To make the business case clearer, Agentforce mode should now show three stronger outputs on top of the same LWC-style workflow:
+
+1. **Top Recommendation**
+- one clear next-best action
+- why it matters
+- expected impact or blocker removal
+
+2. **Revisit Intelligence**
+- a compact change-tracking view for revisit mode
+- retained / updated / removed / added counts
+- pending revisit decisions
+- score impact versus the last completed scorecard
+
+3. **Manager Summary Draft**
+- short business-facing summary text
+- score, LGOR, risk, and next action in one compact draft
+- should feel ready to share, but still clearly front-end generated
+
 It should **not** dominate the UI.
 
 ---

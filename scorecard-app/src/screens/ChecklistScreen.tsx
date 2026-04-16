@@ -22,7 +22,7 @@ import {
   getQuestionStatus,
   getVisitTypeLabel,
 } from '../lib/scorecard'
-import { getChecklistHeaderInsight, getChecklistSuggestion } from '../lib/trellis'
+import { getChecklistHeaderInsight, getChecklistSuggestion, getTopRecommendation } from '../lib/trellis'
 import type { ChecklistAnswer, ChecklistQuestion } from '../types'
 
 const OPTIONS: { value: ChecklistAnswer; label: string }[] = [
@@ -90,6 +90,7 @@ export function ChecklistScreen() {
   const basePlanScore = getChecklistBasePlanScore(checklist)
   const projectedTotalScore = getChecklistDecisionScore(checklist, offShelf)
   const trellisInsight = getChecklistHeaderInsight(app)
+  const topRecommendation = getTopRecommendation(app)
   const groups = CHECKLIST_GROUPS
     .map(group => {
       const questions = checklistQuestions.filter(
@@ -197,14 +198,30 @@ export function ChecklistScreen() {
 
         <div className="px-4 py-3 space-y-3">
           {agentforceEnabled && (
-            <TrellisInsightCard
-              badge="Agentforce Guidance"
-              title={trellisInsight.title}
-              summary={trellisInsight.summary}
-              tone={trellisInsight.tone}
-              items={trellisInsight.items}
-              footer="Agentforce translates live checklist answers into the most useful recovery focus for the current aisle."
-            />
+            <>
+              <TrellisInsightCard
+                badge="Top Recommendation"
+                title={topRecommendation.title}
+                summary={topRecommendation.summary}
+                tone={topRecommendation.tone}
+                metrics={[
+                  { label: 'Impact', value: topRecommendation.impactLabel },
+                ]}
+                items={[
+                  { label: 'Why this matters', value: topRecommendation.reason, tone: topRecommendation.tone },
+                ]}
+                actionLabel={topRecommendation.actionLabel}
+                onAction={() => navigate(topRecommendation.route)}
+              />
+              <TrellisInsightCard
+                badge="Agentforce Guidance"
+                title={trellisInsight.title}
+                summary={trellisInsight.summary}
+                tone={trellisInsight.tone}
+                items={trellisInsight.items}
+                footer="Agentforce translates live checklist answers into the most useful recovery focus for the current aisle."
+              />
+            </>
           )}
           {!agentforceEnabled && (
             <StandardGuidanceCard
