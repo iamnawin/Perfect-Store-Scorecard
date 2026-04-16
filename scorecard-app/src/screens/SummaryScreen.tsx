@@ -15,12 +15,15 @@ import { StandardGuidanceCard } from '../components/StandardGuidanceCard'
 import { TopBar } from '../components/TopBar'
 import { TrellisAskButton, TrellisSummaryCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
-import { checklistQuestions, previousSnapshot, scorecardSections, store } from '../data/mock'
+import { checklistQuestions, previousSnapshot, store } from '../data/mock'
 import {
   getChecklistBasePlanScore,
+  getCurrentSectionNumber,
   getMissingRequiredEvidence,
   getOffShelfIncrementalScore,
+  getPendingFollowUpEntries,
   getRemainingOffShelfRecommendations,
+  getVisitTypeLabel,
   parseOffShelfQuantity,
 } from '../lib/scorecard'
 import { getSummaryInsight } from '../lib/trellis'
@@ -30,6 +33,7 @@ export function SummaryScreen() {
   const app = useApp()
   const [trellisOpen, setTrellisOpen] = useState(false)
   const {
+    visitType,
     checklist,
     offShelf,
     offShelfConfirmed,
@@ -52,8 +56,13 @@ export function SummaryScreen() {
   const basePlanScore = getChecklistBasePlanScore(checklist)
   const incrementalScore = getOffShelfIncrementalScore(offShelf)
   const missingEvidence = getMissingRequiredEvidence(evidence, offShelf)
+  const pendingFollowUpEntries = getPendingFollowUpEntries(offShelf)
   const unansweredCount = checklistQuestions.filter(question => !checklist[question.id]).length
-  const sectionNumber = scorecardSections.findIndex(section => section.id === 'review-submit') + 1
+  const sectionNumber = getCurrentSectionNumber(app)
+  const visitTypeLabel = getVisitTypeLabel(visitType)
+  const retainedCount = offShelf.filter(entry => entry.status === 'retained' || entry.status === 'updated').length
+  const removedCount = offShelf.filter(entry => entry.status === 'removed').length
+  const addedCount = offShelf.filter(entry => entry.status === 'added').length
   const scoreDelta = +(totalScore - previousSnapshot.score).toFixed(1)
   const mapMisses = checklistQuestions.filter(question => question.group === 'map' && checklist[question.id] !== 'yes').length
   const missingTopItems = checklistQuestions.filter(question => question.group === 'pog' && checklist[question.id] !== 'yes').length
@@ -87,13 +96,22 @@ export function SummaryScreen() {
           actionLabel: 'Open Photo Evidence',
         }]
       : []),
-    ...(unansweredCount > 0
+    ...(visitType === 'initial' && unansweredCount > 0
       ? [{
           key: 'unanswered-checks',
           title: `${unansweredCount} checklist question${unansweredCount > 1 ? 's' : ''} still unanswered`,
           detail: 'Finish the checklist so the score summary reflects the full visit.',
           route: '/checklist',
           actionLabel: 'Return to Checklist',
+        }]
+      : []),
+    ...(visitType === 'follow-up' && pendingFollowUpEntries.length > 0
+      ? [{
+          key: 'follow-up-review',
+          title: `${pendingFollowUpEntries.length} prior display${pendingFollowUpEntries.length > 1 ? 's' : ''} still need a follow-up decision`,
+          detail: 'Mark each previous display as Same, Edit, or Gone before you submit the follow-up.',
+          route: '/off-shelf',
+          actionLabel: 'Finish Follow-up Review',
         }]
       : []),
     ...(!offShelfConfirmed && offShelf.length === 0
@@ -186,7 +204,7 @@ export function SummaryScreen() {
       <div className="flex-1 overflow-y-auto bg-[#f4f6f9]">
         <TopBar
           title={submitted ? 'Visit Submitted' : 'Visit Summary'}
-          subtitle={`${store.name} | ${store.visitStatus} Visit`}
+          subtitle={`${store.name} | ${visitTypeLabel} Visit`}
           showBack
         />
 
@@ -244,12 +262,31 @@ export function SummaryScreen() {
           )}
           {!agentforceEnabled && (
             <StandardGuidanceCard
-              title="Review completed actions and follow-ups"
-              summary="Review completed actions, missed items, and required follow-ups."
+              title={visitType === 'follow-up' ? 'Review follow-up changes and required next steps' : 'Review completed actions and follow-ups'}
+              summary={visitType === 'follow-up'
+                ? 'Standard mode keeps this summary focused on retained, removed, and added displays without Agentforce interpretation.'
+                : 'Review completed actions, missed items, and required follow-ups.'}
               detail={`Suggested action: ${blockerCards.length > 0 ? blockerCards[0].actionLabel : buildNextBestAction(remainingRecommendations[0], summaryInsight.nextVisitFocus)}`}
             />
           )}
 
+          {visitType === 'follow-up' && (
+            <InfoBlock title="Follow-up Change Summary" subtitle="Track exactly what changed since the previous visit.">
+              <div className="grid grid-cols-2 gap-2">
+                <MetricTile label="Retained / Updated" value={`${retainedCount}`} tone="success" />
+                <MetricTile label="Removed" value={`${removedCount}`} tone={removedCount > 0 ? 'warning' : 'neutral'} />
+                <MetricTile label="Added" value={`${addedCount}`} tone="success" />
+                <MetricTile label="Pending Review" value={`${pendingFollowUpEntries.length}`} tone={pendingFollowUpEntries.length > 0 ? 'warning' : 'neutral'} />
+              </div>
+              <div className="mt-3 rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Previous summary</p>
+                <p className="mt-1 text-[13px] font-semibold text-on-surface">{previousSnapshot.opportunity}</p>
+                <p className="mt-2 text-[12px] text-on-surface-variant">Last submitted {previousSnapshot.date} by {previousSnapshot.submittedBy}</p>
+              </div>
+            </InfoBlock>
+          )}
+
+          {visitType === 'initial' && (
           <InfoBlock title="Score Breakdown" subtitle="Lightning-style summary of this visit outcome.">
             <div className="grid grid-cols-2 gap-2">
               <MetricTile label="Execution" value={`${executionScore}%`} />
@@ -259,7 +296,9 @@ export function SummaryScreen() {
               <MetricTile label="Risk $" value={formatCurrency(riskValue)} tone={riskValue > previousRiskValue ? 'warning' : 'neutral'} />
             </div>
           </InfoBlock>
+          )}
 
+          {visitType === 'initial' && (
           <InfoBlock title="Current Gaps" subtitle="Business risks that still need attention from the field or next visit.">
             <div className="space-y-2">
               <GapRow
@@ -288,6 +327,7 @@ export function SummaryScreen() {
               />
             </div>
           </InfoBlock>
+          )}
 
           <InfoBlock title="Compared to Last Submission" subtitle="Historical business comparison without AI interpretation.">
             <div className="grid grid-cols-2 gap-2">
@@ -307,7 +347,7 @@ export function SummaryScreen() {
             <InfoBlock title="Visit Flags" subtitle="Field notes and follow-up markers captured during this visit.">
               <div className="space-y-2">
                 {notes && <ListRow icon={<ClipboardCheck size={13} className="text-primary" />} text={`Field note: ${notes}`} />}
-                {revisitRequired && <ListRow icon={<Flag size={13} className="text-[#8b5d00]" />} text="Revisit Required is flagged for this store." />}
+                {revisitRequired && <ListRow icon={<Flag size={13} className="text-[#8b5d00]" />} text="Follow-up Required is flagged for this store." />}
                 {shelfResetNeeded && <ListRow icon={<Flag size={13} className="text-[#8b5d00]" />} text="Shelf Reset Needed is flagged before the next visit." />}
               </div>
             </InfoBlock>
@@ -591,7 +631,7 @@ function buildShareText({
 
   lines.push(
     '',
-    `Revisit Required: ${revisitRequired ? 'On' : 'Off'}`,
+    `Follow-up Required: ${revisitRequired ? 'On' : 'Off'}`,
     `Shelf Reset Needed: ${shelfResetNeeded ? 'On' : 'Off'}`
   )
 

@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
 import {
   Camera,
+  Check,
   ChevronDown,
   ChevronUp,
   CircleEllipsis,
   Copy,
   Edit3,
   Image,
+  Plus,
   Search,
   Sparkles,
   Trash2,
@@ -23,16 +25,18 @@ import {
   offShelfLocations,
   offShelfProducts,
   offShelfQuantityOptions,
-  scorecardSections,
   store,
 } from '../data/mock'
 import {
   estimateOffShelfImpact,
+  getCurrentSectionNumber,
   getOffShelfIncrementalScore,
   getOffShelfProductById,
   getOffShelfQuantityLabel,
+  getPendingFollowUpEntries,
   getPotentialAdditionalGain,
   getRemainingOffShelfRecommendations,
+  getVisitTypeLabel,
 } from '../lib/scorecard'
 import { getOffShelfInsight } from '../lib/trellis'
 import type { OffShelfClassification, OffShelfEntry } from '../types'
@@ -77,6 +81,7 @@ export function OffShelfScreen() {
   const navigate = useNavigate()
   const app = useApp()
   const {
+    visitType,
     offShelf,
     offShelfConfirmed,
     addOffShelfEntry,
@@ -98,9 +103,15 @@ export function OffShelfScreen() {
   const [showCaptured, setShowCaptured] = useState(true)
   const [trellisOpen, setTrellisOpen] = useState(false)
 
-  const sectionNumber = scorecardSections.findIndex(section => section.id === 'off-shelf-capture') + 1
+  const sectionNumber = getCurrentSectionNumber(app)
+  const visitTypeLabel = getVisitTypeLabel(visitType)
   const selectedCategory = offShelfCategories.find(item => item.id === draft.category)
   const selectedProduct = draft.skuId ? getOffShelfProductById(draft.skuId) : undefined
+  const followUpEntries = offShelf.filter(entry => entry.origin === 'previous-visit')
+  const pendingFollowUpEntries = getPendingFollowUpEntries(offShelf)
+  const addedEntries = offShelf.filter(entry => entry.status === 'added')
+  const removedEntries = offShelf.filter(entry => entry.status === 'removed')
+  const retainedEntries = offShelf.filter(entry => entry.status === 'retained' || entry.status === 'updated')
 
   const filteredProducts = offShelfProducts
     .filter(product => !draft.category || product.categoryId === draft.category)
@@ -152,10 +163,14 @@ export function OffShelfScreen() {
   )
 
   const footerHelper = editingId
-    ? 'Update this display record, then continue to evidence review.'
+    ? visitType === 'follow-up'
+      ? 'Save the follow-up change, then continue to evidence review.'
+      : 'Update this display record, then continue to evidence review.'
     : lastSavedAt
       ? `Draft saved at ${lastSavedAt}`
-      : 'Use quick selections to capture incremental displays in under three minutes.'
+      : visitType === 'follow-up'
+        ? 'Review each previous display, then add only the new placements you still need to capture.'
+        : 'Use quick selections to capture incremental displays in under three minutes.'
 
   function updateDraft<K extends keyof DraftState>(key: K, value: DraftState[K]) {
     setDraft(prev => ({ ...prev, [key]: value }))
@@ -196,6 +211,10 @@ export function OffShelfScreen() {
   function handleSaveEntry(resetAfterSave = true) {
     if (!selectedProduct || !draftImpact || !canSaveEntry) return
 
+    const nextStatus = editingEntry
+      ? editingEntry.origin === 'previous-visit' ? 'updated' : editingEntry.status === 'added' ? 'added' : 'saved'
+      : visitType === 'follow-up' ? 'added' : 'saved'
+
     const entry: OffShelfEntry = {
       id: editingId ?? crypto.randomUUID(),
       location: draft.location,
@@ -213,7 +232,8 @@ export function OffShelfScreen() {
       impactPoints: draftImpact.impactPoints,
       multiplier: draftImpact.multiplier,
       multiplierLabel: draftImpact.multiplierLabel,
-      status: 'saved',
+      origin: editingEntry?.origin ?? 'current-visit',
+      status: nextStatus,
     }
 
     if (editingId) {
@@ -234,7 +254,7 @@ export function OffShelfScreen() {
     setEditingId(entry.id)
     setDraft({
       location: entry.location,
-      category: offShelfCategories.find(item => item.label === entry.category)?.id ?? '',
+      category: resolveCategoryId(entry.category),
       skuId: entry.skuId,
       quantity: entry.quantity,
       classification: entry.classification,
@@ -245,6 +265,39 @@ export function OffShelfScreen() {
       notes: entry.notes,
       searchTerm: '',
     })
+  }
+
+  function handleMarkFollowUpEntry(entry: OffShelfEntry, status: OffShelfEntry['status']) {
+    updateOffShelfEntry({
+      ...entry,
+      status,
+    })
+  }
+
+  function handleAddAdditional(sourceEntry?: OffShelfEntry) {
+    if (sourceEntry?.origin === 'previous-visit' && sourceEntry.status === 'pending-review') {
+      handleMarkFollowUpEntry(sourceEntry, 'retained')
+    }
+
+    if (sourceEntry) {
+      setDraft({
+        location: sourceEntry.location,
+        category: resolveCategoryId(sourceEntry.category),
+        skuId: sourceEntry.skuId,
+        quantity: sourceEntry.quantity,
+        classification: sourceEntry.classification,
+        photoCaptured: false,
+        photoName: '',
+        photoPreviewUrl: '',
+        caption: '',
+        notes: '',
+        searchTerm: '',
+      })
+      setEditingId(null)
+      return
+    }
+
+    resetDraft()
   }
 
   function applyRecommendation(recommendation: (typeof remainingRecommendations)[number]) {
@@ -296,7 +349,7 @@ export function OffShelfScreen() {
       <div className="flex-1 overflow-y-auto bg-[#f4f6f9] pb-2">
         <TopBar
           title="Off-Shelf Opportunity Capture"
-          subtitle={`${store.name} | ${store.visitStatus} Visit`}
+          subtitle={`${store.name} | ${visitTypeLabel} Visit`}
           showBack
           rightSlot={(
             <button
@@ -315,7 +368,9 @@ export function OffShelfScreen() {
               <div className="min-w-0">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Progress</p>
                 <p className="text-[12px] text-on-surface-variant mt-1">
-                  {answeredChecks} / {totalChecks} answered | Step {sectionNumber} of {totalSections}
+                  {visitType === 'follow-up'
+                    ? `${followUpEntries.length} prior display ${followUpEntries.length === 1 ? 'entry' : 'entries'} loaded | Step ${sectionNumber} of ${totalSections}`
+                    : `${answeredChecks} / ${totalChecks} answered | Step ${sectionNumber} of ${totalSections}`}
                 </p>
               </div>
               <div className="grid grid-cols-3 gap-2 text-right">
@@ -326,7 +381,7 @@ export function OffShelfScreen() {
             </div>
             <div>
               <div className="mb-1.5 flex items-center justify-between text-[11px] text-on-surface-variant">
-                <span>Off-Shelf Opportunity Capture</span>
+                <span>{visitType === 'follow-up' ? 'Follow-up Display Review' : 'Off-Shelf Opportunity Capture'}</span>
                 <span>{completionPercent}%</span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-[#dde3ea]">
@@ -337,6 +392,51 @@ export function OffShelfScreen() {
         </div>
 
         <div className="px-4 py-3 space-y-3">
+          {visitType === 'follow-up' && (
+            <SectionCard
+              title="Previous Visit Review"
+              subtitle="Confirm what stayed the same, what changed, what is gone, and any additional displays observed on the follow-up."
+              utility={(
+                <button
+                  type="button"
+                  onClick={confirmOffShelfReview}
+                  className="rounded-md border border-outline px-2.5 py-1.5 text-[11px] font-semibold text-on-surface-variant"
+                >
+                  Finish Review
+                </button>
+              )}
+            >
+              <div className="grid grid-cols-2 gap-2">
+                <ScoreCell label="Prior Displays" value={String(followUpEntries.length)} tone="neutral" />
+                <ScoreCell label="Pending" value={String(pendingFollowUpEntries.length)} tone={pendingFollowUpEntries.length > 0 ? 'positive' : 'neutral'} />
+                <ScoreCell label="Retained / Updated" value={String(retainedEntries.length)} tone="positive" />
+                <ScoreCell label="Removed / Added" value={`${removedEntries.length} / ${addedEntries.length}`} tone="neutral" />
+              </div>
+              <div className="space-y-2">
+                {followUpEntries.map((entry, index) => (
+                  <div key={entry.id} className="rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Previous display {index + 1}</p>
+                        <p className="mt-1 text-[13px] font-semibold text-on-surface">{entry.location} | {entry.product} | {getOffShelfQuantityLabel(entry.quantity)}</p>
+                        <p className="mt-1 text-[11px] text-on-surface-variant">{entry.caption || entry.notes || 'Review this display against the current follow-up visit.'}</p>
+                      </div>
+                      <span className={clsx('rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]', followUpStatusTone(entry.status))}>
+                        {formatFollowUpStatus(entry.status)}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <InlineAction icon={<Check size={12} />} label="Same" onClick={() => handleMarkFollowUpEntry(entry, 'retained')} />
+                      <InlineAction icon={<Edit3 size={12} />} label="Edit" onClick={() => handleEdit(entry)} />
+                      <InlineAction icon={<Trash2 size={12} />} label="Gone" onClick={() => handleMarkFollowUpEntry(entry, 'removed')} destructive />
+                      <InlineAction icon={<Plus size={12} />} label="Additional" onClick={() => handleAddAdditional(entry)} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+          )}
+
           <SectionCard title="Score Impact" subtitle="Current score state for this visit.">
             <div className="grid grid-cols-2 gap-2">
               <ScoreCell label="Current Score" value={projectedScore.toFixed(1)} tone="neutral" />
@@ -387,22 +487,30 @@ export function OffShelfScreen() {
           )}
           {!agentforceEnabled && (
             <StandardGuidanceCard
-              title="Capture displays with score impact"
-              summary="Add displays based on store opportunity and business priorities."
-              detail="Suggested action: save each display with photo evidence so the projected score stays review-ready."
+              title={visitType === 'follow-up' ? 'Use follow-up decisions to track change over time' : 'Capture displays with score impact'}
+              summary={visitType === 'follow-up'
+                ? 'Standard mode keeps the same scoring and evidence rules while focusing this screen on retained, removed, and added displays.'
+                : 'Add displays based on store opportunity and business priorities.'}
+              detail={visitType === 'follow-up'
+                ? 'Suggested action: review all previous displays, then save only the new or edited placements with evidence.'
+                : 'Suggested action: save each display with photo evidence so the projected score stays review-ready.'}
             />
           )}
 
           <SectionCard
-            title={editingId ? 'Edit Off-Shelf Display' : 'Add Off-Shelf Display'}
-            subtitle="Capture incremental displays above base plan, attach evidence, and score the impact in real time."
+            title={editingId
+              ? editingEntry?.origin === 'previous-visit' ? 'Update Previous Display' : 'Edit Added Display'
+              : visitType === 'follow-up' ? 'Add Additional Display' : 'Add Off-Shelf Display'}
+            subtitle={visitType === 'follow-up'
+              ? 'Capture only the changed or newly added displays from the follow-up visit.'
+              : 'Capture incremental displays above base plan, attach evidence, and score the impact in real time.'}
             utility={(
               <button
                 type="button"
-                onClick={confirmOffShelfReview}
+                onClick={visitType === 'follow-up' ? () => handleAddAdditional() : confirmOffShelfReview}
                 className="rounded-md border border-outline px-2.5 py-1.5 text-[11px] font-semibold text-on-surface-variant"
               >
-                No display today
+                {visitType === 'follow-up' ? 'Add Blank Entry' : 'No display today'}
               </button>
             )}
           >
@@ -641,11 +749,15 @@ export function OffShelfScreen() {
           )}
 
           <SectionCard
-            title="Added in This Visit"
+            title={visitType === 'follow-up' ? 'Follow-up Change Log' : 'Added in This Visit'}
             subtitle={offShelf.length > 0
-              ? `${offShelf.length} display records saved for this visit.`
+              ? visitType === 'follow-up'
+                ? `${retainedEntries.length} retained or updated | ${removedEntries.length} removed | ${addedEntries.length} added during this follow-up.`
+                : `${offShelf.length} display records saved for this visit.`
               : offShelfConfirmed
-                ? 'No incremental off-shelf displays were confirmed for this visit.'
+                ? visitType === 'follow-up'
+                  ? 'Previous displays were reviewed with no additional displays added.'
+                  : 'No incremental off-shelf displays were confirmed for this visit.'
                 : 'No display records saved yet.'}
             open={showCaptured}
             onToggle={() => setShowCaptured(prev => !prev)}
@@ -663,7 +775,7 @@ export function OffShelfScreen() {
                       </p>
                     </div>
                     <span className="rounded-md border border-[#cde8d3] bg-[#edf7ee] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#1f5f33]">
-                      {entry.status}
+                      {formatFollowUpStatus(entry.status)}
                     </span>
                   </div>
                   {entry.photoPreviewUrl && (
@@ -677,15 +789,24 @@ export function OffShelfScreen() {
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <InlineAction icon={<Edit3 size={12} />} label="Edit" onClick={() => handleEdit(entry)} />
-                    <InlineAction icon={<Copy size={12} />} label="Duplicate" onClick={() => duplicateOffShelfEntry(entry.id)} />
-                    <InlineAction icon={<Trash2 size={12} />} label="Delete" onClick={() => removeOffShelfEntry(entry.id)} destructive />
+                    <InlineAction icon={<Copy size={12} />} label={visitType === 'follow-up' ? 'Additional' : 'Duplicate'} onClick={() => visitType === 'follow-up' ? handleAddAdditional(entry) : duplicateOffShelfEntry(entry.id)} />
+                    <InlineAction
+                      icon={<Trash2 size={12} />}
+                      label={visitType === 'follow-up' && entry.origin === 'previous-visit' ? 'Gone' : 'Delete'}
+                      onClick={() => visitType === 'follow-up' && entry.origin === 'previous-visit'
+                        ? handleMarkFollowUpEntry(entry, 'removed')
+                        : removeOffShelfEntry(entry.id)}
+                      destructive
+                    />
                   </div>
                 </div>
               ))}
 
               {offShelf.length === 0 && (
                 <div className="rounded-lg border border-dashed border-outline bg-[#f7f9fb] px-3 py-4 text-[12px] text-on-surface-variant">
-                  Capture a new display or mark that no incremental opportunity was found during this visit.
+                  {visitType === 'follow-up'
+                    ? 'Review the loaded displays or add a new one if the follow-up uncovered an additional placement.'
+                    : 'Capture a new display or mark that no incremental opportunity was found during this visit.'}
                 </div>
               )}
             </div>
@@ -718,7 +839,7 @@ export function OffShelfScreen() {
               canSaveEntry ? 'bg-primary text-white' : 'bg-[#c9d8ea] text-white'
             )}
           >
-            Save Entry
+            {editingId ? 'Save Change' : 'Save Entry'}
           </button>
           <button
             type="button"
@@ -732,14 +853,14 @@ export function OffShelfScreen() {
               canSaveEntry ? 'bg-[#014486] text-white' : 'bg-[#c9d8ea] text-white'
             )}
           >
-            Add Another
+            {visitType === 'follow-up' ? 'Add Another' : 'Add Another'}
           </button>
           <button
             type="button"
-            onClick={() => navigate('/summary')}
+            onClick={() => navigate('/photo')}
             className="min-h-11 rounded-lg bg-primary px-3 text-[12px] font-semibold text-white"
           >
-            Review Score
+            Next: Evidence
           </button>
         </div>
         <p className="mt-2 text-[11px] text-on-surface-variant">{footerHelper}</p>
@@ -890,6 +1011,32 @@ function formatQuantityOption(value: number | string) {
   if (numeric >= 120) return 'Large Display'
   if (numeric >= 80) return 'Medium Display'
   return 'Small Display'
+}
+
+function resolveCategoryId(category: string) {
+  return offShelfCategories.find(item => item.label === category || item.id === category)?.id ?? ''
+}
+
+function formatFollowUpStatus(status: OffShelfEntry['status']) {
+  return {
+    saved: 'Saved',
+    'pending-review': 'Pending',
+    retained: 'Retained',
+    updated: 'Updated',
+    removed: 'Removed',
+    added: 'Added',
+  }[status]
+}
+
+function followUpStatusTone(status: OffShelfEntry['status']) {
+  return {
+    saved: 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]',
+    'pending-review': 'border-[#ead7b1] bg-[#f9f2e7] text-[#8b5d00]',
+    retained: 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]',
+    updated: 'border-[#c9d8ea] bg-[#edf4ff] text-primary',
+    removed: 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]',
+    added: 'border-[#c9d8ea] bg-[#edf4ff] text-primary',
+  }[status]
 }
 
 function parseQuantityOption(value: string) {

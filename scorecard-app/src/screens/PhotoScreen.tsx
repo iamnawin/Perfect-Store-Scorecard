@@ -7,8 +7,8 @@ import { StandardGuidanceCard } from '../components/StandardGuidanceCard'
 import { TopBar } from '../components/TopBar'
 import { TrellisAskButton, TrellisInsightCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
-import { evidenceRequirements, scorecardSections, store } from '../data/mock'
-import { getLinkedQuestionTitles, getMissingRequiredEvidence } from '../lib/scorecard'
+import { evidenceRequirements, store } from '../data/mock'
+import { getCurrentSectionNumber, getLinkedQuestionTitles, getMissingRequiredEvidence, getVisitTypeLabel } from '../lib/scorecard'
 import { getPhotoInsight } from '../lib/trellis'
 
 export function PhotoScreen() {
@@ -16,6 +16,7 @@ export function PhotoScreen() {
   const app = useApp()
   const [trellisOpen, setTrellisOpen] = useState(false)
   const {
+    visitType,
     checklist,
     questionNotes,
     evidence,
@@ -36,9 +37,11 @@ export function PhotoScreen() {
   } = app
 
   const missingEvidence = getMissingRequiredEvidence(evidence, offShelf)
-  const sectionNumber = scorecardSections.findIndex(section => section.id === 'photo-evidence') + 1
+  const sectionNumber = getCurrentSectionNumber(app)
+  const visitTypeLabel = getVisitTypeLabel(visitType)
   const helperText = lastSavedAt ? `Draft saved at ${lastSavedAt}` : 'Missing required evidence will block submission.'
   const trellisInsight = getPhotoInsight({
+    visitType,
     checklist,
     questionNotes,
     offShelf,
@@ -63,7 +66,7 @@ export function PhotoScreen() {
   return (
     <PhoneShell>
       <div className="flex-1 overflow-y-auto bg-[#f4f6f9]">
-        <TopBar title="Photo Evidence" subtitle={`${store.name} | ${store.visitStatus} Visit`} showBack />
+        <TopBar title="Photo Evidence" subtitle={`${store.name} | ${visitTypeLabel} Visit`} showBack />
 
         <div className="border-b border-outline bg-surface-lowest px-4 py-3">
           <div className="flex items-center justify-between gap-3">
@@ -212,8 +215,8 @@ export function PhotoScreen() {
               <div className="divide-y divide-outline border border-outline rounded-lg overflow-hidden">
                 <Toggle
                   icon={<RotateCcw size={15} className="text-[#8b5d00]" />}
-                  label="Revisit Required"
-                  description="Flag this store for a follow-up visit."
+                  label="Follow-up Required"
+                  description="Flag this store for another follow-up visit."
                   value={revisitRequired}
                   onChange={setRevisitRequired}
                 />

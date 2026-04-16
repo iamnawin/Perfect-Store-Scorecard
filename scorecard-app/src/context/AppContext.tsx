@@ -1,13 +1,16 @@
 import { useState, type ReactNode } from 'react'
-import type { AppState, ChecklistAnswer, OffShelfEntry } from '../types'
+import type { AppState, ChecklistAnswer, OffShelfEntry, VisitType } from '../types'
 import { AppContext } from './app-context'
+import { previousOffShelfSeed } from '../data/mock'
 import {
+  estimateOffShelfImpact,
   createInitialEvidenceState,
   getAnsweredChecks,
   getCapturedRequiredPhotos,
   getCompletionPercent,
   getExecutionScore,
   getLgorPct,
+  getOffShelfProductById,
   getRequiredPhotoCount,
   getRiskDelta,
   getScorecardStatus,
@@ -16,7 +19,51 @@ import {
   getTotalSections,
 } from '../lib/scorecard'
 
+function createFollowUpSeedEntries(): OffShelfEntry[] {
+  return previousOffShelfSeed.flatMap(seed => {
+    const product = getOffShelfProductById(seed.skuId)
+    if (!product) return []
+    const categoryLabel = {
+      'grass-seed': 'Grass Seed',
+      'plant-food': 'Plant Food',
+      'weed-feed': 'Weed & Feed',
+      chemical: 'Chemical',
+      'indoor-soil': 'Indoor Soil',
+      'outdoor-soil': 'Outdoor Soil',
+    }[product.categoryId] ?? product.categoryId
+
+    const impact = estimateOffShelfImpact({
+      product,
+      location: seed.location,
+      quantity: seed.quantity,
+      classification: seed.classification,
+    })
+
+    return [{
+      id: crypto.randomUUID(),
+      location: seed.location,
+      category: categoryLabel,
+      skuId: product.id,
+      product: product.name,
+      quantity: seed.quantity,
+      classification: seed.classification,
+      photoCaptured: false,
+      photoName: '',
+      photoPreviewUrl: '',
+      caption: seed.caption,
+      notes: seed.notes,
+      estimatedLgor: impact.estimatedLgor,
+      impactPoints: impact.impactPoints,
+      multiplier: impact.multiplier,
+      multiplierLabel: impact.multiplierLabel,
+      origin: 'previous-visit',
+      status: 'pending-review',
+    }]
+  })
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
+  const [visitType, setVisitTypeState] = useState<VisitType>('initial')
   const [checklist, setChecklist] = useState<AppState['checklist']>({})
   const [questionNotes, setQuestionNotes] = useState<AppState['questionNotes']>({})
   const [offShelf, setOffShelf] = useState<OffShelfEntry[]>([])
@@ -28,6 +75,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [agentforceEnabled, setAgentforceEnabled] = useState(false)
+
+  function setVisitType(nextVisitType: VisitType) {
+    setVisitTypeState(nextVisitType)
+    setChecklist({})
+    setQuestionNotes({})
+    setOffShelf(nextVisitType === 'follow-up' ? createFollowUpSeedEntries() : [])
+    setOffShelfConfirmed(false)
+    setEvidence(createInitialEvidenceState())
+    setNotes('')
+    setRevisitRequired(false)
+    setShelfResetNeeded(false)
+    setLastSavedAt(null)
+    setSubmitted(false)
+  }
 
   function setChecklistAnswer(itemId: string, answer: ChecklistAnswer) {
     setChecklist(prev => ({ ...prev, [itemId]: answer }))
@@ -58,6 +119,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         {
           ...target,
           id: crypto.randomUUID(),
+          origin: 'current-visit',
+          status: visitType === 'follow-up' ? 'added' : 'saved',
         },
       ]
     })
@@ -136,6 +199,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   const appState: AppState = {
+    visitType,
     checklist,
     questionNotes,
     offShelf,
@@ -151,7 +215,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const answeredChecks = getAnsweredChecks(checklist)
   const totalChecks = getTotalChecks()
-  const totalSections = getTotalSections()
+  const totalSections = getTotalSections(visitType)
   const requiredPhotos = getRequiredPhotoCount()
   const capturedRequiredPhotos = getCapturedRequiredPhotos(evidence, offShelf)
   const completionPercent = getCompletionPercent(appState)
@@ -163,6 +227,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider value={{
+      visitType,
       checklist,
       questionNotes,
       offShelf,
@@ -174,6 +239,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       lastSavedAt,
       submitted,
       agentforceEnabled,
+      setVisitType,
       setChecklistAnswer,
       setQuestionNote,
       addOffShelfEntry,

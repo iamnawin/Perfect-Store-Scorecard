@@ -371,6 +371,25 @@ export const offShelfRecommendations: OffShelfRecommendation[] = [
   },
 ]
 
+export const previousOffShelfSeed = [
+  {
+    skuId: 'weed-feed-15m',
+    location: 'Fence Line',
+    quantity: 80,
+    classification: 'incremental' as const,
+    caption: 'Previous visit fence line placement with promotional signage.',
+    notes: 'Loaded during the last visit and expected to be reviewed on the follow-up.',
+  },
+  {
+    skuId: 'turf-builder-20lb',
+    location: 'Endcap',
+    quantity: 120,
+    classification: 'incremental' as const,
+    caption: 'Previous visit endcap build tied to spring seed demand.',
+    notes: 'High-impact endcap placement from the last submission.',
+  },
+]
+
 export const trellisContent: Record<'entry' | 'checklist' | 'offShelf' | 'photo' | 'summary', TrellisPromptSet> = {
   entry: {
     title: 'Review last visit issues',

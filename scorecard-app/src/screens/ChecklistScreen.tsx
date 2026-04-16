@@ -20,6 +20,7 @@ import {
   getOffShelfIncrementalScore,
   getQuestionEvidenceLabel,
   getQuestionStatus,
+  getVisitTypeLabel,
 } from '../lib/scorecard'
 import { getChecklistHeaderInsight, getChecklistSuggestion } from '../lib/trellis'
 import type { ChecklistAnswer, ChecklistQuestion } from '../types'
@@ -55,6 +56,7 @@ export function ChecklistScreen() {
   const navigate = useNavigate()
   const app = useApp()
   const {
+    visitType,
     checklist,
     questionNotes,
     evidence,
@@ -75,6 +77,7 @@ export function ChecklistScreen() {
   const [trellisOpen, setTrellisOpen] = useState(false)
 
   const checklistCompletionPercent = Math.round((answeredChecks / totalChecks) * 100)
+  const visitTypeLabel = getVisitTypeLabel(visitType)
   const basePlanScore = getChecklistBasePlanScore(checklist)
   const incrementalScore = getOffShelfIncrementalScore(offShelf)
   const projectedTotalScore = getChecklistDecisionScore(checklist, offShelf)
@@ -128,7 +131,7 @@ export function ChecklistScreen() {
       <div className="flex-1 overflow-y-auto bg-[#f4f6f9]">
         <TopBar
           title={store.name}
-          subtitle={`${store.visitStatus} Visit | ${store.scorecard}`}
+          subtitle={`${visitTypeLabel} Visit | ${store.scorecard}`}
           showBack
         />
 

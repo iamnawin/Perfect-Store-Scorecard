@@ -12,6 +12,7 @@ import type {
   ScorecardSection,
   ScorecardStatus,
   StepState,
+  VisitType,
 } from '../types'
 
 export function createInitialEvidenceState() {
@@ -25,8 +26,24 @@ export function getTotalChecks() {
   return checklistQuestions.length
 }
 
-export function getTotalSections() {
-  return scorecardSections.length
+export function getVisitTypeLabel(visitType: VisitType) {
+  return visitType === 'follow-up' ? 'Follow-up' : 'Initial'
+}
+
+export function getActiveScorecardSections(visitType: VisitType) {
+  if (visitType === 'follow-up') {
+    return scorecardSections.filter(section => (
+      section.id === 'off-shelf-capture' ||
+      section.id === 'photo-evidence' ||
+      section.id === 'review-submit'
+    ))
+  }
+
+  return scorecardSections
+}
+
+export function getTotalSections(visitType: VisitType = 'initial') {
+  return getActiveScorecardSections(visitType).length
 }
 
 export function getAnsweredChecks(checklist: ChecklistState) {
@@ -41,8 +58,16 @@ export function getRequiredPhotoCount() {
   return evidenceRequirements.filter(item => item.required).length
 }
 
+function isActiveOffShelfEntry(entry: OffShelfEntry) {
+  return entry.status !== 'removed' && entry.status !== 'pending-review'
+}
+
+export function getPendingFollowUpEntries(offShelf: OffShelfEntry[]) {
+  return offShelf.filter(entry => entry.origin === 'previous-visit' && entry.status === 'pending-review')
+}
+
 function hasOffShelfPhoto(offShelf: OffShelfEntry[]) {
-  return offShelf.some(entry => entry.photoCaptured)
+  return offShelf.some(entry => isActiveOffShelfEntry(entry) && entry.photoCaptured)
 }
 
 function isEvidenceCaptured(itemId: string, evidence: EvidenceState, offShelf: OffShelfEntry[] = []) {
@@ -81,7 +106,15 @@ export function getChecklistSectionProgress(sectionId: string, checklist: Checkl
   }
 }
 
-export function isOffShelfSectionComplete(offShelf: OffShelfEntry[], offShelfConfirmed: boolean) {
+export function isOffShelfSectionComplete(
+  offShelf: OffShelfEntry[],
+  offShelfConfirmed: boolean,
+  visitType: VisitType = 'initial',
+) {
+  if (visitType === 'follow-up') {
+    return getPendingFollowUpEntries(offShelf).length === 0 && (offShelfConfirmed || offShelf.length > 0)
+  }
+
   return offShelfConfirmed || offShelf.length > 0
 }
 
@@ -170,7 +203,10 @@ export function estimateOffShelfImpact({
 }
 
 export function getOffShelfIncrementalScore(entries: OffShelfEntry[]) {
-  return +entries.reduce((total, entry) => total + entry.impactPoints, 0).toFixed(1)
+  return +entries
+    .filter(isActiveOffShelfEntry)
+    .reduce((total, entry) => total + entry.impactPoints, 0)
+    .toFixed(1)
 }
 
 export function getOffShelfOpportunityScore(entries: OffShelfEntry[]) {
@@ -178,7 +214,11 @@ export function getOffShelfOpportunityScore(entries: OffShelfEntry[]) {
 }
 
 export function getRemainingOffShelfRecommendations(entries: OffShelfEntry[]) {
-  const capturedKeys = new Set(entries.map(entry => `${entry.skuId}:${entry.location}`))
+  const capturedKeys = new Set(
+    entries
+      .filter(isActiveOffShelfEntry)
+      .map(entry => `${entry.skuId}:${entry.location}`)
+  )
 
   return offShelfRecommendations
     .filter(item => !capturedKeys.has(`${item.skuId}:${item.location}`))
@@ -206,7 +246,7 @@ export function isSectionComplete(section: ScorecardSection, state: AppState) {
   }
 
   if (section.id === 'off-shelf-capture') {
-    return isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed)
+    return isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed, state.visitType)
   }
 
   if (section.id === 'photo-evidence') {
@@ -219,11 +259,15 @@ export function isSectionComplete(section: ScorecardSection, state: AppState) {
 export function getCompletionPercent(state: AppState) {
   if (state.submitted) return 100
 
-  const totalUnits = getTotalChecks() + getRequiredPhotoCount() + 1
-  const completedUnits =
-    getAnsweredChecks(state.checklist) +
-    getCapturedRequiredPhotos(state.evidence, state.offShelf) +
-    (isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed) ? 1 : 0)
+  const totalUnits = state.visitType === 'follow-up'
+    ? getRequiredPhotoCount() + 1
+    : getTotalChecks() + getRequiredPhotoCount() + 1
+  const completedUnits = state.visitType === 'follow-up'
+    ? getCapturedRequiredPhotos(state.evidence, state.offShelf) +
+      (isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed, state.visitType) ? 1 : 0)
+    : getAnsweredChecks(state.checklist) +
+      getCapturedRequiredPhotos(state.evidence, state.offShelf) +
+      (isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed, state.visitType) ? 1 : 0)
 
   return Math.round((completedUnits / totalUnits) * 100)
 }
@@ -242,29 +286,33 @@ export function getScorecardStatus(state: AppState): ScorecardStatus {
 
   if (!touched) return 'not-started'
 
-  const ready =
-    getAnsweredChecks(state.checklist) === getTotalChecks() &&
-    isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed) &&
-    isPhotoSectionComplete(state.evidence, state.offShelf)
+  const ready = state.visitType === 'follow-up'
+    ? isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed, state.visitType) &&
+      isPhotoSectionComplete(state.evidence, state.offShelf)
+    : getAnsweredChecks(state.checklist) === getTotalChecks() &&
+      isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed, state.visitType) &&
+      isPhotoSectionComplete(state.evidence, state.offShelf)
 
   return ready ? 'ready-for-review' : 'in-progress'
 }
 
 export function getCurrentSection(state: AppState) {
-  const next = scorecardSections.find(section => !isSectionComplete(section, state))
-  return next ?? scorecardSections[scorecardSections.length - 1]
+  const activeSections = getActiveScorecardSections(state.visitType)
+  const next = activeSections.find(section => !isSectionComplete(section, state))
+  return next ?? activeSections[activeSections.length - 1]
 }
 
 export function getCurrentSectionNumber(state: AppState) {
   const current = getCurrentSection(state)
-  return scorecardSections.findIndex(section => section.id === current.id) + 1
+  return getActiveScorecardSections(state.visitType).findIndex(section => section.id === current.id) + 1
 }
 
 export function getStepState(sectionId: string, state: AppState): StepState {
-  const sectionIndex = scorecardSections.findIndex(section => section.id === sectionId)
+  const activeSections = getActiveScorecardSections(state.visitType)
+  const sectionIndex = activeSections.findIndex(section => section.id === sectionId)
   const currentIndex = getCurrentSectionNumber(state) - 1
   const status = getScorecardStatus(state)
-  const section = scorecardSections[sectionIndex]
+  const section = activeSections[sectionIndex]
 
   if (section && isSectionComplete(section, state)) return 'completed'
   if (status === 'not-started') return sectionIndex === 0 ? 'pending' : 'locked'

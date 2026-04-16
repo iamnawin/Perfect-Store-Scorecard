@@ -2,7 +2,9 @@ export type ChecklistAnswer = 'yes' | 'no' | 'na' | null
 export type ScorecardStatus = 'not-started' | 'in-progress' | 'ready-for-review' | 'completed'
 export type StepState = 'completed' | 'in-progress' | 'pending' | 'locked'
 export type OffShelfClassification = 'base-plan' | 'incremental' | 'not-sure'
-export type OffShelfStatus = 'saved'
+export type VisitType = 'initial' | 'follow-up'
+export type OffShelfStatus = 'saved' | 'pending-review' | 'retained' | 'updated' | 'removed' | 'added'
+export type OffShelfOrigin = 'current-visit' | 'previous-visit'
 
 export interface ChecklistState {
   [itemId: string]: ChecklistAnswer
@@ -45,6 +47,7 @@ export interface OffShelfEntry {
   impactPoints: number
   multiplier: number
   multiplierLabel: string
+  origin: OffShelfOrigin
   status: OffShelfStatus
 }
 
@@ -160,6 +163,7 @@ export interface LeaderboardEntry {
 }
 
 export interface AppState {
+  visitType: VisitType
   checklist: ChecklistState
   questionNotes: QuestionNotesState
   offShelf: OffShelfEntry[]

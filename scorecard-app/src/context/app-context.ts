@@ -1,7 +1,8 @@
 import { createContext } from 'react'
-import type { AppState, ChecklistAnswer, OffShelfEntry, ScorecardStatus } from '../types'
+import type { AppState, ChecklistAnswer, OffShelfEntry, ScorecardStatus, VisitType } from '../types'
 
 export interface AppContextValue extends AppState {
+  setVisitType: (visitType: VisitType) => void
   setChecklistAnswer: (itemId: string, answer: ChecklistAnswer) => void
   setQuestionNote: (itemId: string, note: string) => void
   addOffShelfEntry: (entry: OffShelfEntry) => void
