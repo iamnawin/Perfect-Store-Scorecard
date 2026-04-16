@@ -51,9 +51,9 @@ const CHECKLIST_GROUPS = [
   },
   {
     id: 'display',
-    sectionLabel: 'Secondary Displays',
-    title: 'Secondary Display Execution',
-    helper: 'Validate feature space execution before capturing incremental off-shelf details.',
+    sectionLabel: 'Feature Space',
+    title: 'Display Execution',
+    helper: 'Validate feature space before incremental off-shelf capture.',
   },
 ] as const
 
@@ -137,7 +137,9 @@ export function ChecklistScreen() {
     : 'Finish this step, then move to off-shelf capture.'
   const primaryLabel = nextChecklistSection ? `Next: ${nextChecklistSection.title}` : 'Next: Off-Shelf'
   const primaryRoute = nextChecklistSection?.route ?? '/off-shelf'
-  const sectionBadge = activeSection.id === 'base-plan' ? 'Base Plan' : 'Secondary Displays'
+  const sectionBadge = activeSection.id === 'base-plan' ? 'Base Plan' : 'Feature Space'
+  const headerTitle = activeSection.id === 'base-plan' ? activeSection.title : 'Feature Display Check'
+  const guidanceTitle = activeSection.id === 'base-plan' ? activeSection.title : 'Feature Space Check'
 
   function toggleNote(questionId: string) {
     setOpenNotes(prev => {
@@ -173,7 +175,7 @@ export function ChecklistScreen() {
         />
 
         <div className="border-b border-outline bg-surface-lowest px-4 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">{activeSection.title}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">{headerTitle}</p>
           <div className="mt-2 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[12px] text-on-surface-variant">
@@ -224,7 +226,7 @@ export function ChecklistScreen() {
           )}
           {!agentforceEnabled && (
             <StandardGuidanceCard
-              title={activeSection.title}
+              title={guidanceTitle}
               summary={standardSummary}
               detail={standardDetail}
             />

@@ -80,7 +80,7 @@ export const scorecardSections: ScorecardSection[] = [
   },
   {
     id: 'secondary-displays',
-    title: 'Secondary Display Check',
+    title: 'Feature Display Check',
     description: 'Confirm off-aisle placements and feature space execution.',
     route: '/checklist/secondary-displays',
     kind: 'checklist',

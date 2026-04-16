@@ -532,16 +532,16 @@ export function OffShelfScreen() {
               : visitType === 'follow-up' ? 'Add Additional Display' : 'Add Incremental Display'}
             subtitle={visitType === 'follow-up'
               ? 'Capture only the changed or newly added displays from the follow-up visit.'
-              : 'Capture Above & Beyond displays beyond base plan, attach evidence, and score the incremental impact in real time.'}
-            utility={(
+              : 'Capture Above & Beyond displays and score the incremental impact.'}
+            utility={visitType === 'follow-up' ? (
               <button
                 type="button"
-                onClick={visitType === 'follow-up' ? () => handleAddAdditional() : confirmOffShelfReview}
+                onClick={() => handleAddAdditional()}
                 className="rounded-md border border-outline px-2.5 py-1.5 text-[11px] font-semibold text-on-surface-variant"
               >
-                {visitType === 'follow-up' ? 'Add Blank Entry' : 'No Incremental Display Today'}
+                Add Blank Entry
               </button>
-            )}
+            ) : undefined}
           >
             <FieldLabel label="Display Location" />
             <SegmentGrid
