@@ -101,6 +101,18 @@ export interface TrellisPromptSet {
 export type TrellisTone = 'info' | 'success' | 'warning'
 export type TrellisActionIntent = 'primary' | 'secondary' | 'warning'
 
+export interface AppToast {
+  id: number
+  title: string
+  message: string
+}
+
+export interface SubmissionCelebration {
+  id: number
+  title: string
+  message: string
+}
+
 export interface TrellisMetric {
   label: string
   value: string
@@ -175,4 +187,6 @@ export interface AppState {
   lastSavedAt: string | null
   submitted: boolean
   agentforceEnabled: boolean
+  toast: AppToast | null
+  celebration: SubmissionCelebration | null
 }

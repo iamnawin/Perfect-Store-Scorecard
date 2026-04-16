@@ -60,7 +60,8 @@ export function SummaryScreen() {
   const unansweredCount = checklistQuestions.filter(question => !checklist[question.id]).length
   const sectionNumber = getCurrentSectionNumber(app)
   const visitTypeLabel = getVisitTypeLabel(visitType)
-  const retainedCount = offShelf.filter(entry => entry.status === 'retained' || entry.status === 'updated').length
+  const retainedCount = offShelf.filter(entry => entry.status === 'retained').length
+  const updatedCount = offShelf.filter(entry => entry.status === 'updated').length
   const removedCount = offShelf.filter(entry => entry.status === 'removed').length
   const addedCount = offShelf.filter(entry => entry.status === 'added').length
   const scoreDelta = +(totalScore - previousSnapshot.score).toFixed(1)
@@ -192,7 +193,7 @@ export function SummaryScreen() {
 
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(shareText)
-      window.alert('Visit snapshot copied. Paste it into Chatter.')
+      window.alert('Visit snapshot copied.')
       return
     }
 
@@ -250,7 +251,7 @@ export function SummaryScreen() {
 
           {agentforceEnabled && (
             <TrellisSummaryCard
-              title="Agentforce Summary"
+              title="Execution Summary"
               summary={summaryInsight.narrative}
               highlights={[
                 { label: 'Main positive driver', value: summaryInsight.mainPositiveDriver, tone: 'success' },
@@ -262,7 +263,7 @@ export function SummaryScreen() {
           )}
           {!agentforceEnabled && (
             <StandardGuidanceCard
-              title={visitType === 'follow-up' ? 'Review follow-up changes and required next steps' : 'Review completed actions and follow-ups'}
+              title={visitType === 'follow-up' ? 'Visit Outcome & Next Actions' : 'Visit Outcome & Next Actions'}
               summary={visitType === 'follow-up'
                 ? 'Standard mode keeps this summary focused on retained, removed, and added displays without Agentforce interpretation.'
                 : 'Review completed actions, missed items, and required follow-ups.'}
@@ -271,11 +272,13 @@ export function SummaryScreen() {
           )}
 
           {visitType === 'follow-up' && (
-            <InfoBlock title="Follow-up Change Summary" subtitle="Track exactly what changed since the previous visit.">
+            <InfoBlock title="Execution Summary" subtitle="Track exactly what changed since the previous completed scorecard.">
               <div className="grid grid-cols-2 gap-2">
-                <MetricTile label="Retained / Updated" value={`${retainedCount}`} tone="success" />
+                <MetricTile label="Retained" value={`${retainedCount}`} tone="success" />
+                <MetricTile label="Updated" value={`${updatedCount}`} tone="success" />
                 <MetricTile label="Removed" value={`${removedCount}`} tone={removedCount > 0 ? 'warning' : 'neutral'} />
                 <MetricTile label="Added" value={`${addedCount}`} tone="success" />
+                <MetricTile label="Net Score Impact" value={`${scoreDelta >= 0 ? '+' : ''}${scoreDelta.toFixed(1)} pts`} tone={scoreDelta >= 0 ? 'success' : 'warning'} />
                 <MetricTile label="Pending Review" value={`${pendingFollowUpEntries.length}`} tone={pendingFollowUpEntries.length > 0 ? 'warning' : 'neutral'} />
               </div>
               <div className="mt-3 rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
@@ -329,7 +332,7 @@ export function SummaryScreen() {
           </InfoBlock>
           )}
 
-          <InfoBlock title="Compared to Last Submission" subtitle="Historical business comparison without AI interpretation.">
+          <InfoBlock title="Compared to Last Completed Scorecard" subtitle="Historical business comparison without implying backend delivery.">
             <div className="grid grid-cols-2 gap-2">
               <MetricTile label="Last Score" value={String(previousSnapshot.score)} />
               <MetricTile label="Score Trend" value={`${scoreDelta >= 0 ? '+' : ''}${scoreDelta.toFixed(1)} pts`} tone={scoreDelta >= 0 ? 'success' : 'warning'} />
@@ -344,19 +347,19 @@ export function SummaryScreen() {
           </InfoBlock>
 
           {(notes || revisitRequired || shelfResetNeeded) && (
-            <InfoBlock title="Visit Flags" subtitle="Field notes and follow-up markers captured during this visit.">
+            <InfoBlock title="Visit Outcome & Next Actions" subtitle="Field notes and tracked next-step flags captured during this visit.">
               <div className="space-y-2">
                 {notes && <ListRow icon={<ClipboardCheck size={13} className="text-primary" />} text={`Field note: ${notes}`} />}
-                {revisitRequired && <ListRow icon={<Flag size={13} className="text-[#8b5d00]" />} text="Follow-up Required is flagged for this store." />}
+                {revisitRequired && <ListRow icon={<Flag size={13} className="text-[#8b5d00]" />} text="Revisit Required is flagged for this store." />}
                 {shelfResetNeeded && <ListRow icon={<Flag size={13} className="text-[#8b5d00]" />} text="Shelf Reset Needed is flagged before the next visit." />}
               </div>
             </InfoBlock>
           )}
 
-          <InfoBlock title="Submission Actions" subtitle="Share or submit the visit summary from the field.">
+          <InfoBlock title="Submission Actions" subtitle="Share a snapshot or submit the scorecard from the field.">
             <div className="grid grid-cols-1 gap-2">
               <ActionButton label="Email Snapshot" icon={<Mail size={14} />} tone="secondary" onClick={openEmailSnapshot} />
-              <ActionButton label="Post to Chatter" icon={<Share2 size={14} />} tone="secondary" onClick={() => { void shareToTeamFeed() }} />
+              <ActionButton label="Copy Snapshot" icon={<Share2 size={14} />} tone="secondary" onClick={() => { void shareToTeamFeed() }} />
               <ActionButton
                 label={submitted ? 'Visit Submitted' : blockerCards.length === 0 ? 'Submit Visit' : blockerCards[0]?.actionLabel ?? 'Resolve Blocker'}
                 icon={submitted ? <CheckCircle2 size={14} /> : blockerCards.length === 0 ? <Send size={14} /> : <AlertTriangle size={14} />}
@@ -365,7 +368,7 @@ export function SummaryScreen() {
             </div>
           </InfoBlock>
 
-          <InfoBlock title="Required Before Submit" subtitle="Resolve these blockers before the visit can be closed.">
+          <InfoBlock title="Required Before Submit" subtitle="Resolve these blockers before the scorecard can be closed.">
             <div className="space-y-2">
               {blockerCards.length > 0 ? blockerCards.map(blocker => (
                 <div key={blocker.key} className="rounded-lg border border-[#f9d6d0] bg-[#fef1ee] px-3 py-3">
@@ -631,7 +634,7 @@ function buildShareText({
 
   lines.push(
     '',
-    `Follow-up Required: ${revisitRequired ? 'On' : 'Off'}`,
+    `Revisit Required: ${revisitRequired ? 'On' : 'Off'}`,
     `Shelf Reset Needed: ${shelfResetNeeded ? 'On' : 'Off'}`
   )
 

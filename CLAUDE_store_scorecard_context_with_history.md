@@ -218,6 +218,140 @@ Use simple example product categories such as:
 - Weed & Feed
 - Fertilizer
 - Controls
+
+---
+
+# Follow-up Terminology
+
+Follow-up is a NEW scorecard instance based on the previous completed scorecard.
+It is used to validate what changed since the last completed execution.
+
+Initial = full new scorecard
+Follow-up = new scorecard based on prior completed scorecard
+Resume Draft = continuation of an unfinished scorecard
+
+Important:
+Do not mix Follow-up with Resume.
+
+Follow-up is not a resumed draft.
+It is a change-tracking scorecard run created after a previous scorecard has already been completed.
+
+This distinction is important for:
+- user understanding
+- data model clarity
+- correct summary logic
+- future reporting
+
+---
+
+# Revisit Flag Terminology
+
+Replace Follow-up Required with Revisit Required.
+
+Definition:
+Revisit Required is a user-set flag indicating that the store should be tracked for a future execution visit.
+
+Purpose:
+- highlight unresolved gaps
+- mark store for future operational review
+- support follow-up planning
+
+---
+
+# Revisit Flag UX
+
+When Revisit Required is enabled, the UI should show a non-blocking confirmation message.
+
+Recommended message:
+Revisit flagged successfully.
+This store will be tracked for follow-up execution.
+
+This is a front-end confirmation only unless backend workflow is implemented.
+
+---
+
+# Shelf Reset Flag UX
+
+When Shelf Reset Needed is enabled, the UI should show a non-blocking confirmation message.
+
+Recommended message:
+Shelf reset flagged successfully.
+This store will be marked for layout correction before the next visit.
+
+---
+
+# Submission Success Feedback
+
+The system may show a subtle success celebration after successful scorecard submission.
+
+Trigger conditions:
+- scorecard submitted successfully
+- at least one incremental display captured
+- no critical blockers remaining
+
+Recommended feedback:
+- subtle confetti animation
+- success message:
+  Nice execution! You added incremental value to this store.
+
+Purpose:
+- reinforce positive execution behavior
+- improve demo experience
+- reward meaningful completion
+
+Do not trigger celebration:
+- for draft save
+- for blocked submission
+- when required evidence is missing
+
+---
+
+# Follow-up Entry Experience
+
+Follow-up mode should present the previous completed scorecard as a reference baseline, not as an unfinished draft.
+
+Expected content:
+- previous completed scorecard loaded
+- prior score
+- prior display count
+- last completed date
+- explanation of follow-up purpose
+
+Primary CTA:
+Start Follow-up
+
+Suggested flow steps:
+- Review Prior Displays
+- Update Evidence
+- Review Changes & Submit
+
+Avoid wording such as:
+- Continue Follow-up
+- Resume point
+- In Progress
+
+when referring to a new follow-up session.
+
+---
+
+# Scorecard Execution States
+
+The product conceptually supports 3 execution states:
+
+Initial
+- full execution flow
+
+Follow-up
+- new execution session using previous completed scorecard as baseline
+
+Resume Draft
+- unfinished session continued later
+
+Current MVP priority:
+- Initial
+- Follow-up
+
+Resume Draft may remain future or separate if not implemented explicitly.
 - Other
 
 Use quantity bucket examples such as:

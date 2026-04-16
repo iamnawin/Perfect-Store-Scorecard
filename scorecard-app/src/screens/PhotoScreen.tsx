@@ -53,6 +53,8 @@ export function PhotoScreen() {
     lastSavedAt,
     submitted: false,
     agentforceEnabled,
+    toast: null,
+    celebration: null,
   })
   const agentforceDraft = buildAgentforceDraft({
     missingEvidenceCount: missingEvidence.length,
@@ -103,7 +105,7 @@ export function PhotoScreen() {
               summary={agentforceDraft}
               tone={trellisInsight.tone}
               metrics={trellisInsight.metrics}
-              footer="Agentforce turns the captured proof into a manager-ready visit note using mock local logic only."
+              footer="Agentforce turns the captured proof into a review-ready visit note using mock local logic only."
             />
           )}
           {!agentforceEnabled && (
@@ -202,7 +204,7 @@ export function PhotoScreen() {
             </div>
             <div className="px-4 py-4 space-y-4">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant mb-2">Manager notes</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant mb-2">Visit notes</p>
                 <textarea
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
@@ -215,8 +217,8 @@ export function PhotoScreen() {
               <div className="divide-y divide-outline border border-outline rounded-lg overflow-hidden">
                 <Toggle
                   icon={<RotateCcw size={15} className="text-[#8b5d00]" />}
-                  label="Follow-up Required"
-                  description="Flag this store for another follow-up visit."
+                  label="Revisit Required"
+                  description="Flag this store for a follow-up execution visit."
                   value={revisitRequired}
                   onChange={setRevisitRequired}
                 />
@@ -278,10 +280,10 @@ function buildAgentforceDraft({
     ? `${offShelfCount} incremental display record${offShelfCount > 1 ? 's' : ''} captured with required proof complete.`
     : 'Required base-plan evidence is complete for this visit.'
   const followUpLine = revisitRequired
-    ? 'Follow-up visit remains flagged.'
+    ? 'Revisit remains flagged for follow-up execution.'
     : shelfResetNeeded
       ? 'Shelf reset remains flagged before the next visit.'
-      : 'No follow-up flag is currently set.'
+      : 'No revisit flag is currently set.'
 
   return noteSeed
     ? `${noteSeed} ${statusLine} ${followUpLine}`

@@ -51,6 +51,67 @@ This is enough to validate:
 
 ---
 
+# Follow-up Positioning Note
+
+Follow-up is not a resumed draft.
+It is a new scorecard run based on the previous completed scorecard and focused on validating what changed.
+
+Conceptual execution states:
+- Initial
+- Follow-up
+- Resume Draft
+
+Current MVP priority:
+- Initial
+- Follow-up
+
+When Follow-up is shown on the entry screen, the UX should emphasize:
+- previous completed scorecard loaded
+- prior score
+- prior display count
+- last completed date
+- follow-up purpose explanation
+
+Preferred CTA:
+- Start Follow-up
+
+Preferred flow steps:
+- Review Prior Displays
+- Update Evidence
+- Review Changes & Submit
+
+Avoid:
+- Continue Follow-up
+- Resume point
+- In Progress
+
+when describing a new follow-up session.
+
+---
+
+# Revisit And Success Feedback
+
+Use Revisit Required as the flag name instead of Follow-up Required.
+
+When Revisit Required is enabled, show a non-blocking confirmation message:
+Revisit flagged successfully.
+This store will be tracked for follow-up execution.
+
+When Shelf Reset Needed is enabled, show a non-blocking confirmation message:
+Shelf reset flagged successfully.
+This store will be marked for layout correction before the next visit.
+
+After successful submission, the prototype may show subtle success feedback when:
+- the scorecard submits successfully
+- at least one incremental display was captured
+- no critical blockers remain
+
+Recommended celebration:
+- subtle confetti animation
+- Nice execution! You added incremental value to this store.
+
+---
+
 # 3) Global UI Direction
 
 Use these principles across all screens:

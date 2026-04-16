@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { AppState, ChecklistAnswer, OffShelfEntry, VisitType } from '../types'
 import { AppContext } from './app-context'
 import { previousOffShelfSeed } from '../data/mock'
@@ -10,6 +10,7 @@ import {
   getCompletionPercent,
   getExecutionScore,
   getLgorPct,
+  getMissingRequiredEvidence,
   getOffShelfProductById,
   getRequiredPhotoCount,
   getRiskDelta,
@@ -17,6 +18,8 @@ import {
   getTotalChecks,
   getTotalScore,
   getTotalSections,
+  getPendingFollowUpEntries,
+  getOffShelfIncrementalScore,
 } from '../lib/scorecard'
 
 function createFollowUpSeedEntries(): OffShelfEntry[] {
@@ -70,11 +73,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [offShelfConfirmed, setOffShelfConfirmed] = useState(false)
   const [evidence, setEvidence] = useState<AppState['evidence']>(() => createInitialEvidenceState())
   const [notes, setNotes] = useState('')
-  const [revisitRequired, setRevisitRequired] = useState(false)
-  const [shelfResetNeeded, setShelfResetNeeded] = useState(false)
+  const [revisitRequired, setRevisitRequiredState] = useState(false)
+  const [shelfResetNeeded, setShelfResetNeededState] = useState(false)
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [agentforceEnabled, setAgentforceEnabled] = useState(false)
+  const [toast, setToast] = useState<AppState['toast']>(null)
+  const [celebration, setCelebration] = useState<AppState['celebration']>(null)
+
+  useEffect(() => {
+    if (!toast) return
+    const timer = window.setTimeout(() => setToast(null), 2600)
+    return () => window.clearTimeout(timer)
+  }, [toast])
+
+  useEffect(() => {
+    if (!celebration) return
+    const timer = window.setTimeout(() => setCelebration(null), 2400)
+    return () => window.clearTimeout(timer)
+  }, [celebration])
+
+  function triggerToast(title: string, message: string) {
+    setToast({
+      id: Date.now(),
+      title,
+      message,
+    })
+  }
 
   function setVisitType(nextVisitType: VisitType) {
     setVisitTypeState(nextVisitType)
@@ -84,10 +109,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setOffShelfConfirmed(false)
     setEvidence(createInitialEvidenceState())
     setNotes('')
-    setRevisitRequired(false)
-    setShelfResetNeeded(false)
+    setRevisitRequiredState(false)
+    setShelfResetNeededState(false)
     setLastSavedAt(null)
     setSubmitted(false)
+    setToast(null)
+    setCelebration(null)
   }
 
   function setChecklistAnswer(itemId: string, answer: ChecklistAnswer) {
@@ -193,9 +220,52 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setLastSavedAt(new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))
   }
 
+  function setRevisitRequired(nextValue: boolean) {
+    setRevisitRequiredState(prev => {
+      if (nextValue && !prev) {
+        triggerToast(
+          'Revisit flagged successfully.',
+          'This store will be tracked for follow-up execution.'
+        )
+      }
+      return nextValue
+    })
+  }
+
+  function setShelfResetNeeded(nextValue: boolean) {
+    setShelfResetNeededState(prev => {
+      if (nextValue && !prev) {
+        triggerToast(
+          'Shelf reset flagged successfully.',
+          'This store will be marked for layout correction before the next visit.'
+        )
+      }
+      return nextValue
+    })
+  }
+
   function submitScorecard() {
+    const hasCriticalBlockers = getMissingRequiredEvidence(evidence, offShelf).length > 0 ||
+      (visitType === 'initial' && getAnsweredChecks(checklist) !== getTotalChecks()) ||
+      (visitType === 'follow-up' && getPendingFollowUpEntries(offShelf).length > 0)
+    const hasIncrementalAddedThisRun = offShelf.some(entry => (
+      visitType === 'follow-up'
+        ? entry.status === 'added'
+        : entry.origin === 'current-visit'
+    ))
+    const shouldCelebrate = !hasCriticalBlockers &&
+      hasIncrementalAddedThisRun &&
+      getOffShelfIncrementalScore(offShelf) > 0
+
     setSubmitted(true)
     saveDraft()
+    if (shouldCelebrate) {
+      setCelebration({
+        id: Date.now(),
+        title: 'Nice execution!',
+        message: 'You added incremental value to this store.',
+      })
+    }
   }
 
   const appState: AppState = {
@@ -211,6 +281,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     lastSavedAt,
     submitted,
     agentforceEnabled,
+    toast,
+    celebration,
   }
 
   const answeredChecks = getAnsweredChecks(checklist)
@@ -239,6 +311,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       lastSavedAt,
       submitted,
       agentforceEnabled,
+      toast,
+      celebration,
       setVisitType,
       setChecklistAnswer,
       setQuestionNote,

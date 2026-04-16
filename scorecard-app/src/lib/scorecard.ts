@@ -62,6 +62,16 @@ function isActiveOffShelfEntry(entry: OffShelfEntry) {
   return entry.status !== 'removed' && entry.status !== 'pending-review'
 }
 
+function hasStartedFollowUpReview(offShelf: OffShelfEntry[]) {
+  return offShelf.some(entry => (
+    entry.origin === 'current-visit' ||
+    entry.status === 'retained' ||
+    entry.status === 'updated' ||
+    entry.status === 'removed' ||
+    entry.status === 'added'
+  ))
+}
+
 export function getPendingFollowUpEntries(offShelf: OffShelfEntry[]) {
   return offShelf.filter(entry => entry.origin === 'previous-visit' && entry.status === 'pending-review')
 }
@@ -275,14 +285,20 @@ export function getCompletionPercent(state: AppState) {
 export function getScorecardStatus(state: AppState): ScorecardStatus {
   if (state.submitted) return 'completed'
 
-  const touched =
-    getAnsweredChecks(state.checklist) > 0 ||
-    state.offShelf.length > 0 ||
-    state.offShelfConfirmed ||
-    getCapturedRequiredPhotos(state.evidence, state.offShelf) > 0 ||
-    state.notes.trim().length > 0 ||
-    state.revisitRequired ||
-    state.shelfResetNeeded
+  const touched = state.visitType === 'follow-up'
+    ? hasStartedFollowUpReview(state.offShelf) ||
+      state.offShelfConfirmed ||
+      getCapturedRequiredPhotos(state.evidence, state.offShelf) > 0 ||
+      state.notes.trim().length > 0 ||
+      state.revisitRequired ||
+      state.shelfResetNeeded
+    : getAnsweredChecks(state.checklist) > 0 ||
+      state.offShelf.length > 0 ||
+      state.offShelfConfirmed ||
+      getCapturedRequiredPhotos(state.evidence, state.offShelf) > 0 ||
+      state.notes.trim().length > 0 ||
+      state.revisitRequired ||
+      state.shelfResetNeeded
 
   if (!touched) return 'not-started'
 

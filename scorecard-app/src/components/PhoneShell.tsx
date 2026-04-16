@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { FeedbackLayer } from './FeedbackLayer'
 
 export function PhoneShell({ children }: { children: ReactNode }) {
   return (
@@ -9,6 +10,7 @@ export function PhoneShell({ children }: { children: ReactNode }) {
             <div className="flex min-h-0 flex-1 flex-col">
               {children}
             </div>
+            <FeedbackLayer />
           </div>
         </div>
       </div>

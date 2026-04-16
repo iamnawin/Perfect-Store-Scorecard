@@ -46,3 +46,49 @@ body {
   justify-content: center;
   overflow-x: hidden;
 }
+
+@keyframes codexToastEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes codexConfettiBurst {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.7);
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--confetti-x, 0), 84px, 0) rotate(180deg) scale(1);
+  }
+}
+
+.codex-toast-enter {
+  animation: codexToastEnter 220ms ease-out;
+}
+
+.codex-confetti {
+  --confetti-x: 0;
+  animation: codexConfettiBurst 1100ms ease-out forwards;
+}
+
+.codex-confetti:nth-child(3n) {
+  --confetti-x: -28px;
+}
+
+.codex-confetti:nth-child(3n + 1) {
+  --confetti-x: 22px;
+}
+
+.codex-confetti:nth-child(3n + 2) {
+  --confetti-x: 48px;
+}
