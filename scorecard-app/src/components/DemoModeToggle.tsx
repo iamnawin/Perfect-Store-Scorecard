@@ -1,51 +1,28 @@
-import clsx from 'clsx'
 import { useApp } from '../context/useApp'
 
 export function DemoModeToggle() {
   const { agentforceEnabled, setAgentforceEnabled } = useApp()
 
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-outline bg-[#f7f9fb] px-2 py-1">
-      <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">
-        Demo Mode
-      </p>
-      <div className="inline-grid grid-cols-2 gap-1 rounded-full bg-[#eef2f6] p-0.5">
-        <ModePill
-          active={!agentforceEnabled}
-          label="Standard"
-          onClick={() => setAgentforceEnabled(false)}
-        />
-        <ModePill
-          active={agentforceEnabled}
-          label="Agentforce"
-          onClick={() => setAgentforceEnabled(true)}
-        />
-      </div>
-    </div>
-  )
-}
-
-function ModePill({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean
-  label: string
-  onClick: () => void
-}) {
-  return (
     <button
       type="button"
-      onClick={onClick}
-      className={clsx(
-        'min-h-6 rounded-full px-2.5 text-[10px] font-semibold leading-none transition-colors',
-        active
-          ? 'bg-primary text-white'
-          : 'bg-transparent text-on-surface-variant'
-      )}
+      onClick={() => setAgentforceEnabled(!agentforceEnabled)}
+      className="inline-flex items-center gap-2 rounded-full border border-[#c9d8ea] bg-[#f7f9fb] px-2.5 py-1"
+      aria-pressed={agentforceEnabled}
+      aria-label={`Trellis AI ${agentforceEnabled ? 'enabled' : 'disabled'}`}
     >
-      {label}
+      <span className="text-[10px] font-semibold text-[#6b2db5]">Trellis AI</span>
+      <span
+        className={`relative h-4 w-7 rounded-full transition-colors ${
+          agentforceEnabled ? 'bg-[#6b2db5]' : 'bg-[#c9d2dc]'
+        }`}
+      >
+        <span
+          className={`absolute top-[2px] h-3 w-3 rounded-full bg-white transition-transform ${
+            agentforceEnabled ? 'translate-x-[13px]' : 'translate-x-[2px]'
+          }`}
+        />
+      </span>
     </button>
   )
 }
