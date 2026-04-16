@@ -470,16 +470,6 @@ export function OffShelfScreen() {
                   lines={remainingRecommendations.slice(0, 3).map(item => `Add ${item.location} display | +${item.potentialPoints.toFixed(1)} pts`)}
                 />
               )}
-              {!agentforceEnabled && (
-                <InsightCell
-                  label="Quick Guidance"
-                  value="Default Flow"
-                  lines={[
-                    'Add displays based on store opportunity and business priorities.',
-                    'Impact values and projected score stay the same in both modes.',
-                  ]}
-                />
-              )}
             </div>
           </SectionCard>
 
