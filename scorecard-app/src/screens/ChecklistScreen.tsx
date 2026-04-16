@@ -223,43 +223,56 @@ export function ChecklistScreen() {
                   </div>
                 </div>
               </div>
-              <div className="divide-y divide-outline">
-                {group.questions.map(question => (
-                  <QuestionCard
-                    key={question.id}
-                    question={question}
-                    answer={checklist[question.id] ?? null}
-                    currentNote={questionNotes[question.id] ?? ''}
-                    noteDraft={noteDrafts[question.id] ?? questionNotes[question.id] ?? ''}
-                    noteOpen={Boolean(openNotes[question.id])}
-                    evidenceOpen={Boolean(openEvidence[question.id])}
-                    evidence={evidence}
-                    offShelfCount={offShelf.length}
-                    projectedTotalScore={projectedTotalScore}
-                    agentforceEnabled={agentforceEnabled}
-                    onAnswer={(value) => setChecklistAnswer(question.id, value)}
-                    onToggleNote={() => toggleNote(question.id)}
-                    onToggleEvidence={() => toggleEvidence(question.id)}
-                    onNoteDraftChange={(value) => handleNoteDraftChange(question.id, value)}
-                    onSaveNote={() => handleSaveQuestionNote(question.id)}
-                    onCancelNote={() => {
-                      setNoteDrafts(prev => ({ ...prev, [question.id]: questionNotes[question.id] ?? '' }))
-                      setOpenNotes(prev => ({ ...prev, [question.id]: false }))
-                    }}
-                    onCapturePhoto={(file) => {
-                      const relatedEvidence = evidenceRequirements.filter(item => item.linkedQuestionIds.includes(question.id))
-                      const primaryEvidence = relatedEvidence.find(item => item.required) ?? relatedEvidence[0]
-                      if (!primaryEvidence) return
-                      setEvidencePhoto(primaryEvidence.id, file)
-                      if (file) {
-                        setOpenEvidence(prev => ({ ...prev, [question.id]: false }))
-                      }
-                    }}
-                    onFollowSuggestion={(route) => navigate(route)}
-                    onOpenPhoto={() => navigate('/photo')}
-                  />
-                ))}
-              </div>
+              {activeSection.id === 'base-plan' ? (
+                <div className="px-4 py-3 space-y-2">
+                  {group.questions.map(question => (
+                    <CompactQuestionRow
+                      key={question.id}
+                      question={question}
+                      answer={checklist[question.id] ?? null}
+                      onAnswer={(value) => setChecklistAnswer(question.id, value)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="divide-y divide-outline">
+                  {group.questions.map(question => (
+                    <QuestionCard
+                      key={question.id}
+                      question={question}
+                      answer={checklist[question.id] ?? null}
+                      currentNote={questionNotes[question.id] ?? ''}
+                      noteDraft={noteDrafts[question.id] ?? questionNotes[question.id] ?? ''}
+                      noteOpen={Boolean(openNotes[question.id])}
+                      evidenceOpen={Boolean(openEvidence[question.id])}
+                      evidence={evidence}
+                      offShelfCount={offShelf.length}
+                      projectedTotalScore={projectedTotalScore}
+                      agentforceEnabled={agentforceEnabled}
+                      onAnswer={(value) => setChecklistAnswer(question.id, value)}
+                      onToggleNote={() => toggleNote(question.id)}
+                      onToggleEvidence={() => toggleEvidence(question.id)}
+                      onNoteDraftChange={(value) => handleNoteDraftChange(question.id, value)}
+                      onSaveNote={() => handleSaveQuestionNote(question.id)}
+                      onCancelNote={() => {
+                        setNoteDrafts(prev => ({ ...prev, [question.id]: questionNotes[question.id] ?? '' }))
+                        setOpenNotes(prev => ({ ...prev, [question.id]: false }))
+                      }}
+                      onCapturePhoto={(file) => {
+                        const relatedEvidence = evidenceRequirements.filter(item => item.linkedQuestionIds.includes(question.id))
+                        const primaryEvidence = relatedEvidence.find(item => item.required) ?? relatedEvidence[0]
+                        if (!primaryEvidence) return
+                        setEvidencePhoto(primaryEvidence.id, file)
+                        if (file) {
+                          setOpenEvidence(prev => ({ ...prev, [question.id]: false }))
+                        }
+                      }}
+                      onFollowSuggestion={(route) => navigate(route)}
+                      onOpenPhoto={() => navigate('/photo')}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           ))}
           {agentforceEnabled && (
@@ -551,6 +564,53 @@ function QuestionCard({
         {question.group === 'display' && offShelfCount > 0 && answer === 'no' && (
           <p className="mt-3 text-[11px] text-on-surface-variant">Existing off-shelf entries: {offShelfCount}</p>
         )}
+      </div>
+    </div>
+  )
+}
+
+function CompactQuestionRow({
+  question,
+  answer,
+  onAnswer,
+}: {
+  question: ChecklistQuestion
+  answer: ChecklistAnswer
+  onAnswer: (value: ChecklistAnswer) => void
+}) {
+  const status = getQuestionStatus(answer)
+
+  return (
+    <div className="rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold text-on-surface">{question.title}</p>
+          <p className="mt-1 text-[11px] text-on-surface-variant">{question.category}</p>
+        </div>
+        <span className={`shrink-0 rounded-md border px-2 py-1 text-[10px] font-semibold ${status.statusClass}`}>
+          {status.label}
+        </span>
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        {OPTIONS.map(({ value, label }) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => onAnswer(value)}
+            className={clsx(
+              'min-h-10 rounded-md border text-[12px] font-semibold transition-colors',
+              answer === value
+                ? value === 'yes'
+                  ? 'border-[#2e844a] bg-[#edf7ee] text-[#1f5f33]'
+                  : value === 'no'
+                    ? 'border-[#ba0517] bg-[#fef1ee] text-[#8e030f]'
+                    : 'border-[#8b939d] bg-[#f4f6f9] text-[#39414a]'
+                : 'border-outline bg-white text-on-surface-variant'
+            )}
+          >
+            {label}
+          </button>
+        ))}
       </div>
     </div>
   )
