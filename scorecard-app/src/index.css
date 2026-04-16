@@ -32,19 +32,20 @@ body {
 
 body {
   margin: 0;
-  min-height: 100dvh;
+  height: 100dvh;
   font-family: var(--font-sans);
   background: #e7ebf0;
+  overflow: hidden;
   overflow-x: hidden;
 }
 
 #root {
   width: 100%;
-  min-height: 100dvh;
+  height: 100dvh;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 @keyframes codexToastEnter {

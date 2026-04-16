@@ -14,7 +14,7 @@ export function TopBar({ title, subtitle, showBack = false, rightSlot }: TopBarP
   const navigate = useNavigate()
 
   return (
-    <div className="bg-surface-lowest border-b border-outline px-4 pt-11 pb-3 shrink-0">
+    <div className="bg-surface-lowest border-b border-outline px-4 pt-8 pb-3 shrink-0">
       <div className="flex items-start gap-2">
         {showBack && (
           <button
@@ -26,13 +26,13 @@ export function TopBar({ title, subtitle, showBack = false, rightSlot }: TopBarP
           </button>
         )}
         <div className="flex-1 min-w-0">
-          <h1 className="text-[15px] font-semibold leading-tight text-on-surface truncate">{title}</h1>
-          {subtitle && <p className="text-[11px] text-on-surface-variant mt-0.5">{subtitle}</p>}
+          <h1 className="text-[14px] font-semibold leading-tight text-on-surface truncate">{title}</h1>
+          {subtitle && <p className="text-[10px] text-on-surface-variant mt-0.5">{subtitle}</p>}
         </div>
-        {rightSlot}
-      </div>
-      <div className="mt-2 flex justify-end">
-        <DemoModeToggle />
+        <div className="flex items-start gap-2">
+          {rightSlot}
+          <DemoModeToggle />
+        </div>
       </div>
     </div>
   )

@@ -2,7 +2,6 @@ import clsx from 'clsx'
 import { useNavigate } from 'react-router-dom'
 import { CheckCircle2, ChevronRight, CircleDot, ClipboardCheck, LockKeyhole, TrendingUp } from 'lucide-react'
 import { PhoneShell } from '../components/PhoneShell'
-import { StandardGuidanceCard } from '../components/StandardGuidanceCard'
 import { TopBar } from '../components/TopBar'
 import { TrellisInsightCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
@@ -76,11 +75,11 @@ export function EntryScreen() {
 
   const initialPrimaryCopy = {
     'not-started': {
-      label: 'Start Initial Scorecard',
+      label: 'Start Scorecard',
       badge: 'Not Started',
       detail: 'Begin with base plan validation before capturing incremental displays.',
       helper: 'Start with MAP and POG checks, then move into off-shelf and evidence.',
-      cta: 'Start Initial',
+      cta: 'Start Scorecard',
     },
     'in-progress': {
       label: 'Initial scorecard underway',
@@ -119,12 +118,10 @@ export function EntryScreen() {
           <p className="text-[11px] font-medium text-on-surface-variant">{store.scorecard}</p>
         </div>
 
-        <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
-          <div className="px-4 py-3 border-b border-outline">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Scorecard Type / Mode</p>
-          </div>
-          <div className="px-4 py-3">
-            <div className="grid grid-cols-2 gap-2 rounded-lg border border-[#d8dde6] bg-[#f7f9fb] p-1">
+        <div className="rounded-lg border border-outline bg-surface-lowest px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Scorecard Type</p>
+            <div className="inline-grid grid-cols-2 gap-1 rounded-md border border-[#d8dde6] bg-[#f7f9fb] p-1">
               <VisitTypeButton active={visitType === 'initial'} label="Initial" onClick={() => setVisitType('initial')} />
               <VisitTypeButton active={visitType === 'follow-up'} label="Follow-up" onClick={() => setVisitType('follow-up')} />
             </div>
@@ -170,13 +167,6 @@ export function EntryScreen() {
                 ]}
               />
             )}
-            {!agentforceEnabled && (
-              <StandardGuidanceCard
-                title="Use the visit snapshot to guide execution"
-                summary="Use the previous visit snapshot and score breakdown to guide execution."
-                detail="Standard mode keeps the same checklist, scoring, evidence, and summary flow without Trellis guidance."
-              />
-            )}
           </>
         )}
 
@@ -192,14 +182,6 @@ export function EntryScreen() {
             ]}
           />
         )}
-        {visitType === 'follow-up' && !agentforceEnabled && (
-          <StandardGuidanceCard
-            title="Use the previous scorecard as the baseline"
-            summary="Follow-up is a new scorecard session that validates what changed since the last completed execution."
-            detail="Standard mode keeps the same scoring and evidence rules without Trellis cards or AI wording."
-          />
-        )}
-
         <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
           <div className="px-4 py-3 border-b border-outline flex items-start justify-between gap-3">
             <div>
@@ -399,7 +381,7 @@ function VisitTypeButton({
       type="button"
       onClick={onClick}
       className={clsx(
-        'min-h-11 rounded-md border px-3 text-[12px] font-semibold transition-colors',
+        'min-h-9 rounded-md border px-3 text-[11px] font-semibold transition-colors',
         active
           ? 'border-[#014486] bg-[#0176d3] text-white'
           : 'border-transparent bg-white text-[#2e3a47]'
