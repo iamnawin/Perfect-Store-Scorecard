@@ -16,7 +16,6 @@ import {
   Trash2,
 } from 'lucide-react'
 import { PhoneShell } from '../components/PhoneShell'
-import { StandardGuidanceCard } from '../components/StandardGuidanceCard'
 import { TopBar } from '../components/TopBar'
 import { TrellisAskButton, TrellisInsightCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
@@ -364,7 +363,7 @@ export function OffShelfScreen() {
 
         <div className="border-b border-outline bg-surface-lowest">
           <div className="px-4 py-3 space-y-3">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Progress</p>
                 <p className="text-[12px] text-on-surface-variant mt-1">
@@ -373,7 +372,7 @@ export function OffShelfScreen() {
                     : `${answeredChecks} / ${totalChecks} answered | Step ${sectionNumber} of ${totalSections}`}
                 </p>
               </div>
-              <div className="grid grid-cols-3 gap-2 text-right">
+              <div className="grid min-w-[174px] grid-cols-3 gap-2">
                 <BandMetric label="Done" value={`${completionPercent}%`} />
                 <BandMetric label="Score" value={projectedScore.toFixed(1)} />
                 <BandMetric label="Lift" value={`+${liveIncremental.toFixed(1)}`} />
@@ -426,10 +425,30 @@ export function OffShelfScreen() {
                       </span>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <InlineAction icon={<Check size={12} />} label="Same" onClick={() => handleMarkFollowUpEntry(entry, 'retained')} />
-                      <InlineAction icon={<Edit3 size={12} />} label="Edit" onClick={() => handleEdit(entry)} />
-                      <InlineAction icon={<Trash2 size={12} />} label="Gone" onClick={() => handleMarkFollowUpEntry(entry, 'removed')} destructive />
-                      <InlineAction icon={<Plus size={12} />} label="Additional" onClick={() => handleAddAdditional(entry)} />
+                      <FollowUpDecisionButton
+                        icon={<Check size={12} />}
+                        label="Same"
+                        active={entry.status === 'retained'}
+                        onClick={() => handleMarkFollowUpEntry(entry, 'retained')}
+                      />
+                      <FollowUpDecisionButton
+                        icon={<Edit3 size={12} />}
+                        label="Edit"
+                        active={entry.status === 'updated'}
+                        onClick={() => handleEdit(entry)}
+                      />
+                      <FollowUpDecisionButton
+                        icon={<Trash2 size={12} />}
+                        label="Gone"
+                        active={entry.status === 'removed'}
+                        destructive
+                        onClick={() => handleMarkFollowUpEntry(entry, 'removed')}
+                      />
+                      <FollowUpDecisionButton
+                        icon={<Plus size={12} />}
+                        label="Additional"
+                        onClick={() => handleAddAdditional(entry)}
+                      />
                     </div>
                   </div>
                 ))}
@@ -483,17 +502,6 @@ export function OffShelfScreen() {
                 { label: 'Suggested Next Move', value: trellisRecommendation.suggestedNextMove, tone: 'success' },
               ]}
               footer="Agentforce ranks the best next display using mock store history, score upside, and preferred placements."
-            />
-          )}
-          {!agentforceEnabled && (
-            <StandardGuidanceCard
-              title={visitType === 'follow-up' ? 'Use follow-up decisions to track change over time' : 'Capture displays with score impact'}
-              summary={visitType === 'follow-up'
-                ? 'Standard mode keeps the same scoring and evidence rules while focusing this screen on retained, removed, and added displays.'
-                : 'Add displays based on store opportunity and business priorities.'}
-              detail={visitType === 'follow-up'
-                ? 'Suggested action: review all previous displays, then save only the new or edited placements with evidence.'
-                : 'Suggested action: save each display with photo evidence so the projected score stays review-ready.'}
             />
           )}
 
@@ -954,9 +962,9 @@ function SegmentGrid({
 
 function BandMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-[64px] rounded-lg border border-outline bg-[#f7f9fb] px-2 py-2">
+    <div className="flex min-h-[58px] min-w-0 flex-col justify-between rounded-lg border border-outline bg-[#f7f9fb] px-2 py-2 text-center">
       <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">{label}</p>
-      <p className="mt-1 text-[15px] font-semibold text-on-surface">{value}</p>
+      <p className="mt-1 text-[14px] font-semibold text-on-surface leading-tight">{value}</p>
     </div>
   )
 }
@@ -1168,6 +1176,40 @@ function InlineAction({
         destructive
           ? 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'
           : 'border-outline bg-[#f7f9fb] text-on-surface-variant'
+      )}
+    >
+      {icon}
+      {label}
+    </button>
+  )
+}
+
+function FollowUpDecisionButton({
+  icon,
+  label,
+  onClick,
+  active = false,
+  destructive = false,
+}: {
+  icon: ReactNode
+  label: string
+  onClick: () => void
+  active?: boolean
+  destructive?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={clsx(
+        'inline-flex min-h-9 items-center gap-1.5 rounded-md border px-3 py-1.5 text-[11px] font-semibold transition-colors',
+        destructive
+          ? active
+            ? 'border-[#f2a8a0] bg-[#fef1ee] text-[#8e030f]'
+            : 'border-[#f9d6d0] bg-white text-[#8e030f]'
+          : active
+            ? 'border-[#c9d8ea] bg-[#edf4ff] text-primary'
+            : 'border-outline bg-white text-on-surface-variant'
       )}
     >
       {icon}

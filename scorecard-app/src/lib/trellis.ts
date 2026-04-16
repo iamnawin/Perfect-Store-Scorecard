@@ -94,25 +94,25 @@ const suggestionConfig: Record<string, SuggestionConfig> = {
   'map-fence-line': {
     fix: 'Set the required Fence Line base location before logging incremental displays against it.',
     estimatedGain: 6,
-    route: '/checklist',
+    route: '/checklist/base-plan',
     actionLabel: 'Return to Base Plan',
   },
   'map-drive-aisle': {
     fix: 'Confirm the Drive Aisle base set so later off-shelf gains are counted cleanly.',
     estimatedGain: 6,
-    route: '/checklist',
+    route: '/checklist/base-plan',
     actionLabel: 'Return to Base Plan',
   },
   'map-endcap': {
     fix: 'Reset the core Endcap base plan first, then use off-shelf capture for true incremental displays.',
     estimatedGain: 8,
-    route: '/checklist',
+    route: '/checklist/base-plan',
     actionLabel: 'Return to Base Plan',
   },
   'map-garden-doors': {
     fix: 'Set the Garden Door base location before trying to recover the repeated display gap.',
     estimatedGain: 7,
-    route: '/checklist',
+    route: '/checklist/base-plan',
     actionLabel: 'Return to Base Plan',
   },
 }
@@ -199,7 +199,7 @@ export function getChecklistSuggestion(question: ChecklistQuestion, answer: Chec
       label: config?.actionLabel ?? 'Resolve Issue',
       intent: question.group === 'display' ? 'primary' : 'secondary',
     },
-    route: config?.route ?? '/checklist',
+    route: config?.route ?? '/checklist/base-plan',
     supportingText: config?.supportingText ?? 'This action can materially change the visit outcome before submission.',
   }
 }

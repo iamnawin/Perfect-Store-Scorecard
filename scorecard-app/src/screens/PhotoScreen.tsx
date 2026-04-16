@@ -195,43 +195,45 @@ export function PhotoScreen() {
             )
           })}
 
-          <div className="border border-outline bg-surface-lowest rounded-lg overflow-hidden">
-            <div className="px-4 py-3 border-b border-outline">
-              <div className="flex items-center gap-1.5">
-                <FileText size={14} className="text-primary" />
-                <p className="text-[12px] font-semibold text-on-surface">Notes and visit flags</p>
+          {visitType === 'initial' && (
+            <div className="border border-outline bg-surface-lowest rounded-lg overflow-hidden">
+              <div className="px-4 py-3 border-b border-outline">
+                <div className="flex items-center gap-1.5">
+                  <FileText size={14} className="text-primary" />
+                  <p className="text-[12px] font-semibold text-on-surface">Notes and visit flags</p>
+                </div>
               </div>
-            </div>
-            <div className="px-4 py-4 space-y-4">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant mb-2">Visit notes</p>
-                <textarea
-                  value={notes}
-                  onChange={(event) => setNotes(event.target.value)}
-                  placeholder="Document missing placements, recovery actions, or store-specific context."
-                  rows={3}
-                  className="w-full rounded-lg border border-outline bg-[#f7f9fb] px-3 py-2.5 text-[13px] text-on-surface outline-none resize-none"
-                />
-              </div>
+              <div className="px-4 py-4 space-y-4">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant mb-2">Visit notes</p>
+                  <textarea
+                    value={notes}
+                    onChange={(event) => setNotes(event.target.value)}
+                    placeholder="Document missing placements, recovery actions, or store-specific context."
+                    rows={3}
+                    className="w-full rounded-lg border border-outline bg-[#f7f9fb] px-3 py-2.5 text-[13px] text-on-surface outline-none resize-none"
+                  />
+                </div>
 
-              <div className="divide-y divide-outline border border-outline rounded-lg overflow-hidden">
-                <Toggle
-                  icon={<RotateCcw size={15} className="text-[#8b5d00]" />}
-                  label="Revisit Required"
-                  description="Flag this store for a follow-up execution visit."
-                  value={revisitRequired}
-                  onChange={setRevisitRequired}
-                />
-                <Toggle
-                  icon={<Flag size={15} className="text-[#8b5d00]" />}
-                  label="Shelf Reset Needed"
-                  description="Use when the planogram needs to be reset before the next visit."
-                  value={shelfResetNeeded}
-                  onChange={setShelfResetNeeded}
-                />
+                <div className="divide-y divide-outline border border-outline rounded-lg overflow-hidden">
+                  <Toggle
+                    icon={<RotateCcw size={15} className="text-[#8b5d00]" />}
+                    label="Revisit Required"
+                    description="Flag this store for a follow-up execution visit."
+                    value={revisitRequired}
+                    onChange={setRevisitRequired}
+                  />
+                  <Toggle
+                    icon={<Flag size={15} className="text-[#8b5d00]" />}
+                    label="Shelf Reset Needed"
+                    description="Use when the planogram needs to be reset before the next visit."
+                    value={shelfResetNeeded}
+                    onChange={setShelfResetNeeded}
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          )}
           {agentforceEnabled && (
             <TrellisAskButton
               active={trellisOpen}

@@ -24,7 +24,8 @@ export default function App() {
         <ScrollToTop />
         <Routes>
           <Route path="/" element={<EntryScreen />} />
-          <Route path="/checklist" element={<ChecklistScreen />} />
+          <Route path="/checklist" element={<Navigate to="/checklist/base-plan" replace />} />
+          <Route path="/checklist/:sectionId" element={<ChecklistScreen />} />
           <Route path="/off-shelf" element={<OffShelfScreen />} />
           <Route path="/photo" element={<PhotoScreen />} />
           <Route path="/summary" element={<SummaryScreen />} />

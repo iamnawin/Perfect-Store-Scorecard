@@ -29,15 +29,15 @@ export function TopBar({ title, subtitle, showBack = false, rightSlot }: TopBarP
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold leading-none text-[#2e844a] truncate">{store.banner}</p>
-              <h1 className="mt-1 text-[15px] font-semibold leading-tight text-primary truncate">{title}</h1>
+              <p className="text-[11px] font-semibold leading-none text-on-surface-variant truncate">Scorecard</p>
+              <h1 className="mt-1 text-[15px] font-semibold leading-tight text-on-surface truncate">{title}</h1>
             </div>
             <span className="shrink-0 rounded-full border border-[#c9d8ea] bg-[#edf4ff] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
               {store.visitStatus}
             </span>
           </div>
           {subtitle && <p className="text-[11px] text-on-surface-variant mt-1">{subtitle}</p>}
-          <div className="mt-2 flex items-center justify-end gap-2">
+          <div className="mt-2 flex flex-wrap items-center justify-end gap-2 min-w-0">
             {rightSlot}
             <DemoModeToggle />
           </div>

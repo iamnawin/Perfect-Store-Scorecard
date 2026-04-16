@@ -6,7 +6,7 @@ import { TopBar } from '../components/TopBar'
 import { TrellisInsightCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
 import { previousSnapshot, store } from '../data/mock'
-import { getActiveScorecardSections, getCurrentSection, getCurrentSectionNumber, getPendingFollowUpEntries, getStepState, getVisitTypeLabel } from '../lib/scorecard'
+import { getActiveScorecardSections, getCurrentSection, getCurrentSectionNumber, getPendingFollowUpEntries, getStepState } from '../lib/scorecard'
 
 export function EntryScreen() {
   const navigate = useNavigate()
@@ -29,7 +29,9 @@ export function EntryScreen() {
   const currentSection = getCurrentSection(app)
   const activeSections = getActiveScorecardSections(visitType)
   const currentSectionNumber = getCurrentSectionNumber(app)
-  const visitTypeLabel = getVisitTypeLabel(visitType)
+  const entrySubtitle = visitType === 'follow-up'
+    ? `Revisit Scorecard | ${store.city}`
+    : `Initial Scorecard | ${store.city}`
   const previousEntryCount = offShelf.filter(entry => entry.origin === 'previous-visit').length
   const pendingFollowUpEntries = getPendingFollowUpEntries(offShelf)
   const reviewedFollowUpEntries = previousEntryCount - pendingFollowUpEntries.length
@@ -111,7 +113,7 @@ export function EntryScreen() {
       <div className="flex-1 overflow-y-auto bg-[#f4f6f9] px-4 py-4 space-y-3">
         <TopBar
           title={store.name}
-          subtitle={`${visitTypeLabel} Scorecard | ${store.city}`}
+          subtitle={entrySubtitle}
         />
 
         <div className="px-1">

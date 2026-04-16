@@ -18,6 +18,7 @@ import { useApp } from '../context/useApp'
 import { checklistQuestions, previousSnapshot, regionBenchmark, store } from '../data/mock'
 import {
   getChecklistBasePlanScore,
+  getCurrentSection,
   getCurrentSectionNumber,
   getCurrentRiskValue,
   getMissingRequiredEvidence,
@@ -69,6 +70,7 @@ export function SummaryScreen() {
   const pendingFollowUpEntries = getPendingFollowUpEntries(offShelf)
   const unansweredCount = checklistQuestions.filter(question => !checklist[question.id]).length
   const sectionNumber = getCurrentSectionNumber(app)
+  const currentSection = getCurrentSection(app)
   const visitTypeLabel = getVisitTypeLabel(visitType)
   const retainedCount = offShelf.filter(entry => entry.status === 'retained').length
   const updatedCount = offShelf.filter(entry => entry.status === 'updated').length
@@ -113,7 +115,7 @@ export function SummaryScreen() {
           key: 'unanswered-checks',
           title: `${unansweredCount} checklist question${unansweredCount > 1 ? 's' : ''} still unanswered`,
           detail: 'Finish the checklist so the score summary reflects the full visit.',
-          route: '/checklist',
+          route: currentSection.route,
           actionLabel: 'Return to Checklist',
         }]
       : []),

@@ -75,14 +75,14 @@ export const scorecardSections: ScorecardSection[] = [
     id: 'base-plan',
     title: 'Base Plan Check',
     description: 'Verify core Scotts shelf and POG standards.',
-    route: '/checklist',
+    route: '/checklist/base-plan',
     kind: 'checklist',
   },
   {
     id: 'secondary-displays',
     title: 'Secondary Display Check',
     description: 'Confirm off-aisle placements and feature space execution.',
-    route: '/checklist',
+    route: '/checklist/secondary-displays',
     kind: 'checklist',
   },
   {

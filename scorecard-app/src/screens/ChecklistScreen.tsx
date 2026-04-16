@@ -1,5 +1,5 @@
-import { useMemo, useState, type ChangeEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, type ChangeEvent } from 'react'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import clsx from 'clsx'
 import { Camera, ClipboardCheck, FilePenLine, Layers3, ShieldAlert } from 'lucide-react'
 import { BottomActionBar } from '../components/BottomActionBar'
@@ -12,12 +12,12 @@ import {
   TrellisSuggestionCard,
 } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
-import { checklistQuestions, evidenceRequirements, store } from '../data/mock'
+import { checklistQuestions, evidenceRequirements, scorecardSections, store } from '../data/mock'
 import {
   getChecklistBasePlanScore,
   getChecklistDecisionScore,
   getChecklistImpactValue,
-  getOffShelfIncrementalScore,
+  getChecklistSectionProgress,
   getQuestionEvidenceLabel,
   getQuestionStatus,
   getVisitTypeLabel,
@@ -52,8 +52,11 @@ const CHECKLIST_GROUPS = [
   },
 ] as const
 
+const CHECKLIST_SECTION_ORDER = scorecardSections.filter(section => section.kind === 'checklist')
+
 export function ChecklistScreen() {
   const navigate = useNavigate()
+  const { sectionId } = useParams<{ sectionId: string }>()
   const app = useApp()
   const {
     visitType,
@@ -64,8 +67,6 @@ export function ChecklistScreen() {
     setChecklistAnswer,
     setQuestionNote,
     setEvidencePhoto,
-    answeredChecks,
-    totalChecks,
     saveDraft,
     lastSavedAt,
     agentforceEnabled,
@@ -76,16 +77,26 @@ export function ChecklistScreen() {
   const [openEvidence, setOpenEvidence] = useState<Record<string, boolean>>({})
   const [trellisOpen, setTrellisOpen] = useState(false)
 
-  const checklistCompletionPercent = Math.round((answeredChecks / totalChecks) * 100)
+  const activeSection = CHECKLIST_SECTION_ORDER.find(section => section.id === sectionId)
+  if (!activeSection) {
+    return <Navigate to="/checklist/base-plan" replace />
+  }
+
+  const activeSectionIndex = CHECKLIST_SECTION_ORDER.findIndex(section => section.id === activeSection.id)
+  const nextChecklistSection = CHECKLIST_SECTION_ORDER[activeSectionIndex + 1]
+  const sectionProgress = getChecklistSectionProgress(activeSection.id, checklist)
+  const checklistCompletionPercent = Math.round((sectionProgress.answered / Math.max(1, sectionProgress.total)) * 100)
   const visitTypeLabel = getVisitTypeLabel(visitType)
   const basePlanScore = getChecklistBasePlanScore(checklist)
-  const incrementalScore = getOffShelfIncrementalScore(offShelf)
   const projectedTotalScore = getChecklistDecisionScore(checklist, offShelf)
   const trellisInsight = getChecklistHeaderInsight(app)
+  const groups = CHECKLIST_GROUPS
+    .map(group => {
+      const questions = checklistQuestions.filter(
+        question => question.sectionId === activeSection.id && question.group === group.id
+      )
+      if (questions.length === 0) return null
 
-  const groups = useMemo(() => {
-    return CHECKLIST_GROUPS.map(group => {
-      const questions = checklistQuestions.filter(question => question.group === group.id)
       const answered = questions.filter(question => checklist[question.id]).length
       const totalValue = questions.reduce((total, question) => total + question.weight, 0)
       return {
@@ -96,11 +107,31 @@ export function ChecklistScreen() {
         totalValue,
       }
     })
-  }, [checklist])
+    .filter(Boolean) as Array<{
+    id: string
+    sectionLabel: string
+    title: string
+    helper: string
+    questions: typeof checklistQuestions
+    answered: number
+    total: number
+    totalValue: number
+  }>
 
-  const currentGroupIndex = Math.max(0, groups.findIndex(group => group.answered < group.total))
-  const currentGroupNumber = currentGroupIndex === -1 ? groups.length : currentGroupIndex + 1
-  const helperText = lastSavedAt ? `Draft saved at ${lastSavedAt}` : 'Draft saves automatically inside the active visit.'
+  const helperText = lastSavedAt
+    ? `Draft saved at ${lastSavedAt}`
+    : nextChecklistSection
+      ? `Shorter checklist flow: finish ${activeSection.title.toLowerCase()} and continue to ${nextChecklistSection.title.toLowerCase()}.`
+      : 'Finish the final checklist step, then move into off-shelf capture.'
+  const standardSummary = activeSection.id === 'base-plan'
+    ? 'Confirm MAP and POG first so the store has a stable baseline before any incremental capture.'
+    : 'Confirm feature-space execution separately so the off-shelf step only captures true incremental opportunity.'
+  const standardDetail = activeSection.id === 'base-plan'
+    ? 'Suggested action: finish this baseline step, then review secondary display quality on the next page.'
+    : 'Suggested action: finish this execution-quality step, then move into off-shelf capture.'
+  const primaryLabel = nextChecklistSection ? `Next: ${nextChecklistSection.title}` : 'Next: Off-Shelf'
+  const primaryRoute = nextChecklistSection?.route ?? '/off-shelf'
+  const sectionBadge = activeSection.id === 'base-plan' ? 'Base Plan' : 'Secondary Displays'
 
   function toggleNote(questionId: string) {
     setOpenNotes(prev => {
@@ -136,24 +167,24 @@ export function ChecklistScreen() {
         />
 
         <div className="border-b border-outline bg-surface-lowest px-4 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">{store.scorecard}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">{activeSection.title}</p>
           <div className="mt-2 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[12px] text-on-surface-variant">
-                {answeredChecks} of {totalChecks} checks answered | Section {currentGroupNumber} of {groups.length}
+                {sectionProgress.answered} of {sectionProgress.total} answered | Checklist step {activeSectionIndex + 1} of {CHECKLIST_SECTION_ORDER.length}
               </p>
-              <p className="text-[12px] text-on-surface-variant mt-1">{checklistCompletionPercent}% complete</p>
+              <p className="text-[12px] text-on-surface-variant mt-1">{checklistCompletionPercent}% complete in this step</p>
             </div>
             <span className="rounded-md border border-[#c9d8ea] bg-[#edf4ff] px-2 py-1 text-[11px] font-semibold text-primary">
-              Checklist
+              {sectionBadge}
             </span>
           </div>
           <div className="h-2 rounded-full bg-[#e6ebf1] overflow-hidden mt-3">
             <div className="h-full rounded-full bg-primary" style={{ width: `${checklistCompletionPercent}%` }} />
           </div>
           <div className="grid grid-cols-3 gap-2 mt-3">
+            <ScoreBandMetric label="Step Checks" value={`${sectionProgress.answered}/${sectionProgress.total}`} />
             <ScoreBandMetric label="Base Plan Score" value={basePlanScore.toFixed(1)} />
-            <ScoreBandMetric label="Incremental Score" value={`+${incrementalScore.toFixed(1)}`} positive />
             <ScoreBandMetric label="Projected Total" value={projectedTotalScore.toFixed(1)} />
           </div>
         </div>
@@ -171,9 +202,9 @@ export function ChecklistScreen() {
           )}
           {!agentforceEnabled && (
             <StandardGuidanceCard
-              title="Complete all required checks to proceed"
-              summary="Complete base plan checks before moving to incremental displays."
-              detail="High-impact gaps and missing photos reduce score. Suggested action: capture required photo before submit."
+              title={activeSection.title}
+              summary={standardSummary}
+              detail={standardDetail}
             />
           )}
 
@@ -246,8 +277,8 @@ export function ChecklistScreen() {
       <BottomActionBar
         secondaryLabel="Save Draft"
         onSecondary={saveDraft}
-        primaryLabel="Next Section"
-        onPrimary={() => navigate('/off-shelf')}
+        primaryLabel={primaryLabel}
+        onPrimary={() => navigate(primaryRoute)}
         helperText={helperText}
       />
     </PhoneShell>
@@ -542,9 +573,9 @@ function ScoreBandMetric({
   positive?: boolean
 }) {
   return (
-    <div className="rounded-lg border border-outline bg-[#f7f9fb] px-3 py-2">
+    <div className="flex min-h-[58px] min-w-0 flex-col justify-between rounded-lg border border-outline bg-[#f7f9fb] px-3 py-2">
       <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">{label}</p>
-      <p className={clsx('mt-1 text-[14px] font-semibold', positive ? 'text-[#1f5f33]' : 'text-on-surface')}>{value}</p>
+      <p className={clsx('mt-1 text-[14px] font-semibold leading-tight', positive ? 'text-[#1f5f33]' : 'text-on-surface')}>{value}</p>
     </div>
   )
 }
