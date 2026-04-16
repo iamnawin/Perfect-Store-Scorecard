@@ -213,10 +213,12 @@ export function estimateOffShelfImpact({
 }
 
 export function getOffShelfIncrementalScore(entries: OffShelfEntry[]) {
-  return +entries
+  const rawIncremental = +entries
     .filter(isActiveOffShelfEntry)
     .reduce((total, entry) => total + entry.impactPoints, 0)
     .toFixed(1)
+
+  return clampScore(rawIncremental)
 }
 
 export function getOffShelfOpportunityScore(entries: OffShelfEntry[]) {
@@ -349,11 +351,16 @@ export function getChecklistImpactValue(weight: number, answer: ChecklistAnswer)
 }
 
 export function getChecklistBasePlanScore(checklist: ChecklistState) {
-  const delta = checklistQuestions.reduce((total, question) => (
-    total + getChecklistImpactValue(question.weight, checklist[question.id] ?? null)
+  const eligibleQuestions = checklistQuestions.filter(question => checklist[question.id] !== 'na')
+  const possibleWeight = eligibleQuestions.reduce((total, question) => total + question.weight, 0)
+
+  if (possibleWeight === 0) return 0
+
+  const earnedWeight = eligibleQuestions.reduce((total, question) => (
+    total + (checklist[question.id] === 'yes' ? question.weight : 0)
   ), 0)
 
-  return Math.max(0, +(100 + delta).toFixed(1))
+  return clampScore((earnedWeight / possibleWeight) * 100)
 }
 
 export function getChecklistDecisionScore(checklist: ChecklistState, offShelf: OffShelfEntry[]) {
@@ -361,16 +368,19 @@ export function getChecklistDecisionScore(checklist: ChecklistState, offShelf: O
 }
 
 export function getTotalScore(state: AppState) {
-  const noCount = Object.values(state.checklist).filter(answer => answer === 'no').length
-  const offShelfBonus = Math.min(getOffShelfIncrementalScore(state.offShelf), 24)
+  const basePlanScore = getChecklistBasePlanScore(state.checklist)
+  const incrementalScore = getOffShelfIncrementalScore(state.offShelf)
   const evidencePenalty = getMissingRequiredEvidence(state.evidence, state.offShelf).length * 6
-  const executionScore = getExecutionScore(state.checklist)
 
-  return Math.max(0, +(136 + Math.round(executionScore * 0.48) + offShelfBonus - noCount * 4 - evidencePenalty).toFixed(1))
+  return Math.max(0, +(basePlanScore + incrementalScore - evidencePenalty).toFixed(1))
 }
 
 export function getLgorPct(state: AppState) {
   return +(6.8 + getYesCount(state.checklist) * 0.55 + getOffShelfIncrementalScore(state.offShelf) * 0.12).toFixed(1)
+}
+
+function clampScore(value: number) {
+  return +Math.min(100, Math.max(0, value)).toFixed(1)
 }
 
 export function getRiskDelta(state: AppState) {
