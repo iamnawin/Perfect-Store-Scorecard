@@ -15,7 +15,7 @@ export function TopBar({ title, subtitle, showBack = false, rightSlot }: TopBarP
   const navigate = useNavigate()
 
   return (
-    <div className="bg-surface-lowest border-b border-outline px-4 pt-5 pb-3 shrink-0">
+    <div className="bg-surface-lowest border-b border-outline px-4 pt-5 pb-3 shrink-0 overflow-x-hidden">
       <div className="flex items-start gap-2">
         {showBack && (
           <button
@@ -37,9 +37,11 @@ export function TopBar({ title, subtitle, showBack = false, rightSlot }: TopBarP
             </span>
           </div>
           {subtitle && <p className="text-[11px] text-on-surface-variant mt-1">{subtitle}</p>}
-          <div className="mt-2 flex flex-wrap items-center justify-end gap-2 min-w-0">
+          <div className="mt-2 flex w-full items-center gap-2">
             {rightSlot}
-            <DemoModeToggle />
+            <div className="ml-auto shrink-0">
+              <DemoModeToggle />
+            </div>
           </div>
         </div>
       </div>
