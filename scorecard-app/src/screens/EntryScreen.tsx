@@ -31,7 +31,7 @@ export function EntryScreen() {
   const currentSectionNumber = getCurrentSectionNumber(app)
   const entrySubtitle = visitType === 'follow-up'
     ? `Revisit Scorecard | ${store.city}`
-    : `Initial Scorecard | ${store.city}`
+    : `New Scorecard | ${store.city}`
   const previousEntryCount = offShelf.filter(entry => entry.origin === 'previous-visit').length
   const pendingFollowUpEntries = getPendingFollowUpEntries(offShelf)
   const reviewedFollowUpEntries = previousEntryCount - pendingFollowUpEntries.length
@@ -42,14 +42,14 @@ export function EntryScreen() {
 
   const followUpPrimaryCopy = {
     'not-started': {
-      label: 'Start Follow-up',
+      label: 'Start Revisit',
       badge: 'Loaded',
       detail: 'Previous completed scorecard loaded',
       helper: 'Starting point: Review Prior Displays',
-      cta: 'Start Follow-up',
+      cta: 'Start Revisit',
     },
     'in-progress': {
-      label: 'Follow-up in Review',
+      label: 'Revisit in Review',
       badge: 'Reviewing',
       detail: 'This is a new scorecard run based on the last completed execution.',
       helper: currentSection.id === 'photo-evidence'
@@ -57,19 +57,19 @@ export function EntryScreen() {
         : currentSection.id === 'review-submit'
           ? 'Next action: Review Changes & Submit'
           : 'Starting point: Review Prior Displays',
-      cta: 'Open Follow-up',
+      cta: 'Open Revisit',
     },
     'ready-for-review': {
-      label: 'Follow-up ready for review',
+      label: 'Revisit ready for review',
       badge: 'Ready',
       detail: 'Previous changes have been reviewed and evidence is complete.',
       helper: 'Next action: Review Changes & Submit',
-      cta: 'Review Follow-up',
+      cta: 'Review Revisit',
     },
     'completed': {
-      label: 'Follow-up completed',
+      label: 'Revisit completed',
       badge: 'Completed',
-      detail: 'This follow-up scorecard has already been submitted.',
+      detail: 'This revisit scorecard has already been submitted.',
       helper: 'Open the summary to review the completed change-tracking result.',
       cta: 'Open Summary',
     },
@@ -84,21 +84,21 @@ export function EntryScreen() {
       cta: 'Start Scorecard',
     },
     'in-progress': {
-      label: 'Initial scorecard underway',
+      label: 'New scorecard underway',
       badge: 'In Progress',
       detail: 'An unfinished scorecard is available for this active visit.',
       helper: `Progress: ${answeredChecks} / ${totalChecks} checks | Section ${currentSectionNumber} of ${totalSections}.`,
       cta: 'Resume Draft',
     },
     'ready-for-review': {
-      label: 'Initial scorecard ready for review',
+      label: 'New scorecard ready for review',
       badge: 'Ready',
       detail: 'Checklist and evidence are complete for this visit.',
       helper: `${capturedRequiredPhotos}/${requiredPhotos} required photos captured | Open the summary to submit.`,
       cta: 'Review & Submit',
     },
     'completed': {
-      label: 'Initial scorecard completed',
+      label: 'New scorecard completed',
       badge: 'Completed',
       detail: 'This scorecard has already been submitted for the current visit.',
       helper: 'Open the summary to review the final outcome and next actions.',
@@ -124,8 +124,8 @@ export function EntryScreen() {
           <div className="flex items-center justify-between gap-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Scorecard Type</p>
             <div className="inline-grid grid-cols-2 gap-1 rounded-md border border-[#d8dde6] bg-[#f7f9fb] p-1">
-              <VisitTypeButton active={visitType === 'initial'} label="Initial" onClick={() => setVisitType('initial')} />
-              <VisitTypeButton active={visitType === 'follow-up'} label="Follow-up" onClick={() => setVisitType('follow-up')} />
+              <VisitTypeButton active={visitType === 'initial'} label="New" onClick={() => setVisitType('initial')} />
+              <VisitTypeButton active={visitType === 'follow-up'} label="Revisit" onClick={() => setVisitType('follow-up')} />
             </div>
           </div>
         </div>
@@ -230,7 +230,7 @@ export function EntryScreen() {
             {scorecardStatus !== 'not-started' && (
               <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
                 <div className="px-4 py-3 border-b border-outline">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Follow-up Change Review</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Revisit Change Review</p>
                 </div>
                 <div className="px-4 py-3 grid grid-cols-2 gap-x-6 gap-y-3">
                   <SnapshotField label="Reviewed" value={String(reviewedFollowUpEntries)} />
@@ -243,7 +243,7 @@ export function EntryScreen() {
 
             <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
               <div className="px-4 py-3 border-b border-outline">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Follow-up Flow</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Revisit Flow</p>
               </div>
               <div className="divide-y divide-outline">
                 {activeSections.map((section, index) => (
@@ -359,7 +359,7 @@ export function EntryScreen() {
         {submitted && (
           <div className="border border-[#cde8d3] bg-[#edf7ee] rounded-lg px-4 py-3">
             <p className="text-[12px] font-semibold text-[#1f5f33]">
-              {visitType === 'follow-up' ? 'Follow-up scorecard submitted successfully.' : 'Initial scorecard submitted successfully.'}
+              {visitType === 'follow-up' ? 'Revisit scorecard submitted successfully.' : 'New scorecard submitted successfully.'}
             </p>
             <p className="text-[12px] text-[#25523b] mt-1">Open the summary to review the execution outcome, next actions, and tracked flags.</p>
           </div>

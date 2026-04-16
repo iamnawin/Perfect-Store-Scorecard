@@ -27,7 +27,7 @@ export function getTotalChecks() {
 }
 
 export function getVisitTypeLabel(visitType: VisitType) {
-  return visitType === 'follow-up' ? 'Follow-up' : 'Initial'
+  return visitType === 'follow-up' ? 'Revisit' : 'New'
 }
 
 export function getActiveScorecardSections(visitType: VisitType) {

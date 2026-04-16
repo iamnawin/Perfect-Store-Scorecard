@@ -125,7 +125,7 @@ export function SummaryScreen() {
           title: `${pendingFollowUpEntries.length} prior display${pendingFollowUpEntries.length > 1 ? 's' : ''} still need a follow-up decision`,
           detail: 'Mark each previous display as Same, Edit, or Gone before you submit the follow-up.',
           route: '/off-shelf',
-          actionLabel: 'Finish Follow-up Review',
+          actionLabel: 'Finish Revisit Review',
         }]
       : []),
     ...(!offShelfConfirmed && offShelf.length === 0

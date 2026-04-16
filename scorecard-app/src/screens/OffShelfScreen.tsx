@@ -380,7 +380,7 @@ export function OffShelfScreen() {
             </div>
             <div>
               <div className="mb-1.5 flex items-center justify-between text-[11px] text-on-surface-variant">
-                <span>{visitType === 'follow-up' ? 'Follow-up Display Review' : 'Off-Shelf Opportunity Capture'}</span>
+                <span>{visitType === 'follow-up' ? 'Revisit Display Review' : 'Off-Shelf Opportunity Capture'}</span>
                 <span>{completionPercent}%</span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-[#dde3ea]">
@@ -757,7 +757,7 @@ export function OffShelfScreen() {
           )}
 
           <SectionCard
-            title={visitType === 'follow-up' ? 'Follow-up Change Log' : 'Added in This Visit'}
+            title={visitType === 'follow-up' ? 'Revisit Change Log' : 'Added in This Visit'}
             subtitle={offShelf.length > 0
               ? visitType === 'follow-up'
                 ? `${retainedEntries.length} retained or updated | ${removedEntries.length} removed | ${addedEntries.length} added during this follow-up.`
