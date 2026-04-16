@@ -225,11 +225,13 @@ export function ChecklistScreen() {
             </>
           )}
           {!agentforceEnabled && (
-            <StandardGuidanceCard
-              title={guidanceTitle}
-              summary={standardSummary}
-              detail={standardDetail}
-            />
+            activeSection.id === 'base-plan' ? (
+              <StandardGuidanceCard
+                title={guidanceTitle}
+                summary={standardSummary}
+                detail={standardDetail}
+              />
+            ) : null
           )}
 
           {groups.map(group => (
