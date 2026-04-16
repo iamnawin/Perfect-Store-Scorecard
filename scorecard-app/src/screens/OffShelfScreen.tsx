@@ -529,17 +529,17 @@ export function OffShelfScreen() {
           <SectionCard
             title={editingId
               ? editingEntry?.origin === 'previous-visit' ? 'Update Previous Display' : 'Edit Added Display'
-              : visitType === 'follow-up' ? 'Add Additional Display' : 'Add Off-Shelf Display'}
+              : visitType === 'follow-up' ? 'Add Additional Display' : 'Add Incremental Display'}
             subtitle={visitType === 'follow-up'
               ? 'Capture only the changed or newly added displays from the follow-up visit.'
-              : 'Capture incremental displays above base plan, attach evidence, and score the impact in real time.'}
+              : 'Capture Above & Beyond displays beyond base plan, attach evidence, and score the incremental impact in real time.'}
             utility={(
               <button
                 type="button"
                 onClick={visitType === 'follow-up' ? () => handleAddAdditional() : confirmOffShelfReview}
                 className="rounded-md border border-outline px-2.5 py-1.5 text-[11px] font-semibold text-on-surface-variant"
               >
-                {visitType === 'follow-up' ? 'Add Blank Entry' : 'No display today'}
+                {visitType === 'follow-up' ? 'Add Blank Entry' : 'No Incremental Display Today'}
               </button>
             )}
           >

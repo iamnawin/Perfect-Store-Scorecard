@@ -198,6 +198,11 @@ export function ChecklistScreen() {
             <p className="mt-1 text-[12px] text-on-surface-variant">
               Base Plan is a weighted score out of 100 from the checklist answers. Projected Total = Base Plan + Incremental.
             </p>
+            {activeSection.id === 'secondary-displays' && (
+              <p className="mt-2 text-[12px] text-on-surface-variant">
+                Secondary Displays affect Base Plan Score only. Incremental score is added later from Off-Shelf display entries.
+              </p>
+            )}
           </div>
         </div>
 
