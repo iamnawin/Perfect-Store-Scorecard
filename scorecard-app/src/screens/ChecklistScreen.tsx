@@ -31,6 +31,11 @@ const OPTIONS: { value: ChecklistAnswer; label: string }[] = [
   { value: 'na', label: 'N/A' },
 ]
 
+const COMPACT_OPTIONS: { value: Exclude<ChecklistAnswer, 'na' | null>; label: string }[] = [
+  { value: 'yes', label: 'Yes' },
+  { value: 'no', label: 'No' },
+]
+
 const CHECKLIST_GROUPS = [
   {
     id: 'map',
@@ -615,7 +620,7 @@ function CompactQuestionRow({
         </span>
       </div>
       <div className="mt-3 grid grid-cols-3 gap-2">
-        {OPTIONS.map(({ value, label }) => (
+        {COMPACT_OPTIONS.map(({ value, label }) => (
           <button
             key={value}
             type="button"
@@ -625,9 +630,7 @@ function CompactQuestionRow({
               answer === value
                 ? value === 'yes'
                   ? 'border-[#2e844a] bg-[#edf7ee] text-[#1f5f33]'
-                  : value === 'no'
-                    ? 'border-[#ba0517] bg-[#fef1ee] text-[#8e030f]'
-                    : 'border-[#8b939d] bg-[#f4f6f9] text-[#39414a]'
+                  : 'border-[#ba0517] bg-[#fef1ee] text-[#8e030f]'
                 : 'border-outline bg-white text-on-surface-variant'
             )}
           >
