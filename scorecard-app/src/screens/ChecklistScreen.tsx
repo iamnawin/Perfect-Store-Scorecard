@@ -131,10 +131,10 @@ export function ChecklistScreen() {
       : 'Finish the final checklist step, then move into off-shelf capture.'
   const standardSummary = activeSection.id === 'base-plan'
     ? 'Confirm MAP and POG first so the store has a stable baseline before any incremental capture.'
-    : 'Confirm feature-space execution separately so the off-shelf step only captures true incremental opportunity.'
+    : 'Confirm feature-space execution before off-shelf capture.'
   const standardDetail = activeSection.id === 'base-plan'
     ? 'Suggested action: finish this baseline step, then review secondary display quality on the next page.'
-    : 'Suggested action: finish this execution-quality step, then move into off-shelf capture.'
+    : 'Finish this step, then move to off-shelf capture.'
   const primaryLabel = nextChecklistSection ? `Next: ${nextChecklistSection.title}` : 'Next: Off-Shelf'
   const primaryRoute = nextChecklistSection?.route ?? '/off-shelf'
   const sectionBadge = activeSection.id === 'base-plan' ? 'Base Plan' : 'Secondary Displays'
@@ -192,17 +192,6 @@ export function ChecklistScreen() {
             <ScoreBandMetric label="Step Checks" value={`${sectionProgress.answered}/${sectionProgress.total}`} />
             <ScoreBandMetric label="Base Plan Score" value={basePlanScore.toFixed(1)} />
             <ScoreBandMetric label="Projected Total" value={projectedTotalScore.toFixed(1)} />
-          </div>
-          <div className="mt-3 rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Score Math</p>
-            <p className="mt-1 text-[12px] text-on-surface-variant">
-              Base Plan is a weighted score out of 100 from the checklist answers. Projected Total = Base Plan + Incremental.
-            </p>
-            {activeSection.id === 'secondary-displays' && (
-              <p className="mt-2 text-[12px] text-on-surface-variant">
-                Secondary Displays affect Base Plan Score only. Incremental score is added later from Off-Shelf display entries.
-              </p>
-            )}
           </div>
         </div>
 
