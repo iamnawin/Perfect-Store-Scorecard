@@ -187,6 +187,12 @@ export function ChecklistScreen() {
             <ScoreBandMetric label="Base Plan Score" value={basePlanScore.toFixed(1)} />
             <ScoreBandMetric label="Projected Total" value={projectedTotalScore.toFixed(1)} />
           </div>
+          <div className="mt-3 rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Score Math</p>
+            <p className="mt-1 text-[12px] text-on-surface-variant">
+              Base Plan is a weighted score out of 100 from the checklist answers. Projected Total = Base Plan + Incremental.
+            </p>
+          </div>
         </div>
 
         <div className="px-4 py-3 space-y-3">

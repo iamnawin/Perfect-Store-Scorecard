@@ -260,6 +260,12 @@ export function SummaryScreen() {
                 <p className="text-[14px] font-semibold mt-1">{submitted ? 'Closed' : blockerCards.length === 0 ? 'Ready' : 'Action Needed'}</p>
               </div>
             </div>
+            <div className="mt-3 rounded-lg border border-outline bg-surface-lowest px-3 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">How this scores</p>
+              <p className="mt-1 text-[12px] text-on-surface-variant">
+                Base Plan is the weighted checklist score out of 100. Above & Beyond is the incremental display score out of 100. Total Score = Base Plan + Above & Beyond - evidence penalties.
+              </p>
+            </div>
           </div>
 
           {agentforceEnabled && (
