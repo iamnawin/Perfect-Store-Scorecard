@@ -371,7 +371,7 @@ export const offShelfProducts: OffShelfProduct[] = [
   },
 ]
 
-export const offShelfQuantityOptions = [40, 80, 120, 200, 320, '400+']
+export const offShelfQuantityOptions = [40, 80, 120, 200, '400+']
 
 export const offShelfRecommendations: OffShelfRecommendation[] = [
   {

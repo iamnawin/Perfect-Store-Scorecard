@@ -1013,12 +1013,11 @@ function InsightCell({
 function formatQuantityOption(value: number | string) {
   const numeric = typeof value === 'number' ? value : value === '400+' ? 400 : Number(value)
 
-  if (numeric >= 400) return 'Bulk'
-  if (numeric >= 320) return 'Bulk'
-  if (numeric >= 200) return 'Pallet'
-  if (numeric >= 120) return 'Large Display'
-  if (numeric >= 80) return 'Medium Display'
-  return 'Small Display'
+  if (numeric >= 400) return 'Bulk (400+)'
+  if (numeric >= 200) return 'Pallet (200)'
+  if (numeric >= 120) return 'Large (120)'
+  if (numeric >= 80) return 'Medium (80)'
+  return 'Small (40)'
 }
 
 function resolveCategoryId(category: string) {
@@ -1049,11 +1048,11 @@ function followUpStatusTone(status: OffShelfEntry['status']) {
 
 function parseQuantityOption(value: string) {
   return {
-    'Small Display': 40,
-    'Medium Display': 80,
-    'Large Display': 120,
-    Pallet: 200,
-    Bulk: '400+',
+    'Small (40)': 40,
+    'Medium (80)': 80,
+    'Large (120)': 120,
+    'Pallet (200)': 200,
+    'Bulk (400+)': '400+',
   }[value] ?? 40
 }
 
