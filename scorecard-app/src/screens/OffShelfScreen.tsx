@@ -427,26 +427,26 @@ export function OffShelfScreen() {
                     <div className="mt-3 flex flex-wrap gap-2">
                       <FollowUpDecisionButton
                         icon={<Check size={12} />}
-                        label="Same"
+                        label="Keep"
                         active={entry.status === 'retained'}
                         onClick={() => handleMarkFollowUpEntry(entry, 'retained')}
                       />
                       <FollowUpDecisionButton
                         icon={<Edit3 size={12} />}
-                        label="Edit"
+                        label="Update"
                         active={entry.status === 'updated'}
                         onClick={() => handleEdit(entry)}
                       />
                       <FollowUpDecisionButton
                         icon={<Trash2 size={12} />}
-                        label="Gone"
+                        label="Removed"
                         active={entry.status === 'removed'}
                         destructive
                         onClick={() => handleMarkFollowUpEntry(entry, 'removed')}
                       />
                       <FollowUpDecisionButton
                         icon={<Plus size={12} />}
-                        label="Additional"
+                        label="Add New"
                         onClick={() => handleAddAdditional(entry)}
                       />
                     </div>
@@ -470,8 +470,8 @@ export function OffShelfScreen() {
               )}
               {!agentforceEnabled && (
                 <InsightCell
-                  label="Standard Guidance"
-                  value="Rule-based"
+                  label="Quick Guidance"
+                  value="Default Flow"
                   lines={[
                     'Add displays based on store opportunity and business priorities.',
                     'Impact values and projected score stay the same in both modes.',

@@ -276,9 +276,9 @@ export function SummaryScreen() {
           )}
           {!agentforceEnabled && (
             <StandardGuidanceCard
-              title={visitType === 'follow-up' ? 'Visit Outcome & Next Actions' : 'Visit Outcome & Next Actions'}
+              title="Visit Outcome & Next Actions"
               summary={visitType === 'follow-up'
-                ? 'Standard mode keeps this summary focused on retained, removed, and added displays without Agentforce interpretation.'
+                ? 'This summary stays focused on retained, removed, and added displays without the AI interpretation layer.'
                 : 'Review completed actions, missed items, and required follow-ups.'}
               detail={`Suggested action: ${blockerCards.length > 0 ? blockerCards[0].actionLabel : buildNextBestAction(remainingRecommendations[0], summaryInsight.nextVisitFocus)}`}
             />
