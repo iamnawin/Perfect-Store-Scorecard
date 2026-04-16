@@ -29,12 +29,45 @@ export const previousSnapshot = {
 export const regionBenchmark = {
   name: 'Columbus North',
   averageScore: 151,
+  averageLgor: 13.8,
+  currentRiskValue: 1760,
+  riskMinimizedValue: 820,
 }
 
 export const leaderboardSeed: Omit<LeaderboardEntry, 'rank'>[] = [
   { store: 'Home Depot #1881', rep: 'Marcus T.', score: 163, delta: 11 },
   { store: 'Lowe\'s #441', rep: 'Angela R.', score: 157, delta: 8 },
   { store: 'Menards #225', rep: 'Victor P.', score: 149, delta: 5 },
+]
+
+export const regionalPerformanceSeed = [
+  { store: 'Home Depot #1881', score: 163, lgorPct: 15.6, riskValue: 980, incrementalValue: 31.4 },
+  { store: 'Lowe\'s #441', score: 157, lgorPct: 14.9, riskValue: 1140, incrementalValue: 24.8 },
+  { store: 'Menards #225', score: 149, lgorPct: 13.1, riskValue: 1520, incrementalValue: 18.2 },
+  { store: 'Ace #782', score: 144, lgorPct: 12.6, riskValue: 1680, incrementalValue: 14.4 },
+]
+
+export const accountabilitySeed = [
+  {
+    area: 'FST Accountability',
+    owner: 'Sarah M.',
+    lens: 'Field execution across MAP, POG, and incremental support',
+  },
+  {
+    area: 'BDT Accountability',
+    owner: 'Columbus North BDT',
+    lens: 'Banner-level follow-through on repeated gaps and recovery planning',
+  },
+  {
+    area: 'Base Plan Accountability',
+    owner: 'Store leadership',
+    lens: 'Protect the core set so incremental placement is counted against a stable plan',
+  },
+  {
+    area: 'Brand Spend Accountability',
+    owner: 'Merchandising leadership',
+    lens: 'Tie premium feature space to incremental lift and risk reduction',
+  },
 ]
 
 export const scorecardSections: ScorecardSection[] = [

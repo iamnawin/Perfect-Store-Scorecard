@@ -311,6 +311,18 @@ Show outcome in a way that drives action.
 - Not Enough
 - Empty Calories
 - Compared to Last Submission block
+- Store vs Region block
+- Score Rank
+- LGOR Rank
+- Risk Rank
+- Risk Minimized
+- Current Risk
+- Incremental table
+- Opportunity table
+- Risk table
+- Leaderboard preview
+- Accountability section
+- Feedback Loop section
 - Actions:
   - Submit
   - Email Snapshot
@@ -326,13 +338,16 @@ It should feel like:
 - Lightning-style metric tiles
 - recommendation sections below
 - compact comparison section
+- business-output sections below the scorecard metrics
+- leaderboard and accountability cards
+- feedback-loop framing that ties score, LGOR, risk, and incremental execution together
 - business action buttons at bottom
 
 ### Prompt — Without Agentforce
-Design a **Salesforce mobile score summary screen** for a Store Scorecard prototype. Use Lightning-style metric cards and a polished enterprise mobile layout. Show a prominent Total Score card followed by smaller cards for Execution, Base Plan, Above & Beyond, LGOR %, and Risk $. Below that, show recommendation sections for Missing MAP, Missing Top Items, Not Enough, and Empty Calories. Add a compact **Compared to Last Submission** section showing score trend, LGOR trend, Risk trend, and one repeated gap. Add bottom actions for Submit, Email Snapshot, and Post to Chatter. The screen should feel like a modern Salesforce mobile workflow outcome screen.
+Design a **Salesforce mobile score summary screen** for a Store Scorecard prototype. Use Lightning-style metric cards and a polished enterprise mobile layout. Show a prominent Total Score card followed by smaller cards for Execution, Base Plan, Above & Beyond, LGOR %, and Risk $. Below that, show recommendation sections for Missing MAP, Missing Top Items, Not Enough, and Empty Calories. Add a **Store vs Region** block with Score Rank, LGOR Rank, Risk Rank, Risk Minimized, and Current Risk. Add compact **Incremental**, **Opportunity**, and **Risk** tables. Add a **Leaderboard & Accountability** section and a **Feedback Loop** section that ties score, LGOR, risk, and incremental execution into a clearer business story. Add a compact **Compared to Last Submission** section showing score trend, LGOR trend, Risk trend, and one repeated gap. Add bottom actions for Submit, Email Snapshot, and Post to Chatter. The screen should feel like a modern Salesforce mobile workflow outcome screen.
 
 ### Prompt — With Agentforce
-Design a **Salesforce mobile score summary screen** for a Store Scorecard prototype. Use Lightning-style metric cards and a polished enterprise mobile layout. Show a prominent Total Score card followed by smaller cards for Execution, Base Plan, Above & Beyond, LGOR %, and Risk $. Below that, show recommendation sections for Missing MAP, Missing Top Items, Not Enough, and Empty Calories. Add a compact **Compared to Last Submission** section showing score trend, LGOR trend, Risk trend, and one repeated gap. Add a Lightning-style assistant card labeled **Agentforce Summary** that explains why the score looks like this, summarizes recent trend versus the prior submission, highlights the top missed opportunity, and suggests the next best action. Add bottom actions for Submit, Email Snapshot, and Post to Chatter.
+Design a **Salesforce mobile score summary screen** for a Store Scorecard prototype. Use Lightning-style metric cards and a polished enterprise mobile layout. Show a prominent Total Score card followed by smaller cards for Execution, Base Plan, Above & Beyond, LGOR %, and Risk $. Below that, show recommendation sections for Missing MAP, Missing Top Items, Not Enough, and Empty Calories. Add a **Store vs Region** block with Score Rank, LGOR Rank, Risk Rank, Risk Minimized, and Current Risk. Add compact **Incremental**, **Opportunity**, and **Risk** tables. Add a **Leaderboard & Accountability** section and a **Feedback Loop** section that ties score, LGOR, risk, and incremental execution into a clearer business story. Add a compact **Compared to Last Submission** section showing score trend, LGOR trend, Risk trend, and one repeated gap. Add a Lightning-style assistant card labeled **Agentforce Summary** that explains why the score looks like this, summarizes recent trend versus the prior submission, highlights the top missed opportunity, and suggests the next best action. Add bottom actions for Submit, Email Snapshot, and Post to Chatter.
 
 ---
 

@@ -500,6 +500,19 @@ Show:
   - Not Enough
   - Empty Calories
 - compared to last submission block
+- business-output layer:
+  - store vs region comparison
+  - score rank
+  - LGOR rank
+  - risk rank
+  - risk minimized
+  - current risk
+  - incremental table
+  - opportunity table
+  - risk table
+  - leaderboard preview
+  - accountability section
+  - feedback loop section
 - bottom actions:
   - Submit
   - Email Snapshot
@@ -510,6 +523,46 @@ Example comparison block:
 - LGOR vs last: +5.6%
 - Risk vs last: down 14%
 - Repeated gap: Garden Doors
+
+## Outcome layer expectations
+The summary should not stop at visit completion.
+It should answer the business question:
+What do we get out of this?
+
+Expected summary framing:
+- visit outcome
+- region comparison
+- accountability context
+- incremental value captured
+- remaining opportunity
+- open risk
+- business feedback loop
+
+Recommended section titles:
+- Visit Outcome & Next Actions
+- Home Depot #1907 vs Region
+- Incremental, Opportunity & Risk
+- Leaderboard & Accountability
+- Feedback Loop
+
+The summary should communicate:
+- how this store ranks
+- what value was captured
+- what opportunity remains
+- what risk remains
+- who owns the next move
+- how the scorecard supports future planning and ROI discussion
+
+## Feedback loop expectations
+The prototype should include a lightweight business feedback loop section.
+
+Recommended framing:
+- FST vs Base Plan
+- FST = POS
+- FST vs Risk
+- FST = ROI
+
+This remains mock/sample logic, but it should tell a clearer business story than a simple score recap.
 
 ---
 

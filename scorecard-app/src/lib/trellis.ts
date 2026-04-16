@@ -1,7 +1,9 @@
 import {
+  accountabilitySeed,
   checklistQuestions,
   leaderboardSeed,
   previousSnapshot,
+  regionalPerformanceSeed,
   regionBenchmark,
   store,
 } from '../data/mock'
@@ -19,6 +21,8 @@ import type {
 import {
   estimateOffShelfImpact,
   getCapturedRequiredPhotos,
+  getCurrentRiskValue,
+  getLgorPct,
   getMissingRequiredEvidence,
   getOffShelfIncrementalScore,
   getRemainingOffShelfRecommendations,
@@ -389,6 +393,223 @@ export function getLeaderboardPreview(score: number): LeaderboardEntry[] {
     }))
 }
 
+export function getRegionalOutcomeSummary(state: AppState) {
+  const score = getTotalScore(state)
+  const lgorPct = getLgorPct(state)
+  const riskValue = getCurrentRiskValue(state)
+  const comparisonRows = [
+    ...regionalPerformanceSeed,
+    {
+      store: store.name,
+      score: Math.round(score),
+      lgorPct,
+      riskValue,
+      incrementalValue: getOffShelfIncrementalScore(state.offShelf),
+    },
+  ]
+  const scoreRank = getMetricRank(comparisonRows, 'score', 'desc', store.name)
+  const lgorRank = getMetricRank(comparisonRows, 'lgorPct', 'desc', store.name)
+  const riskRank = getMetricRank(comparisonRows, 'riskValue', 'asc', store.name)
+  const riskMinimizedValue = Math.max(0, regionBenchmark.currentRiskValue - riskValue)
+
+  return {
+    scoreGap: +(score - regionBenchmark.averageScore).toFixed(1),
+    lgorGap: +(lgorPct - regionBenchmark.averageLgor).toFixed(1),
+    scoreRankLabel: `${scoreRank}/${comparisonRows.length}`,
+    lgorRankLabel: `${lgorRank}/${comparisonRows.length}`,
+    riskRankLabel: `${riskRank}/${comparisonRows.length}`,
+    currentRiskValue: riskValue,
+    riskMinimizedValue,
+    regionAverageScore: regionBenchmark.averageScore,
+    regionAverageLgor: regionBenchmark.averageLgor,
+  }
+}
+
+export function getIncrementalOutputRows(state: AppState) {
+  const activeEntries = state.offShelf
+    .filter(entry => entry.status !== 'removed' && entry.status !== 'pending-review')
+    .sort((left, right) => right.impactPoints - left.impactPoints)
+    .slice(0, 3)
+
+  if (activeEntries.length === 0) {
+    return [{
+      label: 'No incremental displays captured yet',
+      detail: 'Above-and-beyond value starts when at least one active display is added and confirmed.',
+      value: 'Open',
+      tone: 'warning' as const,
+    }]
+  }
+
+  return activeEntries.map(entry => ({
+    label: `${entry.location} | ${entry.product}`,
+    detail: `${getQuantitySummary(entry.quantity)} display contributing ${entry.estimatedLgor.toFixed(1)}% LGOR lift.`,
+    value: formatSigned(entry.impactPoints),
+    tone: entry.classification === 'incremental' ? 'success' as const : 'warning' as const,
+  }))
+}
+
+export function getOpportunityTable(state: AppState) {
+  const recommendations = getRemainingOffShelfRecommendations(state.offShelf).slice(0, 3)
+
+  if (recommendations.length === 0) {
+    return [{
+      label: 'Top opportunity list is clear',
+      detail: 'Recommended placements are already captured in the current scorecard.',
+      value: 'Captured',
+      tone: 'success' as const,
+    }]
+  }
+
+  return recommendations.map(item => ({
+    label: `${item.location} | ${item.product?.name ?? 'Recommended SKU'}`,
+    detail: item.rationale,
+    value: formatSigned(item.potentialPoints),
+    tone: 'success' as const,
+  }))
+}
+
+export function getRiskTable(state: AppState) {
+  const failedQuestions = getFailedQuestions(state)
+  const missingEvidence = getMissingRequiredEvidence(state.evidence, state.offShelf)
+  const rows = []
+
+  if (failedQuestions.some(question => question.id === 'garden-doors')) {
+    rows.push({
+      label: 'Repeated gap | Garden Door',
+      detail: 'This location is still missing from the feature mix and continues to suppress seasonal conversion.',
+      value: 'Open',
+      tone: 'warning' as const,
+    })
+  }
+
+  failedQuestions
+    .filter(question => question.group === 'pog')
+    .slice(0, 2)
+    .forEach(question => {
+      rows.push({
+        label: `POG risk | ${question.title}`,
+        detail: question.businessWhy,
+        value: `-${question.weight}`,
+        tone: 'warning' as const,
+      })
+    })
+
+  if (missingEvidence.length > 0) {
+    rows.push({
+      label: 'Evidence risk',
+      detail: `${missingEvidence.length} required photo${missingEvidence.length > 1 ? 's are' : ' is'} still missing from the visit proof set.`,
+      value: 'Blocked',
+      tone: 'warning' as const,
+    })
+  }
+
+  if (rows.length === 0) {
+    rows.push({
+      label: 'Current risk is controlled',
+      detail: 'No material execution or evidence risks remain open in this scorecard.',
+      value: 'Clear',
+      tone: 'success' as const,
+    })
+  }
+
+  return rows.slice(0, 3)
+}
+
+export function getAccountabilityRows(state: AppState) {
+  const missingEvidence = getMissingRequiredEvidence(state.evidence, state.offShelf).length
+  const repeatedGapOpen = getFailedQuestions(state).some(question => question.id === 'garden-doors')
+  const basePlanPct = Math.round(getYesPercent(state, checklistQuestions.filter(question => question.group !== 'display')))
+  const incrementalScore = getOffShelfIncrementalScore(state.offShelf)
+
+  return accountabilitySeed.map(item => {
+    if (item.area === 'FST Accountability') {
+      return {
+        ...item,
+        status: missingEvidence === 0 ? 'On track' : 'Needs evidence closeout',
+        detail: missingEvidence === 0
+          ? `Visit proof is in place and score is ${formatSigned(getTotalScore(state) - previousSnapshot.score)} vs last completed run.`
+          : `${missingEvidence} required image${missingEvidence > 1 ? 's' : ''} still block clean closeout.`,
+        tone: missingEvidence === 0 ? 'success' as const : 'warning' as const,
+      }
+    }
+
+    if (item.area === 'BDT Accountability') {
+      return {
+        ...item,
+        status: repeatedGapOpen ? 'Repeated gap open' : 'Recovery path defined',
+        detail: repeatedGapOpen
+          ? 'Garden Door execution still requires follow-through in the next field cycle.'
+          : 'The highest-risk repeated gap is closed or explicitly tracked in this visit.',
+        tone: repeatedGapOpen ? 'warning' as const : 'success' as const,
+      }
+    }
+
+    if (item.area === 'Base Plan Accountability') {
+      return {
+        ...item,
+        status: basePlanPct >= 80 ? 'Protected' : 'At risk',
+        detail: `${basePlanPct}% of base-plan checks are currently supported by visible execution.`,
+        tone: basePlanPct >= 80 ? 'success' as const : 'warning' as const,
+      }
+    }
+
+    return {
+      ...item,
+      status: incrementalScore > 0 ? 'Value captured' : 'Upside still open',
+      detail: incrementalScore > 0
+        ? `${incrementalScore.toFixed(1)} points of above-and-beyond value are now tied to feature space.`
+        : 'Premium space still needs an incremental display to show clear return on brand presence.',
+      tone: incrementalScore > 0 ? 'success' as const : 'warning' as const,
+    }
+  })
+}
+
+export function getFeedbackLoopRows(state: AppState) {
+  const score = getTotalScore(state)
+  const lgorPct = getLgorPct(state)
+  const riskValue = getCurrentRiskValue(state)
+  const basePlanScore = Math.round(getYesPercent(state, checklistQuestions.filter(question => question.group !== 'display')))
+  const incrementalScore = getOffShelfIncrementalScore(state.offShelf)
+  const opportunityScore = getRemainingOffShelfRecommendations(state.offShelf)
+    .slice(0, 2)
+    .reduce((total, item) => total + item.potentialPoints, 0)
+
+  return [
+    {
+      label: 'FST vs Base Plan',
+      value: `${basePlanScore}%`,
+      detail: basePlanScore >= 80
+        ? 'The field visit is protecting the core plan well enough to measure true incremental lift.'
+        : 'Base plan support is still soft, so incremental gains are less defensible.',
+      tone: basePlanScore >= 80 ? 'success' as const : 'warning' as const,
+    },
+    {
+      label: 'FST = POS',
+      value: `${lgorPct.toFixed(1)}%`,
+      detail: incrementalScore > 0
+        ? 'LGOR lift is supported by active off-shelf placements captured in this run.'
+        : 'No incremental support is yet reinforcing the point-of-sale story.',
+      tone: incrementalScore > 0 ? 'success' as const : 'warning' as const,
+    },
+    {
+      label: 'FST vs Risk',
+      value: formatCurrency(riskValue),
+      detail: riskValue <= regionBenchmark.riskMinimizedValue
+        ? 'Risk is now at or below the regional minimized-risk benchmark.'
+        : 'Open execution gaps still keep this store above the minimized-risk target.',
+      tone: riskValue <= regionBenchmark.riskMinimizedValue ? 'success' as const : 'warning' as const,
+    },
+    {
+      label: 'FST = ROI',
+      value: opportunityScore > 0 ? formatCurrency(Math.round((score + opportunityScore) * 18)) : formatCurrency(Math.round(score * 14)),
+      detail: opportunityScore > 0
+        ? 'The remaining opportunity stack shows clear upside still available after this visit.'
+        : 'Current execution is already converting most visible opportunity into score and value.',
+      tone: opportunityScore > 0 ? 'warning' as const : 'success' as const,
+    },
+  ]
+}
+
 function getFailedQuestions(state: AppState, predicate?: (question: ChecklistQuestion) => boolean) {
   return checklistQuestions.filter(question => state.checklist[question.id] === 'no' && (!predicate || predicate(question)))
 }
@@ -411,10 +632,37 @@ function formatSigned(value: number) {
   return `${rounded >= 0 ? '+' : ''}${rounded}`
 }
 
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(value)
+}
+
 function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1)
 }
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
+}
+
+function getMetricRank<T extends Record<string, string | number>>(
+  rows: T[],
+  key: keyof T,
+  direction: 'asc' | 'desc',
+  currentStore: string,
+) {
+  const sorted = [...rows].sort((left, right) => {
+    const leftValue = Number(left[key])
+    const rightValue = Number(right[key])
+    return direction === 'asc' ? leftValue - rightValue : rightValue - leftValue
+  })
+
+  return sorted.findIndex(row => row.store === currentStore) + 1
+}
+
+function getQuantitySummary(quantity: number | string) {
+  return typeof quantity === 'string' ? quantity : `${quantity}`
 }

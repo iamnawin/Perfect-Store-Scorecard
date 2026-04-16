@@ -15,10 +15,11 @@ import { StandardGuidanceCard } from '../components/StandardGuidanceCard'
 import { TopBar } from '../components/TopBar'
 import { TrellisAskButton, TrellisSummaryCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
-import { checklistQuestions, previousSnapshot, store } from '../data/mock'
+import { checklistQuestions, previousSnapshot, regionBenchmark, store } from '../data/mock'
 import {
   getChecklistBasePlanScore,
   getCurrentSectionNumber,
+  getCurrentRiskValue,
   getMissingRequiredEvidence,
   getOffShelfIncrementalScore,
   getPendingFollowUpEntries,
@@ -26,7 +27,16 @@ import {
   getVisitTypeLabel,
   parseOffShelfQuantity,
 } from '../lib/scorecard'
-import { getSummaryInsight } from '../lib/trellis'
+import {
+  getAccountabilityRows,
+  getFeedbackLoopRows,
+  getIncrementalOutputRows,
+  getLeaderboardPreview,
+  getOpportunityTable,
+  getRegionalOutcomeSummary,
+  getRiskTable,
+  getSummaryInsight,
+} from '../lib/trellis'
 
 export function SummaryScreen() {
   const navigate = useNavigate()
@@ -71,13 +81,7 @@ export function SummaryScreen() {
   const lightDisplays = offShelf.filter(entry => parseOffShelfQuantity(entry.quantity) < 80).length
   const notEnough = displayMisses + lightDisplays
   const emptyCalories = offShelf.filter(entry => entry.classification !== 'incremental').length
-  const riskValue = calculateRiskValue({
-    mapMisses,
-    missingTopItems,
-    notEnough,
-    emptyCalories,
-    missingEvidenceCount: missingEvidence.length,
-  })
+  const riskValue = getCurrentRiskValue(app)
   const previousLgorPct = +(Math.max(0, lgorPct - 1.3)).toFixed(1)
   const previousRiskValue = Math.max(0, riskValue + (scoreDelta >= 0 ? 420 : -260))
   const lgorDelta = +(lgorPct - previousLgorPct).toFixed(1)
@@ -87,6 +91,13 @@ export function SummaryScreen() {
     : previousSnapshot.gap
   const remainingRecommendations = getRemainingOffShelfRecommendations(offShelf)
   const summaryInsight = getSummaryInsight(app)
+  const regionalOutcome = getRegionalOutcomeSummary(app)
+  const incrementalOutputRows = getIncrementalOutputRows(app)
+  const opportunityRows = getOpportunityTable(app)
+  const riskRows = getRiskTable(app)
+  const leaderboardPreview = getLeaderboardPreview(totalScore)
+  const accountabilityRows = getAccountabilityRows(app)
+  const feedbackLoopRows = getFeedbackLoopRows(app)
   const blockerCards = [
     ...(missingEvidence.length > 0
       ? [{
@@ -332,6 +343,100 @@ export function SummaryScreen() {
           </InfoBlock>
           )}
 
+          <InfoBlock title={`${store.name} vs ${regionBenchmark.name}`} subtitle="What this visit produces beyond capture: rank context, risk context, and region comparison.">
+            <div className="grid grid-cols-2 gap-2">
+              <MetricTile label="Score Rank" value={regionalOutcome.scoreRankLabel} tone={regionalOutcome.scoreGap >= 0 ? 'success' : 'warning'} />
+              <MetricTile label="LGOR Rank" value={regionalOutcome.lgorRankLabel} tone={regionalOutcome.lgorGap >= 0 ? 'success' : 'warning'} />
+              <MetricTile label="Risk Rank" value={regionalOutcome.riskRankLabel} tone={regionalOutcome.currentRiskValue <= regionBenchmark.currentRiskValue ? 'success' : 'warning'} />
+              <MetricTile label="Risk Minimized" value={formatCurrency(regionalOutcome.riskMinimizedValue)} tone={regionalOutcome.riskMinimizedValue > 0 ? 'success' : 'warning'} />
+              <MetricTile label="Score vs Region" value={`${regionalOutcome.scoreGap >= 0 ? '+' : ''}${regionalOutcome.scoreGap.toFixed(1)}`} tone={regionalOutcome.scoreGap >= 0 ? 'success' : 'warning'} />
+              <MetricTile label="Current Risk" value={formatCurrency(regionalOutcome.currentRiskValue)} tone={regionalOutcome.currentRiskValue <= regionBenchmark.currentRiskValue ? 'success' : 'warning'} />
+            </div>
+            <div className="mt-3 rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Region lens</p>
+              <p className="mt-1 text-[13px] font-semibold text-on-surface">
+                {store.name} is {regionalOutcome.scoreGap >= 0 ? 'outperforming' : 'trailing'} the region on score and {regionalOutcome.lgorGap >= 0 ? 'holding' : 'giving back'} LGOR support.
+              </p>
+              <p className="mt-2 text-[12px] text-on-surface-variant">
+                Region average score {regionalOutcome.regionAverageScore} | Region average LGOR {regionalOutcome.regionAverageLgor.toFixed(1)}%
+              </p>
+            </div>
+          </InfoBlock>
+
+          <InfoBlock title="Incremental, Opportunity & Risk" subtitle="The deck’s business-output layer translated into a mobile review surface.">
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Incremental</p>
+                <div className="mt-2 space-y-2">
+                  {incrementalOutputRows.map(row => (
+                    <SignalRow key={`${row.label}-${row.value}`} title={row.label} detail={row.detail} value={row.value} tone={row.tone} />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Opportunity</p>
+                <div className="mt-2 space-y-2">
+                  {opportunityRows.map(row => (
+                    <SignalRow key={`${row.label}-${row.value}`} title={row.label} detail={row.detail} value={row.value} tone={row.tone} />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Risk</p>
+                <div className="mt-2 space-y-2">
+                  {riskRows.map(row => (
+                    <SignalRow key={`${row.label}-${row.value}`} title={row.label} detail={row.detail} value={row.value} tone={row.tone} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </InfoBlock>
+
+          <InfoBlock title="Leaderboard & Accountability" subtitle="Show who is leading, where this store ranks, and who owns the next move.">
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Leaderboard Preview</p>
+                <div className="mt-2 space-y-2">
+                  {leaderboardPreview.map(entry => (
+                    <LeaderboardRow
+                      key={entry.store}
+                      rank={entry.rank}
+                      storeName={entry.store}
+                      owner={entry.rep}
+                      score={entry.score}
+                      delta={entry.delta}
+                      highlighted={entry.store === store.name}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Accountability</p>
+                <div className="mt-2 space-y-2">
+                  {accountabilityRows.map(row => (
+                    <AccountabilityRow
+                      key={row.area}
+                      area={row.area}
+                      owner={row.owner}
+                      status={row.status}
+                      lens={row.lens}
+                      detail={row.detail}
+                      tone={row.tone}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </InfoBlock>
+
+          <InfoBlock title="Feedback Loop" subtitle="Tie score, LGOR, risk, and incremental execution back to a clearer business story.">
+            <div className="space-y-2">
+              {feedbackLoopRows.map(row => (
+                <SignalRow key={row.label} title={row.label} detail={row.detail} value={row.value} tone={row.tone} />
+              ))}
+            </div>
+          </InfoBlock>
+
           <InfoBlock title="Compared to Last Completed Scorecard" subtitle="Historical business comparison without implying backend delivery.">
             <div className="grid grid-cols-2 gap-2">
               <MetricTile label="Last Score" value={String(previousSnapshot.score)} />
@@ -527,25 +632,107 @@ function ActionButton({
   )
 }
 
-function calculateRiskValue({
-  mapMisses,
-  missingTopItems,
-  notEnough,
-  emptyCalories,
-  missingEvidenceCount,
+function SignalRow({
+  title,
+  detail,
+  value,
+  tone,
 }: {
-  mapMisses: number
-  missingTopItems: number
-  notEnough: number
-  emptyCalories: number
-  missingEvidenceCount: number
+  title: string
+  detail: string
+  value: string
+  tone: 'success' | 'warning'
 }) {
   return (
-    mapMisses * 180 +
-    missingTopItems * 140 +
-    notEnough * 120 +
-    emptyCalories * 90 +
-    missingEvidenceCount * 160
+    <div className="flex items-start justify-between gap-3 rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
+      <div>
+        <p className="text-[12px] font-semibold text-on-surface">{title}</p>
+        <p className="mt-1 text-[12px] text-on-surface-variant">{detail}</p>
+      </div>
+      <span className={`shrink-0 rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+        tone === 'success'
+          ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
+          : 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'
+      }`}>
+        {value}
+      </span>
+    </div>
+  )
+}
+
+function LeaderboardRow({
+  rank,
+  storeName,
+  owner,
+  score,
+  delta,
+  highlighted,
+}: {
+  rank: number
+  storeName: string
+  owner: string
+  score: number
+  delta: number
+  highlighted?: boolean
+}) {
+  return (
+    <div className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-3 ${
+      highlighted
+        ? 'border-[#c9d8ea] bg-[#edf4ff]'
+        : 'border-outline bg-[#f7f9fb]'
+    }`}>
+      <div className="flex items-center gap-3 min-w-0">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-low text-[11px] font-semibold text-on-surface">
+          {rank}
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-[12px] font-semibold text-on-surface">{storeName}</p>
+          <p className="truncate text-[11px] text-on-surface-variant">{owner}</p>
+        </div>
+      </div>
+      <div className="text-right">
+        <p className="text-[13px] font-semibold text-on-surface">{score}</p>
+        <p className={`text-[11px] ${delta >= 0 ? 'text-[#1f5f33]' : 'text-[#8e030f]'}`}>
+          {delta >= 0 ? '+' : ''}{delta}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function AccountabilityRow({
+  area,
+  owner,
+  status,
+  lens,
+  detail,
+  tone,
+}: {
+  area: string
+  owner: string
+  status: string
+  lens: string
+  detail: string
+  tone: 'success' | 'warning'
+}) {
+  return (
+    <div className="rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[12px] font-semibold text-on-surface">{area}</p>
+          <p className="mt-1 text-[11px] text-on-surface-variant">{owner}</p>
+        </div>
+        <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+          tone === 'success'
+            ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
+            : 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'
+        }`}>
+          {status}
+        </span>
+      </div>
+      <p className="mt-2 text-[12px] text-on-surface">{lens}</p>
+      <p className="mt-1 text-[12px] text-on-surface-variant">{detail}</p>
+    </div>
   )
 }
 

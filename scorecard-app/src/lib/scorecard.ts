@@ -380,6 +380,23 @@ export function getRiskDelta(state: AppState) {
   return Math.round(-1 * Math.max(6, 18 + noCount * 4 + missingEvidence * 5 - reducedRisk))
 }
 
+export function getCurrentRiskValue(state: AppState) {
+  const mapMisses = checklistQuestions.filter(question => question.group === 'map' && state.checklist[question.id] !== 'yes').length
+  const missingTopItems = checklistQuestions.filter(question => question.group === 'pog' && state.checklist[question.id] !== 'yes').length
+  const displayMisses = checklistQuestions.filter(question => question.group === 'display' && state.checklist[question.id] === 'no').length
+  const lightDisplays = state.offShelf.filter(entry => parseOffShelfQuantity(entry.quantity) < 80).length
+  const emptyCalories = state.offShelf.filter(entry => entry.classification !== 'incremental').length
+  const missingEvidenceCount = getMissingRequiredEvidence(state.evidence, state.offShelf).length
+
+  return (
+    mapMisses * 180 +
+    missingTopItems * 140 +
+    (displayMisses + lightDisplays) * 120 +
+    emptyCalories * 90 +
+    missingEvidenceCount * 160
+  )
+}
+
 export function getQuestionStatus(answer: ChecklistAnswer) {
   if (answer === 'no') {
     return {
