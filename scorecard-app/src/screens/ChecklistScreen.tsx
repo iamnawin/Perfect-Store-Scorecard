@@ -22,7 +22,7 @@ import {
   getQuestionStatus,
   getVisitTypeLabel,
 } from '../lib/scorecard'
-import { getChecklistHeaderInsight, getChecklistSuggestion, getTopRecommendation } from '../lib/trellis'
+import { answerTrellisChat, getChecklistHeaderInsight, getChecklistSuggestion } from '../lib/trellis'
 import type { ChecklistAnswer, ChecklistQuestion } from '../types'
 
 const OPTIONS: { value: ChecklistAnswer; label: string }[] = [
@@ -95,7 +95,6 @@ export function ChecklistScreen() {
   const basePlanScore = getChecklistBasePlanScore(checklist)
   const projectedTotalScore = getChecklistDecisionScore(checklist, offShelf)
   const trellisInsight = getChecklistHeaderInsight(app)
-  const topRecommendation = getTopRecommendation(app)
   const groups = CHECKLIST_GROUPS
     .map(group => {
       const questions = checklistQuestions.filter(
@@ -201,20 +200,6 @@ export function ChecklistScreen() {
           {agentforceEnabled && (
             <>
               <TrellisInsightCard
-                badge="Top Recommendation"
-                title={topRecommendation.title}
-                summary={topRecommendation.summary}
-                tone={topRecommendation.tone}
-                metrics={[
-                  { label: 'Impact', value: topRecommendation.impactLabel },
-                ]}
-                items={[
-                  { label: 'Why this matters', value: topRecommendation.reason, tone: topRecommendation.tone },
-                ]}
-                actionLabel={topRecommendation.actionLabel}
-                onAction={() => navigate(topRecommendation.route)}
-              />
-              <TrellisInsightCard
                 badge="Agentforce Guidance"
                 title={trellisInsight.title}
                 summary={trellisInsight.summary}
@@ -311,9 +296,12 @@ export function ChecklistScreen() {
               items={trellisInsight.items.map(item => `${item.label}: ${item.value}`)}
               suggestions={[
                 'What should I do next?',
+                'Explain my score breakdown.',
+                'Coach my visit comment.',
                 'Which miss is highest impact?',
                 'What photo proof is still missing?',
               ]}
+              onAsk={(message) => answerTrellisChat({ state: app, screen: 'checklist', message })}
             />
           )}
         </div>

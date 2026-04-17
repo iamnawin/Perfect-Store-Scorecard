@@ -28,6 +28,7 @@ import {
 } from '../data/mock'
 import {
   estimateOffShelfImpact,
+  getChecklistBasePlanScore,
   getCurrentSectionNumber,
   getOffShelfIncrementalScore,
   getOffShelfProductById,
@@ -37,7 +38,7 @@ import {
   getRemainingOffShelfRecommendations,
   getVisitTypeLabel,
 } from '../lib/scorecard'
-import { getOffShelfInsight, getRevisitIntelligence, getTopRecommendation } from '../lib/trellis'
+import { answerTrellisChat, getOffShelfInsight, getRevisitIntelligence } from '../lib/trellis'
 import type { OffShelfClassification, OffShelfEntry } from '../types'
 
 interface DraftState {
@@ -81,6 +82,7 @@ export function OffShelfScreen() {
   const app = useApp()
   const {
     visitType,
+    checklist,
     offShelf,
     offShelfConfirmed,
     addOffShelfEntry,
@@ -127,6 +129,7 @@ export function OffShelfScreen() {
     })
 
   const currentIncremental = getOffShelfIncrementalScore(offShelf)
+  const basePlanScore = getChecklistBasePlanScore(checklist)
   const editingEntry = editingId ? offShelf.find(entry => entry.id === editingId) : null
   const editingImpact = editingEntry?.impactPoints ?? 0
   const draftImpact = selectedProduct && draft.location && draft.quantity !== ''
@@ -138,7 +141,7 @@ export function OffShelfScreen() {
       })
     : null
   const liveIncremental = +(currentIncremental - editingImpact + (draftImpact?.impactPoints ?? editingImpact)).toFixed(1)
-  const projectedScore = +(100 + liveIncremental).toFixed(1)
+  const projectedScore = +(basePlanScore + liveIncremental).toFixed(1)
   const potentialAdditionalGain = getPotentialAdditionalGain(offShelf)
   const remainingRecommendations = getRemainingOffShelfRecommendations(offShelf).slice(0, 4)
   const quantityLabel = draft.quantity === '' ? '' : getOffShelfQuantityLabel(draft.quantity)
@@ -152,7 +155,6 @@ export function OffShelfScreen() {
     classification: draft.classification,
     product: selectedProduct,
   })
-  const topRecommendation = getTopRecommendation(app)
   const revisitIntelligence = visitType === 'follow-up' ? getRevisitIntelligence(app) : null
 
   const canSaveEntry = Boolean(
@@ -461,7 +463,7 @@ export function OffShelfScreen() {
           <SectionCard title="Score Impact" subtitle="Current score state for this visit.">
             <div className="grid grid-cols-2 gap-2">
               <ScoreCell label="Current Score" value={projectedScore.toFixed(1)} tone="neutral" />
-              <ScoreCell label="Base Plan" value="100.0" tone="neutral" />
+              <ScoreCell label="Base Plan" value={basePlanScore.toFixed(1)} tone="neutral" />
               <ScoreCell label="Incremental Off-Shelf" value={`+${liveIncremental.toFixed(1)}`} tone="positive" />
               {agentforceEnabled && (
                 <InsightCell
@@ -482,20 +484,6 @@ export function OffShelfScreen() {
 
           {agentforceEnabled && (
             <>
-              <TrellisInsightCard
-                title={topRecommendation.title}
-                summary={topRecommendation.summary}
-                badge="Top Recommendation"
-                tone={topRecommendation.tone}
-                metrics={[
-                  { label: 'Impact', value: topRecommendation.impactLabel },
-                ]}
-                items={[
-                  { label: 'Why this matters', value: topRecommendation.reason, tone: topRecommendation.tone },
-                ]}
-                actionLabel={topRecommendation.actionLabel}
-                onAction={() => navigate(topRecommendation.route)}
-              />
               {visitType === 'follow-up' && revisitIntelligence && (
                 <TrellisInsightCard
                   title={revisitIntelligence.title}
@@ -854,9 +842,12 @@ export function OffShelfScreen() {
               ]}
               suggestions={[
                 'What should I do next?',
+                'Explain my score breakdown.',
+                'Give me a talk track for the store manager.',
                 'Why did you rank this display first?',
                 'Summarize this recommendation.',
               ]}
+              onAsk={(message) => answerTrellisChat({ state: app, screen: 'off-shelf', message })}
             />
           )}
 

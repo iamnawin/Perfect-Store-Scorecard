@@ -35,6 +35,8 @@ import {
   getTotalScore,
 } from './scorecard'
 
+export type TrellisChatScreen = 'entry' | 'checklist' | 'off-shelf' | 'photo' | 'summary'
+
 type SuggestionConfig = {
   fix: string
   estimatedGain: number
@@ -220,6 +222,7 @@ export function getTopRecommendation(state: AppState): TrellisTopRecommendation 
 }
 
 export function getChecklistHeaderInsight(state: AppState) {
+  const breakdown = getScoreBreakdown(state)
   const failedHighImpact = getFailedQuestions(state, question => question.weight >= 15)[0]
   const unansweredHighImpact = checklistQuestions
     .filter(question => !state.checklist[question.id])
@@ -231,8 +234,9 @@ export function getChecklistHeaderInsight(state: AppState) {
       summary: `${failedHighImpact.title} is dragging score and should be corrected before the rep leaves the aisle.`,
       tone: 'warning' as const,
       items: [
-        { label: 'Repeated gap', value: 'Garden Door / display execution is the current accountability risk.', tone: 'warning' as const },
-        { label: 'Best recovery move', value: 'Use off-shelf capture to convert misses into guided recovery actions.', tone: 'success' as const },
+        { label: 'Score now', value: `${breakdown.totalScore.toFixed(1)} total | ${breakdown.basePlanScore.toFixed(1)} base + ${breakdown.incrementalScore.toFixed(1)} inc`, tone: 'info' as const },
+        { label: 'Highest-weight miss', value: `${failedHighImpact.title} (-${failedHighImpact.weight} pts)`, tone: 'warning' as const },
+        { label: 'Manager comment', value: breakdown.missingEvidenceTitles.length > 0 ? `Blocked by missing evidence: ${breakdown.missingEvidenceTitles[0]}` : 'No evidence blockers - fix the miss and keep moving.', tone: breakdown.missingEvidenceTitles.length > 0 ? 'warning' as const : 'success' as const },
       ],
     }
   }
@@ -243,8 +247,9 @@ export function getChecklistHeaderInsight(state: AppState) {
       summary: `Answer ${unansweredHighImpact.title} next. It is one of the highest-impact checks in the visit.`,
       tone: 'info' as const,
       items: [
-        { label: 'Current objective', value: 'Protect base plan first, then recover score through secondary displays.' },
-        { label: 'Manager lens', value: 'Repeated display misses will stand out in the final summary if they remain open.' },
+        { label: 'Score now', value: `${breakdown.totalScore.toFixed(1)} total | risk ${formatCurrency(breakdown.riskValue)}`, tone: 'info' as const },
+        { label: 'Next check', value: `${unansweredHighImpact.title} (${unansweredHighImpact.weight} pts)`, tone: 'success' as const },
+        { label: 'Why it matters', value: 'This is a high-swing check and it shapes the final score story.', tone: 'info' as const },
       ],
     }
   }
@@ -254,8 +259,9 @@ export function getChecklistHeaderInsight(state: AppState) {
     summary: 'Continue capturing high-impact execution details so the visit summary reflects the strongest wins and remaining gaps.',
     tone: 'success' as const,
     items: [
-      { label: 'What is working', value: 'Completed checks are already feeding score impact and accountability logic.', tone: 'success' as const },
-      { label: 'Next step', value: 'Push the strongest off-shelf opportunity before final evidence review.' },
+      { label: 'Score now', value: `${breakdown.totalScore.toFixed(1)} total | LGOR ${breakdown.lgorPct.toFixed(1)}%`, tone: 'success' as const },
+      { label: 'What is working', value: 'Checklist answers are clean enough to justify incremental capture and manager review.', tone: 'success' as const },
+      { label: 'Next step', value: breakdown.missingEvidenceTitles.length > 0 ? `Capture missing proof: ${breakdown.missingEvidenceTitles[0]}` : 'Move into off-shelf capture for incremental lift.', tone: breakdown.missingEvidenceTitles.length > 0 ? 'warning' as const : 'info' as const },
     ],
   }
 }
@@ -437,6 +443,41 @@ export function getRevisitIntelligence(state: AppState): TrellisRevisitIntellige
   }
 }
 
+export function answerTrellisChat({
+  state,
+  screen,
+  message,
+}: {
+  state: AppState
+  screen: TrellisChatScreen
+  message: string
+}) {
+  const lower = message.trim().toLowerCase()
+  const breakdown = getScoreBreakdown(state)
+
+  if (lower.includes('score') || lower.includes('explain') || lower.includes('breakdown')) {
+    return formatScoreExplanation({ breakdown, screen })
+  }
+
+  if (lower.includes('comment') || lower.includes('notes') || lower.includes('note')) {
+    return formatCommentCoach({ state, screen })
+  }
+
+  if (lower.includes('talk') || lower.includes('say') || lower.includes('script') || lower.includes('conversation')) {
+    return formatTalkTrack({ state, screen })
+  }
+
+  if ((lower.includes('what') && lower.includes('next')) || lower.includes('next best action')) {
+    return formatNextBestAction({ state, screen })
+  }
+
+  if (lower.includes('why')) {
+    return formatWhyThis({ state, screen })
+  }
+
+  return formatQuickIntel({ state, screen })
+}
+
 export function getManagerSummaryDraft(state: AppState): TrellisManagerSummaryDraft {
   const score = getTotalScore(state)
   const scoreDelta = score - previousSnapshot.score
@@ -474,6 +515,189 @@ export function getManagerSummaryDraft(state: AppState): TrellisManagerSummaryDr
       { label: 'Top recommendation', value: topRecommendation.summary, tone: topRecommendation.tone },
     ],
   }
+}
+
+function getScoreBreakdown(state: AppState) {
+  const basePlanScore = getChecklistBasePlanScore(state.checklist)
+  const incrementalScore = getOffShelfIncrementalScore(state.offShelf)
+  const missingEvidence = getMissingRequiredEvidence(state.evidence, state.offShelf)
+  const evidencePenalty = missingEvidence.length * 6
+  const totalScore = getTotalScore(state)
+  const lgorPct = getLgorPct(state)
+  const riskValue = getCurrentRiskValue(state)
+
+  return {
+    basePlanScore,
+    incrementalScore,
+    evidencePenalty,
+    totalScore,
+    lgorPct,
+    riskValue,
+    missingEvidenceTitles: missingEvidence.map(item => item.title),
+  }
+}
+
+function formatScoreExplanation({
+  breakdown,
+  screen,
+}: {
+  breakdown: ReturnType<typeof getScoreBreakdown>
+  screen: TrellisChatScreen
+}) {
+  const lines = [
+    `Score breakdown (${screen}):`,
+    `- Base Plan: ${breakdown.basePlanScore.toFixed(1)} / 100`,
+    `- Above & Beyond (incremental): +${breakdown.incrementalScore.toFixed(1)} / 100`,
+    `- Evidence penalty: -${breakdown.evidencePenalty} (${breakdown.missingEvidenceTitles.length} missing)`,
+    `= Total: ${breakdown.totalScore.toFixed(1)}`,
+    ``,
+    `Business signals:`,
+    `- LGOR support: ${breakdown.lgorPct.toFixed(1)}%`,
+    `- Current risk: ${formatCurrency(breakdown.riskValue)}`,
+  ]
+
+  if (breakdown.missingEvidenceTitles.length > 0) {
+    lines.push('', `Missing proof: ${breakdown.missingEvidenceTitles.slice(0, 3).join(', ')}`)
+  }
+
+  return lines.join('\n')
+}
+
+function formatCommentCoach({ state, screen }: { state: AppState; screen: TrellisChatScreen }) {
+  const note = state.notes.trim()
+  const analysis = analyzeComment(note)
+  const suggestion = buildSuggestedComment(state, analysis)
+
+  const lines = [
+    `Comment coach (${screen}):`,
+    `- Signal strength: ${analysis.label}`,
+    ...analysis.reasons.map(reason => `- ${reason}`),
+    ``,
+    `Suggested manager-ready note:`,
+    suggestion,
+  ]
+
+  return lines.join('\n')
+}
+
+function analyzeComment(note: string) {
+  const lower = note.toLowerCase()
+  const hasNumber = /\d/.test(note)
+  const hasActionVerb = /(set|reset|fixed|corrected|added|built|captured|missing|blocked|resolved|reviewed)/.test(lower)
+  const hasLocation = /(endcap|garden|fence|fenceline|drive aisle|racetrack|front|entrance|off-aisle|off shelf)/.test(lower)
+  const hasNextStep = /(next|follow[- ]?up|revisit|return|tomorrow|week|before)/.test(lower)
+
+  const score = Number(hasNumber) + Number(hasActionVerb) + Number(hasLocation) + Number(hasNextStep)
+  const label = score >= 3 ? 'Strong' : score === 2 ? 'Okay' : 'Needs detail'
+
+  const reasons: string[] = []
+  if (!note) reasons.push('No visit note yet - add a 1-2 sentence outcome + next step.')
+  if (note && !hasActionVerb) reasons.push('Add an action verb (what was fixed or what is missing).')
+  if (note && !hasLocation) reasons.push('Name the location (Endcap / Fence Line / Garden Door / etc).')
+  if (note && !hasNumber) reasons.push('Add a number (units, facings, % LGOR, or display count).')
+  if (note && !hasNextStep) reasons.push('Add the next step (revisit required? evidence pending?).')
+  if (reasons.length === 0) reasons.push('This note has the right ingredients for manager review.')
+
+  return { label, reasons }
+}
+
+function buildSuggestedComment(state: AppState, analysis: ReturnType<typeof analyzeComment>) {
+  const breakdown = getScoreBreakdown(state)
+  const missingEvidenceTitles = breakdown.missingEvidenceTitles
+  const pendingRevisit = state.visitType === 'follow-up' ? getPendingFollowUpEntries(state.offShelf).length : 0
+
+  if (!state.notes.trim()) {
+    const base = `Base plan is ${breakdown.basePlanScore.toFixed(1)} with +${breakdown.incrementalScore.toFixed(1)} incremental captured.`
+    const blocker = missingEvidenceTitles.length > 0
+      ? `Submission blocked by missing evidence (${missingEvidenceTitles[0]}).`
+      : pendingRevisit > 0
+        ? `${pendingRevisit} revisit display decision${pendingRevisit > 1 ? 's are' : ' is'} still pending.`
+        : 'No submission blockers remain.'
+    const next = state.revisitRequired ? 'Revisit flagged for follow-up execution.' : state.shelfResetNeeded ? 'Shelf reset flagged before next visit.' : 'Next step: close the top remaining miss and capture proof.'
+    return `${base} ${blocker} ${next}`
+  }
+
+  if (analysis.label === 'Strong') {
+    return state.notes.trim()
+  }
+
+  const nextLine = state.revisitRequired
+    ? 'Next: revisit required for follow-up execution.'
+    : state.shelfResetNeeded
+      ? 'Next: shelf reset needed before next visit.'
+      : missingEvidenceTitles.length > 0
+        ? `Next: capture missing evidence (${missingEvidenceTitles[0]}).`
+        : 'Next: close the highest-weight miss before leaving the aisle.'
+
+  return `${state.notes.trim()} ${nextLine}`
+}
+
+function formatTalkTrack({ state, screen }: { state: AppState; screen: TrellisChatScreen }) {
+  const breakdown = getScoreBreakdown(state)
+  const topRec = getTopRecommendation(state)
+
+  const lines = [
+    `Talk track (${screen}):`,
+    `- "Today I'm focused on protecting the base plan and proving incremental wins with photos."`,
+    `- "We're at ${breakdown.totalScore.toFixed(1)} total score (${breakdown.basePlanScore.toFixed(1)} base + ${breakdown.incrementalScore.toFixed(1)} incremental)."`,
+    `- "Next move: ${topRec.summary}"`,
+  ]
+
+  if (breakdown.missingEvidenceTitles.length > 0) {
+    lines.push(`- "We can't close this until we capture: ${breakdown.missingEvidenceTitles[0]}."`)
+  }
+
+  return lines.join('\n')
+}
+
+function formatNextBestAction({ state, screen }: { state: AppState; screen: TrellisChatScreen }) {
+  const topRec = getTopRecommendation(state)
+  const lines = [
+    `Next best action (${screen}):`,
+    `${topRec.actionLabel} - ${topRec.summary}`,
+    ``,
+    `Why:`,
+    topRec.reason,
+  ]
+
+  return lines.join('\n')
+}
+
+function formatWhyThis({ state, screen }: { state: AppState; screen: TrellisChatScreen }) {
+  const topRec = getTopRecommendation(state)
+  const breakdown = getScoreBreakdown(state)
+
+  const signals: string[] = []
+  if (breakdown.missingEvidenceTitles.length > 0) signals.push(`Evidence blocker: ${breakdown.missingEvidenceTitles[0]}`)
+  if (state.visitType === 'follow-up') {
+    const pending = getPendingFollowUpEntries(state.offShelf).length
+    if (pending > 0) signals.push(`Revisit decisions pending: ${pending}`)
+  }
+
+  const failedQuestions = getFailedQuestions(state).sort((left, right) => right.weight - left.weight)
+  if (failedQuestions[0]) signals.push(`Highest-weight miss: ${failedQuestions[0].title} (${failedQuestions[0].weight} pts)`)
+
+  return [
+    `Why this focus (${screen}):`,
+    topRec.reason,
+    ``,
+    `Supporting signals:`,
+    ...(signals.length > 0 ? signals.slice(0, 4).map(item => `- ${item}`) : ['- Live checklist + remaining upside']),
+  ].join('\n')
+}
+
+function formatQuickIntel({ state, screen }: { state: AppState; screen: TrellisChatScreen }) {
+  const breakdown = getScoreBreakdown(state)
+  const topRec = getTopRecommendation(state)
+  const remaining = getRemainingOffShelfRecommendations(state.offShelf)[0]
+
+  return [
+    `Quick intel (${screen}):`,
+    `- Score: ${breakdown.totalScore.toFixed(1)} (base ${breakdown.basePlanScore.toFixed(1)} + inc ${breakdown.incrementalScore.toFixed(1)} - penalty ${breakdown.evidencePenalty})`,
+    `- Risk: ${formatCurrency(breakdown.riskValue)} | LGOR: ${breakdown.lgorPct.toFixed(1)}%`,
+    `- Next: ${topRec.summary}`,
+    remaining?.product ? `- Remaining upside: ${remaining.product.name} at ${remaining.location} (+${remaining.potentialPoints.toFixed(1)} pts)` : null,
+  ].filter(Boolean).join('\n')
 }
 
 export function getSummaryKpis(state: AppState) {

@@ -29,6 +29,7 @@ import {
   parseOffShelfQuantity,
 } from '../lib/scorecard'
 import {
+  answerTrellisChat,
   getAccountabilityRows,
   getFeedbackLoopRows,
   getIncrementalOutputRows,
@@ -559,9 +560,12 @@ export function SummaryScreen() {
               ]}
               suggestions={[
                 'What should I do next?',
+                'Explain my score breakdown.',
+                'Give me a talk track for my manager.',
                 'Why is this the next best action?',
                 'Summarize this for my manager.',
               ]}
+              onAsk={(message) => answerTrellisChat({ state: app, screen: 'summary', message })}
             />
           )}
         </div>

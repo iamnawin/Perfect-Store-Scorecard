@@ -7,7 +7,7 @@ import { TrellisInsightCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
 import { previousSnapshot, store } from '../data/mock'
 import { getActiveScorecardSections, getCurrentSection, getCurrentSectionNumber, getPendingFollowUpEntries, getStepState } from '../lib/scorecard'
-import { getRevisitIntelligence, getTopRecommendation } from '../lib/trellis'
+import { getEntryVisitBriefing, getRevisitIntelligence, getTopRecommendation } from '../lib/trellis'
 
 export function EntryScreen() {
   const navigate = useNavigate()
@@ -42,6 +42,7 @@ export function EntryScreen() {
     : currentSection.route
   const topRecommendation = getTopRecommendation(app)
   const revisitIntelligence = visitType === 'follow-up' ? getRevisitIntelligence(app) : null
+  const briefing = agentforceEnabled ? getEntryVisitBriefing(app) : null
 
   const followUpPrimaryCopy = {
     'not-started': {
@@ -162,14 +163,19 @@ export function EntryScreen() {
           <>
             {agentforceEnabled && (
               <TrellisInsightCard
-                badge="Agentforce Insight"
-                title="What matters now"
-                summary="Agentforce is reading prior visit history and current score state to point the rep at the fastest recovery path."
-                items={[
-                  { label: 'Repeated Gap', value: 'Garden Door missing for 2 visits', tone: 'warning' },
-                  { label: 'Top Opportunity', value: 'Scotts Turf Builder 20 lb at Endcap (+12 pts)', tone: 'success' },
-                  { label: 'Suggested Focus', value: 'Fix Garden Door first, then add incremental displays' },
+                badge="Agentforce Briefing"
+                title={`Suggested focus: ${briefing?.suggestedFocus ?? 'Visit focus'}`}
+                summary={briefing?.focusReason ?? 'Agentforce is summarizing the highest-confidence focus for this store based on your current state.'}
+                tone="info"
+                metrics={[
+                  { label: 'Last visit', value: String(briefing?.lastVisitScore ?? previousSnapshot.score) },
+                  { label: 'Region avg', value: String(briefing?.regionAverage ?? 0) },
                 ]}
+                items={[
+                  { label: 'Repeated gap', value: briefing?.repeatedGap ?? 'No repeated gap detected', tone: 'warning' },
+                  { label: 'Top opportunity', value: briefing?.topOpportunity ?? 'No incremental opportunity detected', tone: 'success' },
+                ]}
+                footer="Agentforce briefing is mock logic in this prototype; it is designed to demonstrate differentiated guidance across screens."
               />
             )}
           </>

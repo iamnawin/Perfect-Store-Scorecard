@@ -9,7 +9,7 @@ import { TrellisAskButton, TrellisInsightCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
 import { evidenceRequirements, store } from '../data/mock'
 import { getCurrentSectionNumber, getLinkedQuestionTitles, getMissingRequiredEvidence, getVisitTypeLabel } from '../lib/scorecard'
-import { getPhotoInsight } from '../lib/trellis'
+import { answerTrellisChat, getPhotoInsight } from '../lib/trellis'
 
 export function PhotoScreen() {
   const navigate = useNavigate()
@@ -244,9 +244,11 @@ export function PhotoScreen() {
               items={trellisInsight.metrics.map(metric => `${metric.label}: ${metric.value}`)}
               suggestions={[
                 'Summarize this for my manager.',
+                'Coach my visit comment.',
                 'What should I do next?',
                 'What is blocking submission?',
               ]}
+              onAsk={(message) => answerTrellisChat({ state: app, screen: 'photo', message })}
             />
           )}
         </div>
