@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { DemoModeToggle } from './DemoModeToggle'
+import scottsLogo from '../assets/scotts logo.png'
 import { store } from '../data/mock'
 
 interface TopBarProps {
@@ -27,14 +28,17 @@ export function TopBar({ title, subtitle, showBack = false, rightSlot }: TopBarP
           </button>
         )}
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold leading-none text-on-surface-variant truncate">Scorecard</p>
-              <h1 className="mt-1 text-[15px] font-semibold leading-tight text-on-surface truncate">{title}</h1>
-            </div>
-            <span className="shrink-0 rounded-full border border-[#c9d8ea] bg-[#edf4ff] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
-              {store.visitStatus}
-            </span>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <img src={scottsLogo} alt="Scotts" className="h-4 w-auto shrink-0" />
+                  <p className="text-[11px] font-semibold leading-none text-on-surface-variant truncate">Scorecard</p>
+                </div>
+                <h1 className="mt-1 text-[15px] font-semibold leading-tight text-on-surface truncate">{title}</h1>
+              </div>
+              <span className="shrink-0 rounded-full border border-[#c9d8ea] bg-[#edf4ff] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
+                {store.visitStatus}
+              </span>
           </div>
           {subtitle && <p className="text-[11px] text-on-surface-variant mt-1">{subtitle}</p>}
           <div className="mt-2 flex w-full items-center gap-2">
