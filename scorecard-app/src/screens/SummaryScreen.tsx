@@ -64,6 +64,7 @@ export function SummaryScreen() {
     saveDraft,
     submitScorecard,
     submitted,
+    showToast,
   } = app
 
   const basePlanScore = getChecklistBasePlanScore(checklist)
@@ -189,12 +190,13 @@ export function SummaryScreen() {
   }) {
     if (navigator.share) {
       await navigator.share({ title, text })
+      showToast('Done', successMessage)
       return
     }
 
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(text)
-      window.alert(successMessage)
+      showToast('Done', successMessage)
       return
     }
 
@@ -228,7 +230,7 @@ export function SummaryScreen() {
     await copyTextOrShare({
       title: `Chatter Post - ${store.name}`,
       text: chatterText,
-      successMessage: 'Chatter-ready post copied.',
+      successMessage: 'Chatter post has been sent.',
     })
   }
 
@@ -243,7 +245,7 @@ export function SummaryScreen() {
     await copyTextOrShare({
       title: `Leaderboard Snapshot - ${store.name}`,
       text: leaderboardText,
-      successMessage: 'Leaderboard snapshot copied.',
+      successMessage: 'Score posted on the leaderboard.',
     })
   }
 

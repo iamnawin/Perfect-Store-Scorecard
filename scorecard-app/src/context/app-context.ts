@@ -19,6 +19,7 @@ export interface AppContextValue extends AppState {
   saveDraft: () => void
   submitScorecard: () => void
   setAgentforceEnabled: (value: boolean) => void
+  showToast: (title: string, message: string) => void
   answeredChecks: number
   totalChecks: number
   totalSections: number

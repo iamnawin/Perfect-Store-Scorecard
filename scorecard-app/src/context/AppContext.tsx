@@ -101,6 +101,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  function showToast(title: string, message: string) {
+    triggerToast(title, message)
+  }
+
   function setVisitType(nextVisitType: VisitType) {
     setVisitTypeState(nextVisitType)
     setChecklist({})
@@ -330,6 +334,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       saveDraft,
       submitScorecard,
       setAgentforceEnabled,
+      showToast,
       answeredChecks,
       totalChecks,
       totalSections,
