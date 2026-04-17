@@ -349,7 +349,7 @@ export function OffShelfScreen() {
 
   return (
     <PhoneShell>
-      <div className="flex-1 overflow-y-auto bg-[#f4f6f9] pb-2">
+      <div data-scroll-to-top="true" className="flex-1 overflow-y-auto bg-[#f4f6f9] pb-2">
         <TopBar
           title="Off-Shelf Opportunity Capture"
           subtitle={`${store.name} | ${visitTypeLabel} Visit`}

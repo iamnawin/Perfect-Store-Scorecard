@@ -166,7 +166,7 @@ export function ChecklistScreen() {
 
   return (
     <PhoneShell>
-      <div className="flex-1 overflow-y-auto bg-[#f4f6f9]">
+      <div data-scroll-to-top="true" className="flex-1 overflow-y-auto bg-[#f4f6f9]">
         <TopBar
           title={store.name}
           subtitle={`${visitTypeLabel} Visit | ${store.scorecard}`}

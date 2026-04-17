@@ -12,6 +12,16 @@ function ScrollToTop() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+
+    const scrollContainers = document.querySelectorAll<HTMLElement>('[data-scroll-to-top="true"]')
+    scrollContainers.forEach(container => {
+      if (typeof container.scrollTo === 'function') {
+        container.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      } else {
+        container.scrollTop = 0
+        container.scrollLeft = 0
+      }
+    })
   }, [pathname])
 
   return null

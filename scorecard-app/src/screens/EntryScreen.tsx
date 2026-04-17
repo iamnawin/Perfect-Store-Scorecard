@@ -114,7 +114,7 @@ export function EntryScreen() {
 
   return (
     <PhoneShell>
-      <div className="flex-1 overflow-y-auto bg-[#f4f6f9] px-4 py-4 space-y-3">
+      <div data-scroll-to-top="true" className="flex-1 overflow-y-auto bg-[#f4f6f9] px-4 py-4 space-y-3">
         <TopBar
           title={store.name}
           subtitle={entrySubtitle}

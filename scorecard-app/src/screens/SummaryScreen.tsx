@@ -2,7 +2,6 @@ import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertTriangle,
-  CheckCircle2,
   ClipboardCheck,
   Flag,
   Mail,
@@ -107,6 +106,7 @@ export function SummaryScreen() {
   const topRecommendation = getTopRecommendation(app)
   const revisitIntelligence = visitType === 'follow-up' ? getRevisitIntelligence(app) : null
   const managerSummaryDraft = getManagerSummaryDraft(app)
+  const showBusinessOutputBlocks = visitType === 'follow-up' && !submitted
   const blockerCards = [
     ...(missingEvidence.length > 0
       ? [{
@@ -179,6 +179,29 @@ export function SummaryScreen() {
     window.open(`mailto:?subject=${subject}&body=${body}`, '_self')
   }
 
+  async function copyTextOrShare({
+    title,
+    text,
+    successMessage,
+  }: {
+    title: string
+    text: string
+    successMessage: string
+  }) {
+    if (navigator.share) {
+      await navigator.share({ title, text })
+      return
+    }
+
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      window.alert(successMessage)
+      return
+    }
+
+    window.alert(text)
+  }
+
   async function shareToTeamFeed() {
     const shareText = buildShareText({
       agentforceEnabled,
@@ -220,9 +243,55 @@ export function SummaryScreen() {
     window.alert(shareText)
   }
 
+  async function shareToChatter() {
+    const chatterText = buildShareText({
+      agentforceEnabled,
+      totalScore,
+      executionScore,
+      basePlanScore,
+      incrementalScore,
+      lgorPct,
+      riskValue,
+      mapMisses,
+      missingTopItems,
+      notEnough,
+      emptyCalories,
+      scoreDelta,
+      lgorDelta,
+      riskDelta,
+      comparisonRepeatedGap,
+      notes,
+      revisitRequired,
+      shelfResetNeeded,
+      summaryInsight,
+      nextBestAction: buildNextBestAction(remainingRecommendations[0], summaryInsight.nextVisitFocus),
+    })
+
+    await copyTextOrShare({
+      title: `Chatter Post - ${store.name}`,
+      text: chatterText,
+      successMessage: 'Chatter-ready post copied.',
+    })
+  }
+
+  async function shareLeaderboardSnapshot() {
+    const leaderboardText = [
+      `Leaderboard snapshot - ${store.scorecard}`,
+      ...leaderboardPreview.map(entry => (
+        `${entry.rank}. ${entry.store} (${entry.rep}) - ${entry.score}${entry.delta >= 0 ? ` (+${entry.delta})` : ` (${entry.delta})`}`
+      )),
+    ].join('\n')
+
+    await copyTextOrShare({
+      title: `Leaderboard Snapshot - ${store.name}`,
+      text: leaderboardText,
+      successMessage: 'Leaderboard snapshot copied.',
+    })
+  }
+
   return (
     <PhoneShell>
-      <div className="flex-1 overflow-y-auto bg-[#f4f6f9]">
+      <div data-scroll-to-top="true" className="flex-1 overflow-y-auto bg-[#f4f6f9]">
         <TopBar
           title={submitted ? 'Visit Submitted' : 'Visit Summary'}
           subtitle={`${store.name} | ${visitTypeLabel} Visit`}
@@ -394,6 +463,8 @@ export function SummaryScreen() {
           </InfoBlock>
           )}
 
+          {showBusinessOutputBlocks && (
+            <>
           <InfoBlock title={`${store.name} vs ${regionBenchmark.name}`} subtitle="What this visit produces beyond capture: rank context, risk context, and region comparison.">
             <div className="grid grid-cols-2 gap-2">
               <MetricTile label="Score Rank" value={regionalOutcome.scoreRankLabel} tone={regionalOutcome.scoreGap >= 0 ? 'success' : 'warning'} />
@@ -501,6 +572,8 @@ export function SummaryScreen() {
               <p className="mt-2 text-[12px] text-on-surface-variant">Last submitted {previousSnapshot.date} by {previousSnapshot.submittedBy}</p>
             </div>
           </InfoBlock>
+            </>
+          )}
 
           {(notes || revisitRequired || shelfResetNeeded) && (
             <InfoBlock title="Visit Outcome & Next Actions" subtitle="Field notes and tracked next-step flags captured during this visit.">
@@ -515,15 +588,25 @@ export function SummaryScreen() {
           <InfoBlock title="Submission Actions" subtitle="Share a snapshot or submit the scorecard from the field.">
             <div className="grid grid-cols-1 gap-2">
               <ActionButton label="Email Snapshot" icon={<Mail size={14} />} tone="secondary" onClick={openEmailSnapshot} />
-              <ActionButton label="Copy Snapshot" icon={<Share2 size={14} />} tone="secondary" onClick={() => { void shareToTeamFeed() }} />
-              <ActionButton
-                label={submitted ? 'Visit Submitted' : blockerCards.length === 0 ? 'Submit Visit' : blockerCards[0]?.actionLabel ?? 'Resolve Blocker'}
-                icon={submitted ? <CheckCircle2 size={14} /> : blockerCards.length === 0 ? <Send size={14} /> : <AlertTriangle size={14} />}
-                onClick={submitted ? () => navigate('/') : blockerCards.length === 0 ? submitScorecard : () => navigate(blockerCards[0].route)}
-              />
+              {submitted ? (
+                <>
+                  <ActionButton label="Send to Chatter" icon={<Share2 size={14} />} tone="secondary" onClick={() => { void shareToChatter() }} />
+                  <ActionButton label="Leaderboard Snapshot" icon={<ClipboardCheck size={14} />} tone="secondary" onClick={() => { void shareLeaderboardSnapshot() }} />
+                </>
+              ) : (
+                <>
+                  <ActionButton label="Copy Snapshot" icon={<Share2 size={14} />} tone="secondary" onClick={() => { void shareToTeamFeed() }} />
+                  <ActionButton
+                    label={blockerCards.length === 0 ? 'Submit Visit' : blockerCards[0]?.actionLabel ?? 'Resolve Blocker'}
+                    icon={blockerCards.length === 0 ? <Send size={14} /> : <AlertTriangle size={14} />}
+                    onClick={blockerCards.length === 0 ? submitScorecard : () => navigate(blockerCards[0].route)}
+                  />
+                </>
+              )}
             </div>
           </InfoBlock>
 
+          {!submitted && (
           <InfoBlock title="Required Before Submit" subtitle="Resolve these blockers before the scorecard can be closed.">
             <div className="space-y-2">
               {blockerCards.length > 0 ? blockerCards.map(blocker => (
@@ -546,6 +629,7 @@ export function SummaryScreen() {
               )}
             </div>
           </InfoBlock>
+          )}
           {agentforceEnabled && (
             <TrellisAskButton
               active={trellisOpen}

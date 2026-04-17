@@ -67,7 +67,7 @@ export function PhotoScreen() {
 
   return (
     <PhoneShell>
-      <div className="flex-1 overflow-y-auto bg-[#f4f6f9]">
+      <div data-scroll-to-top="true" className="flex-1 overflow-y-auto bg-[#f4f6f9]">
         <TopBar title="Photo Evidence" subtitle={`${store.name} | ${visitTypeLabel} Visit`} showBack />
 
         <div className="border-b border-outline bg-surface-lowest px-4 py-3">
