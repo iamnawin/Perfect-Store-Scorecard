@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  AlertTriangle,
   ClipboardCheck,
   Flag,
   Mail,
@@ -106,7 +105,7 @@ export function SummaryScreen() {
   const topRecommendation = getTopRecommendation(app)
   const revisitIntelligence = visitType === 'follow-up' ? getRevisitIntelligence(app) : null
   const managerSummaryDraft = getManagerSummaryDraft(app)
-  const showBusinessOutputBlocks = visitType === 'follow-up' && !submitted
+  const showBusinessOutputBlocks = visitType === 'follow-up'
   const blockerCards = [
     ...(missingEvidence.length > 0
       ? [{
@@ -200,47 +199,6 @@ export function SummaryScreen() {
     }
 
     window.alert(text)
-  }
-
-  async function shareToTeamFeed() {
-    const shareText = buildShareText({
-      agentforceEnabled,
-      totalScore,
-      executionScore,
-      basePlanScore,
-      incrementalScore,
-      lgorPct,
-      riskValue,
-      mapMisses,
-      missingTopItems,
-      notEnough,
-      emptyCalories,
-      scoreDelta,
-      lgorDelta,
-      riskDelta,
-      comparisonRepeatedGap,
-      notes,
-      revisitRequired,
-      shelfResetNeeded,
-      summaryInsight,
-      nextBestAction: buildNextBestAction(remainingRecommendations[0], summaryInsight.nextVisitFocus),
-    })
-
-    if (navigator.share) {
-      await navigator.share({
-        title: `Store Scorecard Snapshot - ${store.name}`,
-        text: shareText,
-      })
-      return
-    }
-
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(shareText)
-      window.alert('Visit snapshot copied.')
-      return
-    }
-
-    window.alert(shareText)
   }
 
   async function shareToChatter() {
@@ -585,26 +543,15 @@ export function SummaryScreen() {
             </InfoBlock>
           )}
 
-          <InfoBlock title="Submission Actions" subtitle="Share a snapshot or submit the scorecard from the field.">
-            <div className="grid grid-cols-1 gap-2">
-              <ActionButton label="Email Snapshot" icon={<Mail size={14} />} tone="secondary" onClick={openEmailSnapshot} />
-              {submitted ? (
-                <>
-                  <ActionButton label="Send to Chatter" icon={<Share2 size={14} />} tone="secondary" onClick={() => { void shareToChatter() }} />
-                  <ActionButton label="Leaderboard Snapshot" icon={<ClipboardCheck size={14} />} tone="secondary" onClick={() => { void shareLeaderboardSnapshot() }} />
-                </>
-              ) : (
-                <>
-                  <ActionButton label="Copy Snapshot" icon={<Share2 size={14} />} tone="secondary" onClick={() => { void shareToTeamFeed() }} />
-                  <ActionButton
-                    label={blockerCards.length === 0 ? 'Submit Visit' : blockerCards[0]?.actionLabel ?? 'Resolve Blocker'}
-                    icon={blockerCards.length === 0 ? <Send size={14} /> : <AlertTriangle size={14} />}
-                    onClick={blockerCards.length === 0 ? submitScorecard : () => navigate(blockerCards[0].route)}
-                  />
-                </>
-              )}
-            </div>
-          </InfoBlock>
+          {submitted && (
+            <InfoBlock title="After Submit" subtitle="Share this completed visit to managers and the field team.">
+              <div className="grid grid-cols-1 gap-2">
+                <ActionButton label="Email Snapshot" icon={<Mail size={14} />} tone="secondary" onClick={openEmailSnapshot} />
+                <ActionButton label="Send to Chatter" icon={<Share2 size={14} />} tone="secondary" onClick={() => { void shareToChatter() }} />
+                <ActionButton label="Leaderboard Snapshot" icon={<ClipboardCheck size={14} />} tone="secondary" onClick={() => { void shareLeaderboardSnapshot() }} />
+              </div>
+            </InfoBlock>
+          )}
 
           {!submitted && (
           <InfoBlock title="Required Before Submit" subtitle="Resolve these blockers before the scorecard can be closed.">
