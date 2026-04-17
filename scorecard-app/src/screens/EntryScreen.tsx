@@ -4,7 +4,6 @@ import { CheckCircle2, ChevronRight, CircleDot, ClipboardCheck, LockKeyhole, Tre
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
 import { TrellisInsightCard } from '../components/TrellisBot'
-import scottsLogo from '../assets/scotts logo.png'
 import { useApp } from '../context/useApp'
 import { previousSnapshot, store } from '../data/mock'
 import { getActiveScorecardSections, getCurrentSection, getCurrentSectionNumber, getPendingFollowUpEntries, getStepState } from '../lib/scorecard'
@@ -119,10 +118,6 @@ export function EntryScreen() {
           title={store.name}
           subtitle={entrySubtitle}
         />
-
-        <div className="flex justify-center">
-          <img src={scottsLogo} alt="Scotts" className="h-7 w-auto" />
-        </div>
 
         <div className="px-1">
           <p className="text-[11px] font-medium text-on-surface-variant">{store.scorecard}</p>
