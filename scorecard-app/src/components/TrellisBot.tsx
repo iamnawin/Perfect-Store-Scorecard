@@ -1,6 +1,6 @@
 import clsx from 'clsx'
-import { ArrowRight, Bot, Sparkles, TriangleAlert, TrendingUp } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { ArrowRight, Bot, Send, Sparkles, TriangleAlert, TrendingUp, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { TrellisActionIntent, TrellisDetailItem, TrellisMetric, TrellisTone } from '../types'
 
 const toneStyles: Record<TrellisTone, {
@@ -243,17 +243,38 @@ export function TrellisAskButton({
   title,
   summary,
   items = [],
+  mode = 'preview',
+  suggestions = [],
+  onAsk,
 }: {
   active: boolean
   onClick: () => void
   title?: string
   summary?: string
   items?: string[]
+  mode?: 'preview' | 'chat'
+  suggestions?: string[]
+  onAsk?: (message: string) => Promise<string> | string
 }) {
+  const context = useMemo(() => ({
+    title: title ?? 'Trellis',
+    summary: summary ?? '',
+    items,
+  }), [items, summary, title])
+
   return (
     <div className="sticky bottom-4 z-20 flex justify-end pr-1">
       <div className="relative">
-        {active && (title || summary || items.length > 0) && (
+        {active && mode === 'chat' && (
+          <TrellisChatPanel
+            context={context}
+            suggestions={suggestions.length > 0 ? suggestions : buildDefaultSuggestions(context)}
+            onAsk={onAsk ?? ((message) => buildDefaultChatResponse({ context, message }))}
+            onClose={onClick}
+          />
+        )}
+
+        {active && mode === 'preview' && (title || summary || items.length > 0) && (
           <div className="absolute bottom-14 right-0 w-[280px] rounded-2xl border border-[#c9d8ea] bg-white p-3 shadow-[0_20px_40px_rgba(15,23,42,0.2)]">
             <div className="flex items-center gap-2">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[linear-gradient(90deg,#0b5cab,#0176d3)] text-white">
@@ -296,6 +317,258 @@ export function TrellisAskButton({
       </div>
     </div>
   )
+}
+
+type TrellisChatMessage = {
+  id: string
+  role: 'assistant' | 'user'
+  content: string
+}
+
+function TrellisChatPanel({
+  context,
+  suggestions,
+  onAsk,
+  onClose,
+}: {
+  context: { title: string; summary: string; items: string[] }
+  suggestions: string[]
+  onAsk: (message: string) => Promise<string> | string
+  onClose: () => void
+}) {
+  const [messages, setMessages] = useState<TrellisChatMessage[]>([])
+  const [draft, setDraft] = useState('')
+  const [pending, setPending] = useState(false)
+  const idCounter = useRef(0)
+  const endRef = useRef<HTMLDivElement | null>(null)
+
+  const contextKey = useMemo(() => `${context.title}|${context.summary}|${context.items.join('|')}`, [context])
+
+  useEffect(() => {
+    if (messages.length > 0) return
+    const seeded: TrellisChatMessage[] = [
+      {
+        id: nextChatId(idCounter),
+        role: 'assistant',
+        content: `Agentforce Live • Trellis\nAsk me “what next?” or tap a suggestion below.\n\nContext: ${context.title}${context.summary ? `\n${context.summary}` : ''}`,
+      },
+    ]
+
+    if (context.items.length > 0) {
+      seeded.push({
+        id: nextChatId(idCounter),
+        role: 'assistant',
+        content: `What I’m seeing right now:\n${context.items.map(item => `• ${item}`).join('\n')}`,
+      })
+    }
+
+    setMessages(seeded)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: 'end' })
+  }, [messages.length, pending])
+
+  useEffect(() => {
+    if (messages.length === 0) return
+    setMessages(prev => {
+      const existing = prev.find(item => item.id === `context-${contextKey}`)
+      if (existing) return prev
+      return [
+        ...prev,
+        {
+          id: `context-${contextKey}`,
+          role: 'assistant',
+          content: `Context updated: ${context.title}${context.summary ? ` — ${context.summary}` : ''}`,
+        },
+      ]
+    })
+  }, [contextKey, context.summary, context.title, messages.length])
+
+  async function sendMessage(message: string) {
+    const trimmed = message.trim()
+    if (!trimmed || pending) return
+
+    setDraft('')
+    setMessages(prev => [...prev, { id: nextChatId(idCounter), role: 'user', content: trimmed }])
+    setPending(true)
+
+    try {
+      const response = await Promise.resolve(onAsk(trimmed))
+      setMessages(prev => [...prev, { id: nextChatId(idCounter), role: 'assistant', content: response }])
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : 'Unexpected error'
+      setMessages(prev => [...prev, { id: nextChatId(idCounter), role: 'assistant', content: `I couldn’t answer that (${detail}). Try again.` }])
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <div className="absolute bottom-14 right-0 w-[320px] overflow-hidden rounded-2xl border border-[#c9d8ea] bg-white shadow-[0_20px_40px_rgba(15,23,42,0.2)]">
+      <div className="flex items-start justify-between gap-3 border-b border-[#dde7f3] bg-[#f7fbff] px-3 py-2">
+        <div className="flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[linear-gradient(90deg,#0b5cab,#0176d3)] text-white">
+            <Bot size={14} />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Agentforce Live</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Trellis</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline bg-white text-on-surface-variant"
+          aria-label="Close Trellis"
+        >
+          <X size={14} />
+        </button>
+      </div>
+
+      <div className="max-h-[300px] space-y-2 overflow-y-auto px-3 py-3">
+        {messages.map(message => (
+          <div
+            key={message.id}
+            className={clsx(
+              'max-w-[90%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-[12px] leading-snug',
+              message.role === 'user'
+                ? 'ml-auto bg-primary text-white'
+                : 'mr-auto border border-outline bg-[#f7f9fb] text-on-surface'
+            )}
+          >
+            {message.content}
+          </div>
+        ))}
+        {pending && (
+          <div className="mr-auto max-w-[90%] rounded-2xl border border-outline bg-[#f7f9fb] px-3 py-2 text-[12px] text-on-surface">
+            Thinking…
+          </div>
+        )}
+        <div ref={endRef} />
+      </div>
+
+      {suggestions.length > 0 && (
+        <div className="border-t border-outline bg-white px-3 py-2">
+          <div className="flex flex-wrap gap-2">
+            {suggestions.slice(0, 3).map(suggestion => (
+              <button
+                key={suggestion}
+                type="button"
+                onClick={() => sendMessage(suggestion)}
+                className="rounded-full border border-outline bg-white px-3 py-2 text-[11px] font-semibold text-on-surface"
+                disabled={pending}
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-end gap-2 border-t border-outline bg-white px-3 py-2">
+        <input
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault()
+              void sendMessage(draft)
+            }
+          }}
+          placeholder="Ask Trellis…"
+          className="min-h-10 flex-1 rounded-xl border border-outline bg-white px-3 text-[12px] text-on-surface outline-none focus:border-primary"
+          disabled={pending}
+        />
+        <button
+          type="button"
+          onClick={() => void sendMessage(draft)}
+          disabled={pending || !draft.trim()}
+          className={clsx(
+            'inline-flex h-10 w-10 items-center justify-center rounded-xl text-white',
+            pending || !draft.trim() ? 'bg-[#c9d2dc]' : 'bg-primary'
+          )}
+          aria-label="Send message"
+        >
+          <Send size={14} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function nextChatId(counter: { current: number }) {
+  counter.current += 1
+  return `m-${counter.current}`
+}
+
+function buildDefaultSuggestions(context: { title: string; summary: string; items: string[] }) {
+  const suggestions = [
+    'What should I do next?',
+    'Why is this the focus?',
+    'Summarize this for my manager.',
+  ]
+
+  if (context.items.some(item => item.toLowerCase().includes('next best action'))) {
+    suggestions.unshift('Explain the next best action.')
+  }
+
+  return Array.from(new Set(suggestions))
+}
+
+function buildDefaultChatResponse({
+  context,
+  message,
+}: {
+  context: { title: string; summary: string; items: string[] }
+  message: string
+}) {
+  const lower = message.toLowerCase()
+  const nextActionLine = context.items.find(item => item.toLowerCase().includes('next best action'))
+    ?? context.items.find(item => item.toLowerCase().includes('next'))
+
+  if (lower.includes('what') && lower.includes('next')) {
+    return nextActionLine
+      ? `Next best action: ${stripPrefix(nextActionLine)}\n\nIf you do that, I’ll update the story and remaining upside.`
+      : 'Next best action: address the highest-weight missed execution first, then capture off-shelf proof so the visit narrative is defensible.'
+  }
+
+  if (lower.includes('why')) {
+    const detail = context.summary
+      ? `Because: ${context.summary}`
+      : 'Because this is the highest-confidence recovery lever based on the current checklist and store history mock logic.'
+    return `${detail}\n\nSupporting signals:\n${context.items.length > 0 ? context.items.slice(0, 3).map(item => `• ${item}`).join('\n') : '• Live answers and remaining point upside'}`
+  }
+
+  if (lower.includes('manager') || lower.includes('summary')) {
+    const bullets = [
+      context.summary ? `Visit story: ${context.summary}` : null,
+      context.items[0] ? `Main signal: ${context.items[0]}` : null,
+      nextActionLine ? `Next step: ${stripPrefix(nextActionLine)}` : null,
+      'Note: Agentforce output is mock local logic only in this prototype.',
+    ].filter(Boolean)
+    return bullets.join('\n')
+  }
+
+  if (lower.includes('score')) {
+    const scoreLine = context.items.find(item => item.toLowerCase().includes('pts') || item.toLowerCase().includes('%'))
+    return scoreLine
+      ? `Score signal: ${scoreLine}\n\nIf you want, ask: “What is the fastest way to recover points?”`
+      : 'Score signal: the biggest swing comes from the highest-weight checklist misses and any remaining off-shelf opportunities.'
+  }
+
+  if (lower.includes('help') || lower.includes('examples')) {
+    return 'Try:\n• What should I do next?\n• Why is this the focus?\n• Summarize this for my manager.'
+  }
+
+  return `Based on the current context (“${context.title}”), I’d focus on the highest-weight miss first, then capture proof and notes so the visit narrative is clean.\n\nAsk “what next?” for a single recommended move.`
+}
+
+function stripPrefix(value: string) {
+  const idx = value.indexOf(':')
+  if (idx === -1) return value
+  return value.slice(idx + 1).trim()
 }
 
 function CardHeader({

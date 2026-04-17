@@ -305,9 +305,15 @@ export function ChecklistScreen() {
             <TrellisAskButton
               active={trellisOpen}
               onClick={() => setTrellisOpen(prev => !prev)}
+              mode="chat"
               title={trellisInsight.title}
               summary={trellisInsight.summary}
               items={trellisInsight.items.map(item => `${item.label}: ${item.value}`)}
+              suggestions={[
+                'What should I do next?',
+                'Which miss is highest impact?',
+                'What photo proof is still missing?',
+              ]}
             />
           )}
         </div>

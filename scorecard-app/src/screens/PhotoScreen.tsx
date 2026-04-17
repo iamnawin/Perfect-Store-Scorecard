@@ -238,9 +238,15 @@ export function PhotoScreen() {
             <TrellisAskButton
               active={trellisOpen}
               onClick={() => setTrellisOpen(prev => !prev)}
+              mode="chat"
               title="Suggested visit note"
               summary={agentforceDraft}
               items={trellisInsight.metrics.map(metric => `${metric.label}: ${metric.value}`)}
+              suggestions={[
+                'Summarize this for my manager.',
+                'What should I do next?',
+                'What is blocking submission?',
+              ]}
             />
           )}
         </div>

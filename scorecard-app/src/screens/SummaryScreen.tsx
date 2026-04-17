@@ -549,12 +549,18 @@ export function SummaryScreen() {
             <TrellisAskButton
               active={trellisOpen}
               onClick={() => setTrellisOpen(prev => !prev)}
+              mode="chat"
               title="Visit summary"
               summary={summaryInsight.narrative}
               items={[
                 `Main driver: ${summaryInsight.mainPositiveDriver}`,
                 `Top missed opportunity: ${summaryInsight.biggestMissedOpportunity}`,
                 `Next best action: ${buildNextBestAction(remainingRecommendations[0], summaryInsight.nextVisitFocus)}`,
+              ]}
+              suggestions={[
+                'What should I do next?',
+                'Why is this the next best action?',
+                'Summarize this for my manager.',
               ]}
             />
           )}

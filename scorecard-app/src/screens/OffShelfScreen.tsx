@@ -844,12 +844,18 @@ export function OffShelfScreen() {
             <TrellisAskButton
               active={trellisOpen}
               onClick={() => setTrellisOpen(prev => !prev)}
+              mode="chat"
               title={trellisRecommendation.title}
               summary={trellisRecommendation.supportingText}
               items={[
                 `Impact: ${trellisRecommendation.impactLabel}`,
                 `LGOR: ${trellisRecommendation.lgorLabel}`,
                 `Next move: ${trellisRecommendation.suggestedNextMove}`,
+              ]}
+              suggestions={[
+                'What should I do next?',
+                'Why did you rank this display first?',
+                'Summarize this recommendation.',
               ]}
             />
           )}
