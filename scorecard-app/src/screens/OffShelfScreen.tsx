@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
 import {
@@ -103,6 +103,7 @@ export function OffShelfScreen() {
   const [showRecommendations, setShowRecommendations] = useState(false)
   const [showCaptured, setShowCaptured] = useState(true)
   const [trellisOpen, setTrellisOpen] = useState(false)
+  const editorRef = useRef<HTMLDivElement | null>(null)
 
   const sectionNumber = getCurrentSectionNumber(app)
   const visitTypeLabel = getVisitTypeLabel(visitType)
@@ -174,6 +175,11 @@ export function OffShelfScreen() {
       : visitType === 'follow-up'
         ? 'Review each previous display, then add only the new placements you still need to capture.'
         : 'Use quick selections to capture incremental displays in under three minutes.'
+
+  useEffect(() => {
+    if (!editingId) return
+    editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [editingId])
 
   function updateDraft<K extends keyof DraftState>(key: K, value: DraftState[K]) {
     setDraft(prev => ({ ...prev, [key]: value }))
@@ -254,6 +260,10 @@ export function OffShelfScreen() {
   }
 
   function handleEdit(entry: OffShelfEntry) {
+    if (visitType === 'follow-up' && entry.origin === 'previous-visit') {
+      handleMarkFollowUpEntry(entry, 'updated')
+    }
+
     setEditingId(entry.id)
     setDraft({
       location: entry.location,
@@ -297,6 +307,9 @@ export function OffShelfScreen() {
         searchTerm: '',
       })
       setEditingId(null)
+      queueMicrotask(() => {
+        editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
       return
     }
 
@@ -514,30 +527,31 @@ export function OffShelfScreen() {
             </>
           )}
 
-          <SectionCard
-            title={editingId
-              ? editingEntry?.origin === 'previous-visit' ? 'Update Previous Display' : 'Edit Added Display'
-              : visitType === 'follow-up' ? 'Add Additional Display' : 'Add Incremental Display'}
-            subtitle={visitType === 'follow-up'
-              ? 'Capture only the changed or newly added displays from the follow-up visit.'
-              : 'Capture Above & Beyond displays and score the incremental impact.'}
-            utility={visitType === 'follow-up' ? (
-              <button
-                type="button"
-                onClick={() => handleAddAdditional()}
-                className="rounded-md border border-outline px-2.5 py-1.5 text-[11px] font-semibold text-on-surface-variant"
-              >
-                Add Blank Entry
-              </button>
-            ) : undefined}
-          >
-            <FieldLabel label="Display Location" />
-            <SegmentGrid
-              values={offShelfLocations}
-              selectedValue={draft.location}
-              onSelect={handleLocationSelect}
-              columns="grid-cols-3"
-            />
+          <div ref={editorRef}>
+            <SectionCard
+              title={editingId
+                ? editingEntry?.origin === 'previous-visit' ? 'Update Previous Display' : 'Edit Added Display'
+                : visitType === 'follow-up' ? 'Add Additional Display' : 'Add Incremental Display'}
+              subtitle={visitType === 'follow-up'
+                ? 'Capture only the changed or newly added displays from the follow-up visit.'
+                : 'Capture Above & Beyond displays and score the incremental impact.'}
+              utility={visitType === 'follow-up' ? (
+                <button
+                  type="button"
+                  onClick={() => handleAddAdditional()}
+                  className="rounded-md border border-outline px-2.5 py-1.5 text-[11px] font-semibold text-on-surface-variant"
+                >
+                  Add Blank Entry
+                </button>
+              ) : undefined}
+            >
+              <FieldLabel label="Display Location" />
+              <SegmentGrid
+                values={offShelfLocations}
+                selectedValue={draft.location}
+                onSelect={handleLocationSelect}
+                columns="grid-cols-3"
+              />
 
             <FieldLabel label="Product Category" />
             <SegmentGrid
@@ -699,7 +713,8 @@ export function OffShelfScreen() {
               rows={3}
               className="w-full rounded-lg border border-outline bg-surface-lowest px-3 py-2.5 text-[13px] text-on-surface outline-none placeholder:text-[#7f8b99]"
             />
-          </SectionCard>
+            </SectionCard>
+          </div>
 
           <SectionCard title="Live Impact Panel" subtitle="Real-time score feedback from the current entry.">
             {draftImpact && selectedProduct ? (

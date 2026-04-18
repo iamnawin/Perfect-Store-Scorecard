@@ -31,9 +31,10 @@ const OPTIONS: { value: ChecklistAnswer; label: string }[] = [
   { value: 'na', label: 'N/A' },
 ]
 
-const COMPACT_OPTIONS: { value: Exclude<ChecklistAnswer, 'na' | null>; label: string }[] = [
+const COMPACT_OPTIONS: { value: Exclude<ChecklistAnswer, null>; label: string }[] = [
   { value: 'yes', label: 'Yes' },
   { value: 'no', label: 'No' },
+  { value: 'na', label: 'N/A' },
 ]
 
 const CHECKLIST_GROUPS = [
