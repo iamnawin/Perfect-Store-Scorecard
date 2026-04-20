@@ -13,6 +13,8 @@ export interface AppContextValue extends AppState {
   setEvidenceCaptured: (itemId: string, captured: boolean) => void
   setEvidencePhoto: (itemId: string, file: File | null) => void
   setEvidenceNote: (itemId: string, note: string) => void
+  setSecondaryDisplayImage: (file: File | null) => void
+  setAudioNoteFile: (file: File | null) => void
   setNotes: (v: string) => void
   setRevisitRequired: (v: boolean) => void
   setShelfResetNeeded: (v: boolean) => void

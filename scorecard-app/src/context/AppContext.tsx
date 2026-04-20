@@ -72,6 +72,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [offShelf, setOffShelf] = useState<OffShelfEntry[]>([])
   const [offShelfConfirmed, setOffShelfConfirmed] = useState(false)
   const [evidence, setEvidence] = useState<AppState['evidence']>(() => createInitialEvidenceState())
+  const [secondaryDisplayImage, setSecondaryDisplayImageState] = useState<File | null>(null)
+  const [audioNoteFile, setAudioNoteFileState] = useState<File | null>(null)
   const [notes, setNotes] = useState('')
   const [revisitRequired, setRevisitRequiredState] = useState(false)
   const [shelfResetNeeded, setShelfResetNeededState] = useState(false)
@@ -112,6 +114,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setOffShelf(nextVisitType === 'follow-up' ? createFollowUpSeedEntries() : [])
     setOffShelfConfirmed(false)
     setEvidence(createInitialEvidenceState())
+    setSecondaryDisplayImageState(null)
+    setAudioNoteFileState(null)
     setNotes('')
     setRevisitRequiredState(false)
     setShelfResetNeededState(false)
@@ -220,6 +224,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }))
   }
 
+  function setSecondaryDisplayImage(file: File | null) {
+    setSecondaryDisplayImageState(file)
+  }
+
+  function setAudioNoteFile(file: File | null) {
+    setAudioNoteFileState(file)
+  }
+
   function saveDraft() {
     setLastSavedAt(new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))
   }
@@ -279,6 +291,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     offShelf,
     offShelfConfirmed,
     evidence,
+    secondaryDisplayImage,
+    audioNoteFile,
     notes,
     revisitRequired,
     shelfResetNeeded,
@@ -309,6 +323,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       offShelf,
       offShelfConfirmed,
       evidence,
+      secondaryDisplayImage,
+      audioNoteFile,
       notes,
       revisitRequired,
       shelfResetNeeded,
@@ -328,6 +344,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setEvidenceCaptured,
       setEvidencePhoto,
       setEvidenceNote,
+      setSecondaryDisplayImage,
+      setAudioNoteFile,
       setNotes,
       setRevisitRequired,
       setShelfResetNeeded,

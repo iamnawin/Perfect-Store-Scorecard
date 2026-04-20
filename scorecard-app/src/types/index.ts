@@ -6,6 +6,28 @@ export type VisitType = 'initial' | 'follow-up'
 export type OffShelfStatus = 'saved' | 'pending-review' | 'retained' | 'updated' | 'removed' | 'added'
 export type OffShelfOrigin = 'current-visit' | 'previous-visit'
 
+export type AgentforceConfidence = 'high' | 'medium' | 'low'
+export type AgentforceQuantityEstimate = 'small' | 'medium' | 'large' | 'unknown'
+export type AgentforceSuggestionStatus = 'suggested' | 'needs_review'
+export type AgentforceDisplayType = 'endcap' | 'stack' | 'shelf' | 'unknown'
+
+export interface AgentforceSecondaryDisplayAnalysis {
+  analysisStatus: 'success' | 'error'
+  displayType: {
+    value: AgentforceDisplayType
+    confidence: AgentforceConfidence
+  }
+  products: Array<{
+    productName: string
+    brand: string
+    matchedCatalog: boolean
+    confidence: AgentforceConfidence
+    quantityEstimate: AgentforceQuantityEstimate
+    status: AgentforceSuggestionStatus
+  }>
+  notes: string[]
+}
+
 export interface ChecklistState {
   [itemId: string]: ChecklistAnswer
 }
@@ -207,6 +229,8 @@ export interface AppState {
   offShelf: OffShelfEntry[]
   offShelfConfirmed: boolean
   evidence: EvidenceState
+  secondaryDisplayImage: File | null
+  audioNoteFile: File | null
   notes: string
   revisitRequired: boolean
   shelfResetNeeded: boolean
