@@ -71,3 +71,7 @@ export default defineConfig([
   },
 ])
 ```
+
+## Product docs
+- MVP PRD: `docs/prd-mvp.md`
+- Build checklist: `docs/build-checklist.md`

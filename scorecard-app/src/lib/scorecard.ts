@@ -62,6 +62,8 @@ function isActiveOffShelfEntry(entry: OffShelfEntry) {
   return entry.status !== 'removed' && entry.status !== 'pending-review'
 }
 
+const demoBasePlanLgorPct = 26.3
+
 function hasStartedFollowUpReview(offShelf: OffShelfEntry[]) {
   return offShelf.some(entry => (
     entry.origin === 'current-visit' ||
@@ -148,32 +150,25 @@ export function getOffShelfProductById(productId: string) {
   return offShelfProducts.find(product => product.id === productId)
 }
 
-function getLocationMultiplier(location: string) {
-  return {
-    Endcap: 1.2,
-    'Fence Line': 1.12,
-    'Garden Door': 1.08,
-    'Drive Aisle': 1.04,
-    Racetrack: 1,
-    Other: 0.92,
-  }[location] ?? 1
-}
-
-function getQuantityMultiplier(quantity: number) {
-  if (quantity >= 400) return 1.75
-  if (quantity >= 320) return 1.55
-  if (quantity >= 200) return 1.3
-  if (quantity >= 120) return 1.1
-  if (quantity >= 80) return 0.95
-  return 0.78
-}
-
 function getClassificationMultiplier(classification: OffShelfClassification) {
   return {
     'base-plan': 0,
     incremental: 1,
-    'not-sure': 0.55,
+    'not-sure': 0,
   }[classification]
+}
+
+export function getPeakWeekRatio(quantity: number, peakWeekUnits: number) {
+  if (peakWeekUnits <= 0) return 0
+  return +(quantity / peakWeekUnits).toFixed(2)
+}
+
+export function getPeakWeekMultiplier(quantity: number, peakWeekUnits: number) {
+  const ratio = getPeakWeekRatio(quantity, peakWeekUnits)
+  if (ratio >= 3) return 3
+  if (ratio >= 2) return 2
+  if (ratio >= 1) return 1
+  return 0
 }
 
 export function estimateOffShelfImpact({
@@ -188,23 +183,23 @@ export function estimateOffShelfImpact({
   classification: OffShelfClassification
 }) {
   const normalizedQuantity = parseOffShelfQuantity(quantity)
-  const locationMultiplier = getLocationMultiplier(location)
-  const quantityMultiplier = getQuantityMultiplier(normalizedQuantity)
+  const peakWeekRatio = getPeakWeekRatio(normalizedQuantity, product.peakWeekUnits)
+  const peakWeekMultiplier = getPeakWeekMultiplier(normalizedQuantity, product.peakWeekUnits)
   const classificationMultiplier = getClassificationMultiplier(classification)
-  const multiplier = +(locationMultiplier * quantityMultiplier * classificationMultiplier).toFixed(2)
-  const impactPoints = +(product.basePoints * multiplier).toFixed(1)
-  const estimatedLgor = +(product.baseLgor * multiplier).toFixed(1)
+  const multiplier = +(peakWeekMultiplier * classificationMultiplier).toFixed(2)
+  const impactPoints = +(product.baseLgor * multiplier).toFixed(1)
+  const estimatedLgor = classification === 'incremental' ? product.baseLgor : 0
 
   const multiplierLabel = classification === 'base-plan'
-    ? 'Base plan coverage only'
+    ? 'Base plan LGOR only'
     : classification === 'not-sure'
       ? 'Pending classification review'
-      : locationMultiplier > 1
-        ? `${location} multiplier`
-        : 'Standard placement'
+      : `${peakWeekMultiplier}x peak week depth | ${location} tracked only`
 
   return {
     normalizedQuantity,
+    peakWeekUnits: product.peakWeekUnits,
+    peakWeekRatio,
     multiplier,
     multiplierLabel,
     impactPoints,
@@ -218,7 +213,7 @@ export function getOffShelfIncrementalScore(entries: OffShelfEntry[]) {
     .reduce((total, entry) => total + entry.impactPoints, 0)
     .toFixed(1)
 
-  return clampScore(rawIncremental)
+  return Math.max(0, rawIncremental)
 }
 
 export function getOffShelfOpportunityScore(entries: OffShelfEntry[]) {
@@ -367,16 +362,28 @@ export function getChecklistDecisionScore(checklist: ChecklistState, offShelf: O
   return +(getChecklistBasePlanScore(checklist) + getOffShelfIncrementalScore(offShelf)).toFixed(1)
 }
 
-export function getTotalScore(state: AppState) {
-  const basePlanScore = getChecklistBasePlanScore(state.checklist)
-  const incrementalScore = getOffShelfIncrementalScore(state.offShelf)
-  const evidencePenalty = getMissingRequiredEvidence(state.evidence, state.offShelf).length * 6
+export function getBasePlanLgorPoints(checklist: ChecklistState) {
+  return +((getChecklistBasePlanScore(checklist) / 100) * demoBasePlanLgorPct).toFixed(1)
+}
 
-  return Math.max(0, +(basePlanScore + incrementalScore - evidencePenalty).toFixed(1))
+export function getIncrementalRawLgorPct(entries: OffShelfEntry[]) {
+  return +entries
+    .filter(isActiveOffShelfEntry)
+    .filter(entry => entry.classification === 'incremental')
+    .reduce((total, entry) => total + entry.estimatedLgor, 0)
+    .toFixed(1)
+}
+
+export function getTotalScore(state: AppState) {
+  const executionScore = getChecklistBasePlanScore(state.checklist)
+  const basePlanLgorPoints = getBasePlanLgorPoints(state.checklist)
+  const incrementalScore = getOffShelfIncrementalScore(state.offShelf)
+
+  return Math.max(0, +(executionScore + basePlanLgorPoints + incrementalScore).toFixed(1))
 }
 
 export function getLgorPct(state: AppState) {
-  return +(6.8 + getYesCount(state.checklist) * 0.55 + getOffShelfIncrementalScore(state.offShelf) * 0.12).toFixed(1)
+  return +(getBasePlanLgorPoints(state.checklist) + getIncrementalRawLgorPct(state.offShelf)).toFixed(1)
 }
 
 function clampScore(value: number) {

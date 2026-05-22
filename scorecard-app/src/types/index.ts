@@ -81,6 +81,7 @@ export interface OffShelfProduct {
   recommendedLocations: string[]
   basePoints: number
   baseLgor: number
+  peakWeekUnits: number
 }
 
 export interface OffShelfRecommendation {

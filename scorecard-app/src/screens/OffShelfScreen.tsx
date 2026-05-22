@@ -29,6 +29,7 @@ import {
 import { analyzeSecondaryDisplay } from '../lib/agentforce/secondaryDisplayClient'
 import {
   estimateOffShelfImpact,
+  getBasePlanLgorPoints,
   getChecklistBasePlanScore,
   getCurrentSectionNumber,
   getOffShelfIncrementalScore,
@@ -139,6 +140,7 @@ export function OffShelfScreen() {
 
   const currentIncremental = getOffShelfIncrementalScore(offShelf)
   const basePlanScore = getChecklistBasePlanScore(checklist)
+  const basePlanLgorPoints = getBasePlanLgorPoints(checklist)
   const editingEntry = editingId ? offShelf.find(entry => entry.id === editingId) : null
   const editingImpact = editingEntry?.impactPoints ?? 0
   const draftImpact = selectedProduct && draft.location && draft.quantity !== ''
@@ -150,7 +152,7 @@ export function OffShelfScreen() {
       })
     : null
   const liveIncremental = +(currentIncremental - editingImpact + (draftImpact?.impactPoints ?? editingImpact)).toFixed(1)
-  const projectedScore = +(basePlanScore + liveIncremental).toFixed(1)
+  const projectedScore = +(basePlanScore + basePlanLgorPoints + liveIncremental).toFixed(1)
   const potentialAdditionalGain = getPotentialAdditionalGain(offShelf)
   const remainingRecommendations = getRemainingOffShelfRecommendations(offShelf).slice(0, 4)
   const quantityLabel = draft.quantity === '' ? '' : getOffShelfQuantityLabel(draft.quantity)
@@ -668,7 +670,8 @@ export function OffShelfScreen() {
           <SectionCard title="Score Impact" subtitle="Current score state for this visit.">
             <div className="grid grid-cols-2 gap-2">
               <ScoreCell label="Current Score" value={projectedScore.toFixed(1)} tone="neutral" />
-              <ScoreCell label="Base Plan" value={basePlanScore.toFixed(1)} tone="neutral" />
+              <ScoreCell label="Execution" value={basePlanScore.toFixed(1)} tone="neutral" />
+              <ScoreCell label="Base LGOR" value={basePlanLgorPoints.toFixed(1)} tone="neutral" />
               <ScoreCell label="Incremental Off-Shelf" value={`+${liveIncremental.toFixed(1)}`} tone="positive" />
               {agentforceEnabled && (
                 <InsightCell
@@ -919,6 +922,7 @@ export function OffShelfScreen() {
                     <PreviewRow label="Quantity" value={quantityLabel || String(draft.quantity)} />
                     <PreviewRow label="LGOR Contribution" value={`+${draftImpact.estimatedLgor}%`} positive />
                     <PreviewRow label="Score Impact" value={`+${draftImpact.impactPoints} pts`} positive />
+                    <PreviewRow label="Peak Week Ratio" value={`${draftImpact.peakWeekRatio.toFixed(2)}x`} />
                     <PreviewRow label="Projected Score" value={projectedScore.toFixed(1)} positive />
                   </div>
                 </div>
@@ -926,6 +930,7 @@ export function OffShelfScreen() {
                 <ImpactRow label="Quantity" value={`${draft.quantity}`} />
                 <ImpactRow label="Estimated LGOR Lift" value={`+${draftImpact.estimatedLgor}%`} positive />
                 <ImpactRow label="Points Added" value={`+${draftImpact.impactPoints} pts`} positive />
+                <ImpactRow label="Peak Week Units" value={`${draftImpact.peakWeekUnits}`} />
                 <ImpactRow label="Multiplier Applied" value={`${draftImpact.multiplier.toFixed(2)}x • ${draftImpact.multiplierLabel}`} />
                 <ImpactRow label="Projected New Score" value={projectedScore.toFixed(1)} positive />
               </div>

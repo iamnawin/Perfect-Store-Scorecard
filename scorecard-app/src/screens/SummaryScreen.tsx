@@ -15,12 +15,14 @@ import { TrellisAskButton, TrellisSummaryCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
 import { checklistQuestions, previousSnapshot, regionBenchmark, store } from '../data/mock'
 import {
+  getBasePlanLgorPoints,
   getChecklistBasePlanScore,
   getCurrentSection,
   getCurrentSectionNumber,
   getCurrentRiskValue,
   getMissingRequiredEvidence,
   getOffShelfIncrementalScore,
+  getIncrementalRawLgorPct,
   getPendingFollowUpEntries,
   getRemainingOffShelfRecommendations,
   getVisitTypeLabel,
@@ -67,8 +69,10 @@ export function SummaryScreen() {
     showToast,
   } = app
 
-  const basePlanScore = getChecklistBasePlanScore(checklist)
+  const executionPoints = getChecklistBasePlanScore(checklist)
+  const basePlanLgorPoints = getBasePlanLgorPoints(checklist)
   const incrementalScore = getOffShelfIncrementalScore(offShelf)
+  const incrementalRawLgorPct = getIncrementalRawLgorPct(offShelf)
   const missingEvidence = getMissingRequiredEvidence(evidence, offShelf)
   const pendingFollowUpEntries = getPendingFollowUpEntries(offShelf)
   const unansweredCount = checklistQuestions.filter(question => !checklist[question.id]).length
@@ -157,7 +161,8 @@ export function SummaryScreen() {
       agentforceEnabled,
       totalScore,
       executionScore,
-      basePlanScore,
+      basePlanScore: executionPoints,
+      basePlanLgorPoints,
       incrementalScore,
       lgorPct,
       riskValue,
@@ -208,7 +213,8 @@ export function SummaryScreen() {
       agentforceEnabled,
       totalScore,
       executionScore,
-      basePlanScore,
+      basePlanScore: executionPoints,
+      basePlanLgorPoints,
       incrementalScore,
       lgorPct,
       riskValue,
@@ -299,7 +305,7 @@ export function SummaryScreen() {
             <div className="mt-3 rounded-lg border border-outline bg-surface-lowest px-3 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">How this scores</p>
               <p className="mt-1 text-[12px] text-on-surface-variant">
-                Base Plan is the weighted checklist score out of 100. Above & Beyond is the incremental display score out of 100. Total Score = Base Plan + Above & Beyond - evidence penalties.
+                Final Score = Execution Score + Base Plan LGOR Points + Incremental Off-Shelf Points. Display location is tracked for reporting; peak-week quantity depth drives the incremental multiplier.
               </p>
             </div>
           </div>
@@ -384,9 +390,10 @@ export function SummaryScreen() {
           <InfoBlock title="Score Breakdown" subtitle="Lightning-style summary of this visit outcome.">
             <div className="grid grid-cols-2 gap-2">
               <MetricTile label="Execution" value={`${executionScore}%`} />
-              <MetricTile label="Base Plan" value={basePlanScore.toFixed(1)} />
-              <MetricTile label="Above & Beyond" value={`+${incrementalScore.toFixed(1)}`} tone="success" />
-              <MetricTile label="LGOR %" value={`${lgorPct.toFixed(1)}%`} />
+              <MetricTile label="Base LGOR Points" value={basePlanLgorPoints.toFixed(1)} />
+              <MetricTile label="Incremental Points" value={`+${incrementalScore.toFixed(1)}`} tone="success" />
+              <MetricTile label="LGOR Rep %" value={`${lgorPct.toFixed(1)}%`} />
+              <MetricTile label="Raw Inc LGOR" value={`${incrementalRawLgorPct.toFixed(1)}%`} />
               <MetricTile label="Risk $" value={formatCurrency(riskValue)} tone={riskValue > previousRiskValue ? 'warning' : 'neutral'} />
             </div>
           </InfoBlock>
@@ -437,7 +444,7 @@ export function SummaryScreen() {
             <div className="mt-3 rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Region lens</p>
               <p className="mt-1 text-[13px] font-semibold text-on-surface">
-                {store.name} is {regionalOutcome.scoreGap >= 0 ? 'outperforming' : 'trailing'} the region on score and {regionalOutcome.lgorGap >= 0 ? 'holding' : 'giving back'} LGOR support.
+                {store.name} is {regionalOutcome.scoreGap >= 0 ? 'outperforming' : 'trailing'} the region on score and {regionalOutcome.lgorGap >= 0 ? 'holding' : 'giving back'} LGOR Rep coverage.
               </p>
               <p className="mt-2 text-[12px] text-on-surface-variant">
                 Region average score {regionalOutcome.regionAverageScore} | Region average LGOR {regionalOutcome.regionAverageLgor.toFixed(1)}%
@@ -845,6 +852,7 @@ function buildShareText({
   totalScore,
   executionScore,
   basePlanScore,
+  basePlanLgorPoints,
   incrementalScore,
   lgorPct,
   riskValue,
@@ -866,6 +874,7 @@ function buildShareText({
   totalScore: number
   executionScore: number
   basePlanScore: number
+  basePlanLgorPoints: number
   incrementalScore: number
   lgorPct: number
   riskValue: number
@@ -888,9 +897,10 @@ function buildShareText({
     '',
     `Total Score: ${totalScore.toFixed(1)}`,
     `Execution: ${executionScore}%`,
-    `Base Plan: ${basePlanScore.toFixed(1)}`,
-    `Above & Beyond: +${incrementalScore.toFixed(1)}`,
-    `LGOR %: ${lgorPct.toFixed(1)}%`,
+    `Execution Points: ${basePlanScore.toFixed(1)}`,
+    `Base Plan LGOR Points: ${basePlanLgorPoints.toFixed(1)}`,
+    `Incremental Off-Shelf Points: +${incrementalScore.toFixed(1)}`,
+    `LGOR Rep %: ${lgorPct.toFixed(1)}%`,
     `Risk $: ${formatCurrency(riskValue)}`,
     '',
     `Missing MAP: ${mapMisses}`,

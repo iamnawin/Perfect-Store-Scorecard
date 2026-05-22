@@ -7,8 +7,8 @@ import {
   createInitialEvidenceState,
   getAnsweredChecks,
   getCapturedRequiredPhotos,
+  getChecklistBasePlanScore,
   getCompletionPercent,
-  getExecutionScore,
   getLgorPct,
   getMissingRequiredEvidence,
   getOffShelfProductById,
@@ -310,7 +310,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const capturedRequiredPhotos = getCapturedRequiredPhotos(evidence, offShelf)
   const completionPercent = getCompletionPercent(appState)
   const scorecardStatus = getScorecardStatus(appState)
-  const executionScore = getExecutionScore(checklist)
+  const executionScore = getChecklistBasePlanScore(checklist)
   const totalScore = getTotalScore(appState)
   const lgorPct = getLgorPct(appState)
   const riskDelta = getRiskDelta(appState)
