@@ -23,9 +23,11 @@ import type {
 } from '../types'
 import {
   estimateOffShelfImpact,
+  getBasePlanLgorPoints,
   getChecklistBasePlanScore,
   getCapturedRequiredPhotos,
   getCurrentRiskValue,
+  getIncrementalRawLgorPct,
   getLgorPct,
   getMissingRequiredEvidence,
   getOffShelfIncrementalScore,
@@ -234,7 +236,7 @@ export function getChecklistHeaderInsight(state: AppState) {
       summary: `${failedHighImpact.title} is dragging score and should be corrected before the rep leaves the aisle.`,
       tone: 'warning' as const,
       items: [
-        { label: 'Score now', value: `${breakdown.totalScore.toFixed(1)} total | ${breakdown.basePlanScore.toFixed(1)} base + ${breakdown.incrementalScore.toFixed(1)} inc`, tone: 'info' as const },
+        { label: 'Score now', value: `${breakdown.totalScore.toFixed(1)} total | ${breakdown.basePlanScore.toFixed(1)} execution + ${breakdown.basePlanLgorPoints.toFixed(1)} base LGOR + ${breakdown.incrementalScore.toFixed(1)} inc`, tone: 'info' as const },
         { label: 'Highest-weight miss', value: `${failedHighImpact.title} (-${failedHighImpact.weight} pts)`, tone: 'warning' as const },
         { label: 'Manager comment', value: breakdown.missingEvidenceTitles.length > 0 ? `Blocked by missing evidence: ${breakdown.missingEvidenceTitles[0]}` : 'No evidence blockers - fix the miss and keep moving.', tone: breakdown.missingEvidenceTitles.length > 0 ? 'warning' as const : 'success' as const },
       ],
@@ -496,7 +498,7 @@ export function getManagerSummaryDraft(state: AppState): TrellisManagerSummaryDr
     : `Current run is at ${score.toFixed(1)} total score with ${incrementalScore.toFixed(1)} points of incremental value captured.`
   const changePhrase = state.visitType === 'follow-up'
     ? `Display changes: ${retainedCount} retained, ${updatedCount} updated, ${removedCount} removed, ${addedCount} added.`
-    : `Base plan score is ${getChecklistBasePlanScore(state.checklist).toFixed(1)} and LGOR support is ${lgorPct.toFixed(1)}%.`
+    : `Execution score is ${getChecklistBasePlanScore(state.checklist).toFixed(1)} and LGOR Rep is ${lgorPct.toFixed(1)}%.`
   const blockerPhrase = missingEvidence > 0
     ? `${missingEvidence} required photo${missingEvidence > 1 ? 's are' : ' is'} still missing, so submission should stay open until proof is captured.`
     : pendingRevisit > 0
@@ -519,19 +521,21 @@ export function getManagerSummaryDraft(state: AppState): TrellisManagerSummaryDr
 
 function getScoreBreakdown(state: AppState) {
   const basePlanScore = getChecklistBasePlanScore(state.checklist)
+  const basePlanLgorPoints = getBasePlanLgorPoints(state.checklist)
   const incrementalScore = getOffShelfIncrementalScore(state.offShelf)
   const missingEvidence = getMissingRequiredEvidence(state.evidence, state.offShelf)
-  const evidencePenalty = missingEvidence.length * 6
   const totalScore = getTotalScore(state)
   const lgorPct = getLgorPct(state)
+  const incrementalRawLgorPct = getIncrementalRawLgorPct(state.offShelf)
   const riskValue = getCurrentRiskValue(state)
 
   return {
     basePlanScore,
+    basePlanLgorPoints,
     incrementalScore,
-    evidencePenalty,
     totalScore,
     lgorPct,
+    incrementalRawLgorPct,
     riskValue,
     missingEvidenceTitles: missingEvidence.map(item => item.title),
   }
@@ -546,13 +550,14 @@ function formatScoreExplanation({
 }) {
   const lines = [
     `Score breakdown (${screen}):`,
-    `- Base Plan: ${breakdown.basePlanScore.toFixed(1)} / 100`,
-    `- Above & Beyond (incremental): +${breakdown.incrementalScore.toFixed(1)} / 100`,
-    `- Evidence penalty: -${breakdown.evidencePenalty} (${breakdown.missingEvidenceTitles.length} missing)`,
+    `- Execution Score: ${breakdown.basePlanScore.toFixed(1)} / 100`,
+    `- Base Plan LGOR Points: +${breakdown.basePlanLgorPoints.toFixed(1)}`,
+    `- Incremental Off-Shelf Points: +${breakdown.incrementalScore.toFixed(1)}`,
     `= Total: ${breakdown.totalScore.toFixed(1)}`,
     ``,
     `Business signals:`,
-    `- LGOR support: ${breakdown.lgorPct.toFixed(1)}%`,
+    `- LGOR Rep %: ${breakdown.lgorPct.toFixed(1)}%`,
+    `- Incremental raw LGOR: ${breakdown.incrementalRawLgorPct.toFixed(1)}%`,
     `- Current risk: ${formatCurrency(breakdown.riskValue)}`,
   ]
 
@@ -607,7 +612,7 @@ function buildSuggestedComment(state: AppState, analysis: ReturnType<typeof anal
   const pendingRevisit = state.visitType === 'follow-up' ? getPendingFollowUpEntries(state.offShelf).length : 0
 
   if (!state.notes.trim()) {
-    const base = `Base plan is ${breakdown.basePlanScore.toFixed(1)} with +${breakdown.incrementalScore.toFixed(1)} incremental captured.`
+    const base = `Execution is ${breakdown.basePlanScore.toFixed(1)} with +${breakdown.basePlanLgorPoints.toFixed(1)} base LGOR and +${breakdown.incrementalScore.toFixed(1)} incremental captured.`
     const blocker = missingEvidenceTitles.length > 0
       ? `Submission blocked by missing evidence (${missingEvidenceTitles[0]}).`
       : pendingRevisit > 0
@@ -639,7 +644,7 @@ function formatTalkTrack({ state, screen }: { state: AppState; screen: TrellisCh
   const lines = [
     `Talk track (${screen}):`,
     `- "Today I'm focused on protecting the base plan and proving incremental wins with photos."`,
-    `- "We're at ${breakdown.totalScore.toFixed(1)} total score (${breakdown.basePlanScore.toFixed(1)} base + ${breakdown.incrementalScore.toFixed(1)} incremental)."`,
+    `- "We're at ${breakdown.totalScore.toFixed(1)} total score (${breakdown.basePlanScore.toFixed(1)} execution + ${breakdown.basePlanLgorPoints.toFixed(1)} base LGOR + ${breakdown.incrementalScore.toFixed(1)} incremental)."`,
     `- "Next move: ${topRec.summary}"`,
   ]
 
@@ -693,8 +698,8 @@ function formatQuickIntel({ state, screen }: { state: AppState; screen: TrellisC
 
   return [
     `Quick intel (${screen}):`,
-    `- Score: ${breakdown.totalScore.toFixed(1)} (base ${breakdown.basePlanScore.toFixed(1)} + inc ${breakdown.incrementalScore.toFixed(1)} - penalty ${breakdown.evidencePenalty})`,
-    `- Risk: ${formatCurrency(breakdown.riskValue)} | LGOR: ${breakdown.lgorPct.toFixed(1)}%`,
+    `- Score: ${breakdown.totalScore.toFixed(1)} (execution ${breakdown.basePlanScore.toFixed(1)} + base LGOR ${breakdown.basePlanLgorPoints.toFixed(1)} + inc ${breakdown.incrementalScore.toFixed(1)})`,
+    `- Risk: ${formatCurrency(breakdown.riskValue)} | LGOR Rep: ${breakdown.lgorPct.toFixed(1)}%`,
     `- Next: ${topRec.summary}`,
     remaining?.product ? `- Remaining upside: ${remaining.product.name} at ${remaining.location} (+${remaining.potentialPoints.toFixed(1)} pts)` : null,
   ].filter(Boolean).join('\n')

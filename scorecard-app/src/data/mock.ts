@@ -287,6 +287,7 @@ export const offShelfProducts: OffShelfProduct[] = [
     recommendedLocations: ['Endcap', 'Fence Line'],
     basePoints: 10.4,
     baseLgor: 2.1,
+    peakWeekUnits: 60,
   },
   {
     id: 'ez-seed-repair',
@@ -296,6 +297,7 @@ export const offShelfProducts: OffShelfProduct[] = [
     recommendedLocations: ['Drive Aisle', 'Garden Door'],
     basePoints: 8.2,
     baseLgor: 1.7,
+    peakWeekUnits: 45,
   },
   {
     id: 'shake-n-feed',
@@ -305,6 +307,7 @@ export const offShelfProducts: OffShelfProduct[] = [
     recommendedLocations: ['Endcap', 'Racetrack'],
     basePoints: 9.1,
     baseLgor: 1.9,
+    peakWeekUnits: 50,
   },
   {
     id: 'water-soluble',
@@ -314,6 +317,7 @@ export const offShelfProducts: OffShelfProduct[] = [
     recommendedLocations: ['Racetrack', 'Endcap'],
     basePoints: 7.8,
     baseLgor: 1.5,
+    peakWeekUnits: 40,
   },
   {
     id: 'weed-feed-15m',
@@ -323,6 +327,7 @@ export const offShelfProducts: OffShelfProduct[] = [
     recommendedLocations: ['Fence Line', 'Endcap'],
     basePoints: 9.8,
     baseLgor: 2.0,
+    peakWeekUnits: 40,
   },
   {
     id: 'turf-builder-triple',
@@ -332,6 +337,7 @@ export const offShelfProducts: OffShelfProduct[] = [
     recommendedLocations: ['Fence Line', 'Drive Aisle'],
     basePoints: 8.6,
     baseLgor: 1.8,
+    peakWeekUnits: 45,
   },
   {
     id: 'roundup-ready',
@@ -341,6 +347,7 @@ export const offShelfProducts: OffShelfProduct[] = [
     recommendedLocations: ['Drive Aisle', 'Garden Door'],
     basePoints: 6.7,
     baseLgor: 1.2,
+    peakWeekUnits: 35,
   },
   {
     id: 'home-defense',
@@ -350,6 +357,7 @@ export const offShelfProducts: OffShelfProduct[] = [
     recommendedLocations: ['Racetrack', 'Endcap'],
     basePoints: 6.9,
     baseLgor: 1.3,
+    peakWeekUnits: 35,
   },
   {
     id: 'potting-mix',
@@ -359,6 +367,7 @@ export const offShelfProducts: OffShelfProduct[] = [
     recommendedLocations: ['Garden Door', 'Racetrack'],
     basePoints: 7.4,
     baseLgor: 1.4,
+    peakWeekUnits: 50,
   },
   {
     id: 'garden-soil',
@@ -368,6 +377,7 @@ export const offShelfProducts: OffShelfProduct[] = [
     recommendedLocations: ['Garden Door', 'Fence Line'],
     basePoints: 7.1,
     baseLgor: 1.3,
+    peakWeekUnits: 55,
   },
 ]
 

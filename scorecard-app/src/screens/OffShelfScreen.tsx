@@ -26,8 +26,10 @@ import {
   offShelfQuantityOptions,
   store,
 } from '../data/mock'
+import { analyzeSecondaryDisplay } from '../lib/agentforce/secondaryDisplayClient'
 import {
   estimateOffShelfImpact,
+  getBasePlanLgorPoints,
   getChecklistBasePlanScore,
   getCurrentSectionNumber,
   getOffShelfIncrementalScore,
@@ -39,7 +41,7 @@ import {
   getVisitTypeLabel,
 } from '../lib/scorecard'
 import { answerTrellisChat, getOffShelfInsight, getRevisitIntelligence } from '../lib/trellis'
-import type { OffShelfClassification, OffShelfEntry } from '../types'
+import type { AgentforceSecondaryDisplayAnalysis, OffShelfClassification, OffShelfEntry } from '../types'
 
 interface DraftState {
   location: string
@@ -96,6 +98,11 @@ export function OffShelfScreen() {
     totalSections,
     lastSavedAt,
     agentforceEnabled,
+    secondaryDisplayImage,
+    audioNoteFile,
+    setSecondaryDisplayImage,
+    setAudioNoteFile,
+    showToast,
   } = app
 
   const [draft, setDraft] = useState<DraftState>(createEmptyDraft())
@@ -103,6 +110,8 @@ export function OffShelfScreen() {
   const [showRecommendations, setShowRecommendations] = useState(false)
   const [showCaptured, setShowCaptured] = useState(true)
   const [trellisOpen, setTrellisOpen] = useState(false)
+  const [agentforcePrefillStatus, setAgentforcePrefillStatus] = useState<'idle' | 'running' | 'success' | 'error'>('idle')
+  const [agentforcePrefill, setAgentforcePrefill] = useState<AgentforceSecondaryDisplayAnalysis | null>(null)
   const editorRef = useRef<HTMLDivElement | null>(null)
 
   const sectionNumber = getCurrentSectionNumber(app)
@@ -131,6 +140,7 @@ export function OffShelfScreen() {
 
   const currentIncremental = getOffShelfIncrementalScore(offShelf)
   const basePlanScore = getChecklistBasePlanScore(checklist)
+  const basePlanLgorPoints = getBasePlanLgorPoints(checklist)
   const editingEntry = editingId ? offShelf.find(entry => entry.id === editingId) : null
   const editingImpact = editingEntry?.impactPoints ?? 0
   const draftImpact = selectedProduct && draft.location && draft.quantity !== ''
@@ -142,7 +152,7 @@ export function OffShelfScreen() {
       })
     : null
   const liveIncremental = +(currentIncremental - editingImpact + (draftImpact?.impactPoints ?? editingImpact)).toFixed(1)
-  const projectedScore = +(basePlanScore + liveIncremental).toFixed(1)
+  const projectedScore = +(basePlanScore + basePlanLgorPoints + liveIncremental).toFixed(1)
   const potentialAdditionalGain = getPotentialAdditionalGain(offShelf)
   const remainingRecommendations = getRemainingOffShelfRecommendations(offShelf).slice(0, 4)
   const quantityLabel = draft.quantity === '' ? '' : getOffShelfQuantityLabel(draft.quantity)
@@ -360,6 +370,54 @@ export function OffShelfScreen() {
     reader.readAsDataURL(file)
   }
 
+  async function handleGenerateAgentforcePrefill() {
+    if (!agentforceEnabled || !secondaryDisplayImage) return
+
+    setAgentforcePrefillStatus('running')
+    const allowedCatalog = offShelfProducts.map(product => product.name)
+
+    try {
+      const analysis = await analyzeSecondaryDisplay({
+        visitType,
+        retailerOrBanner: store.banner,
+        businessUnit: 'PSS MVP',
+        allowedCatalog,
+        imageFile: secondaryDisplayImage,
+        audioFile: audioNoteFile,
+      })
+
+      setAgentforcePrefill(analysis)
+      setAgentforcePrefillStatus(analysis.analysisStatus === 'success' ? 'success' : 'error')
+      if (analysis.analysisStatus === 'success') {
+        showToast('Agentforce draft ready.', 'Review the suggested products and tap one to prefill.')
+      } else {
+        showToast('Agentforce draft failed.', 'Continue with manual entry.')
+      }
+    } catch {
+      setAgentforcePrefill(null)
+      setAgentforcePrefillStatus('error')
+      showToast('Agentforce draft failed.', 'Continue with manual entry.')
+    }
+  }
+
+  function handleUseAgentforceSuggestion(productName: string) {
+    const product = offShelfProducts.find(item => item.name === productName)
+    if (!product) {
+      showToast('Suggestion needs review.', 'This item does not match the allowed catalog.')
+      return
+    }
+
+    setDraft(prev => ({
+      ...prev,
+      category: product.categoryId,
+      skuId: product.id,
+      searchTerm: '',
+      location: prev.location || product.recommendedLocations[0] || '',
+      classification: 'incremental',
+    }))
+    showToast('Draft updated.', 'Finish location and quantity, then save the entry.')
+  }
+
   return (
     <PhoneShell>
       <div data-scroll-to-top="true" className="flex-1 overflow-y-auto bg-[#f4f6f9] pb-2">
@@ -408,6 +466,142 @@ export function OffShelfScreen() {
         </div>
 
         <div className="px-4 py-3 space-y-3">
+          {agentforceEnabled && (
+            <SectionCard
+              title="Agentforce Prefill (MVP)"
+              subtitle="Capture a secondary display photo (and optional voice note) to generate a draft incremental product list for review."
+            >
+              <div className="space-y-3">
+                <div className="rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Secondary display image</p>
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                    <label className="inline-flex items-center gap-2 rounded-md border border-outline bg-surface-lowest px-3 py-2 text-[12px] font-semibold text-on-surface-variant">
+                      <Camera size={14} />
+                      {secondaryDisplayImage ? 'Retake photo' : 'Capture photo'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                          const file = event.target.files?.[0] ?? null
+                          setSecondaryDisplayImage(file)
+                          event.target.value = ''
+                        }}
+                      />
+                    </label>
+                    {secondaryDisplayImage && (
+                      <button
+                        type="button"
+                        onClick={() => setSecondaryDisplayImage(null)}
+                        className="rounded-md border border-[#f9d6d0] bg-[#fef1ee] px-3 py-2 text-[12px] font-semibold text-[#8e030f]"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  {secondaryDisplayImage && (
+                    <p className="mt-2 text-[12px] text-on-surface-variant">Selected: {secondaryDisplayImage.name}</p>
+                  )}
+                </div>
+
+                <div className="rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Voice note (optional)</p>
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                    <label className="inline-flex items-center gap-2 rounded-md border border-outline bg-surface-lowest px-3 py-2 text-[12px] font-semibold text-on-surface-variant">
+                      <Sparkles size={14} />
+                      {audioNoteFile ? 'Replace audio' : 'Upload audio'}
+                      <input
+                        type="file"
+                        accept="audio/*,.mp3"
+                        className="hidden"
+                        onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                          const file = event.target.files?.[0] ?? null
+                          setAudioNoteFile(file)
+                          event.target.value = ''
+                        }}
+                      />
+                    </label>
+                    {audioNoteFile && (
+                      <button
+                        type="button"
+                        onClick={() => setAudioNoteFile(null)}
+                        className="rounded-md border border-[#f9d6d0] bg-[#fef1ee] px-3 py-2 text-[12px] font-semibold text-[#8e030f]"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  {audioNoteFile && (
+                    <p className="mt-2 text-[12px] text-on-surface-variant">Selected: {audioNoteFile.name}</p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    disabled={!secondaryDisplayImage || agentforcePrefillStatus === 'running'}
+                    onClick={handleGenerateAgentforcePrefill}
+                    className={clsx(
+                      'inline-flex items-center justify-center rounded-md px-3 py-2 text-[12px] font-semibold',
+                      !secondaryDisplayImage || agentforcePrefillStatus === 'running'
+                        ? 'bg-[#dde3ea] text-[#52606d]'
+                        : 'bg-primary text-white'
+                    )}
+                  >
+                    {agentforcePrefillStatus === 'running' ? 'Generating…' : 'Generate draft list'}
+                  </button>
+                  <span className="text-[12px] text-on-surface-variant">
+                    {agentforcePrefillStatus === 'success'
+                      ? 'Draft ready'
+                      : agentforcePrefillStatus === 'error'
+                        ? 'Draft failed (manual entry available)'
+                        : 'Optional'}
+                  </span>
+                </div>
+
+                {agentforcePrefill?.analysisStatus === 'success' && agentforcePrefill.products.length > 0 && (
+                  <div className="rounded-lg border border-outline bg-surface-lowest px-3 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Suggested products</p>
+                    <div className="mt-2 space-y-2">
+                      {agentforcePrefill.products.map((product) => (
+                        <div key={product.productName} className="flex items-center justify-between gap-3 rounded-md border border-outline bg-[#f7f9fb] px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="text-[12px] font-semibold text-on-surface truncate">{product.productName}</p>
+                            <p className="text-[11px] text-on-surface-variant mt-0.5">
+                              {product.brand ? `${product.brand} • ` : ''}{product.confidence.toUpperCase()} • {product.quantityEstimate}
+                              {product.status === 'needs_review' ? ' • needs review' : ''}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={!product.matchedCatalog}
+                            onClick={() => handleUseAgentforceSuggestion(product.productName)}
+                            className={clsx(
+                              'shrink-0 rounded-md border px-2.5 py-1.5 text-[11px] font-semibold',
+                              product.matchedCatalog
+                                ? 'border-[#c9d8ea] bg-[#edf4ff] text-primary'
+                                : 'border-[#dde3ea] bg-[#f4f6f9] text-[#52606d]'
+                            )}
+                          >
+                            Use
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    {agentforcePrefill.notes.length > 0 && (
+                      <div className="mt-3 space-y-1">
+                        {agentforcePrefill.notes.map((note) => (
+                          <p key={note} className="text-[11px] text-on-surface-variant">{note}</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </SectionCard>
+          )}
+
           {visitType === 'follow-up' && (
             <SectionCard
               title="Previous Visit Review"
@@ -476,7 +670,8 @@ export function OffShelfScreen() {
           <SectionCard title="Score Impact" subtitle="Current score state for this visit.">
             <div className="grid grid-cols-2 gap-2">
               <ScoreCell label="Current Score" value={projectedScore.toFixed(1)} tone="neutral" />
-              <ScoreCell label="Base Plan" value={basePlanScore.toFixed(1)} tone="neutral" />
+              <ScoreCell label="Execution" value={basePlanScore.toFixed(1)} tone="neutral" />
+              <ScoreCell label="Base LGOR" value={basePlanLgorPoints.toFixed(1)} tone="neutral" />
               <ScoreCell label="Incremental Off-Shelf" value={`+${liveIncremental.toFixed(1)}`} tone="positive" />
               {agentforceEnabled && (
                 <InsightCell
@@ -727,6 +922,7 @@ export function OffShelfScreen() {
                     <PreviewRow label="Quantity" value={quantityLabel || String(draft.quantity)} />
                     <PreviewRow label="LGOR Contribution" value={`+${draftImpact.estimatedLgor}%`} positive />
                     <PreviewRow label="Score Impact" value={`+${draftImpact.impactPoints} pts`} positive />
+                    <PreviewRow label="Peak Week Ratio" value={`${draftImpact.peakWeekRatio.toFixed(2)}x`} />
                     <PreviewRow label="Projected Score" value={projectedScore.toFixed(1)} positive />
                   </div>
                 </div>
@@ -734,6 +930,7 @@ export function OffShelfScreen() {
                 <ImpactRow label="Quantity" value={`${draft.quantity}`} />
                 <ImpactRow label="Estimated LGOR Lift" value={`+${draftImpact.estimatedLgor}%`} positive />
                 <ImpactRow label="Points Added" value={`+${draftImpact.impactPoints} pts`} positive />
+                <ImpactRow label="Peak Week Units" value={`${draftImpact.peakWeekUnits}`} />
                 <ImpactRow label="Multiplier Applied" value={`${draftImpact.multiplier.toFixed(2)}x • ${draftImpact.multiplierLabel}`} />
                 <ImpactRow label="Projected New Score" value={projectedScore.toFixed(1)} positive />
               </div>

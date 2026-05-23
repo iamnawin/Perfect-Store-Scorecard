@@ -17,8 +17,6 @@ export function PhotoScreen() {
   const [trellisOpen, setTrellisOpen] = useState(false)
   const {
     visitType,
-    checklist,
-    questionNotes,
     evidence,
     offShelf,
     notes,
@@ -40,22 +38,7 @@ export function PhotoScreen() {
   const sectionNumber = getCurrentSectionNumber(app)
   const visitTypeLabel = getVisitTypeLabel(visitType)
   const helperText = lastSavedAt ? `Draft saved at ${lastSavedAt}` : 'Missing required evidence will block submission.'
-  const trellisInsight = getPhotoInsight({
-    visitType,
-    checklist,
-    questionNotes,
-    offShelf,
-    offShelfConfirmed: offShelf.length > 0,
-    evidence,
-    notes,
-    revisitRequired,
-    shelfResetNeeded,
-    lastSavedAt,
-    submitted: false,
-    agentforceEnabled,
-    toast: null,
-    celebration: null,
-  })
+  const trellisInsight = getPhotoInsight(app)
   const agentforceDraft = buildAgentforceDraft({
     missingEvidenceCount: missingEvidence.length,
     missingTitle: missingEvidence[0]?.title,
