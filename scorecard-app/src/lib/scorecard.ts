@@ -375,10 +375,11 @@ export function getIncrementalRawLgorPct(entries: OffShelfEntry[]) {
 }
 
 export function getTotalScore(state: AppState) {
-  const basePlanScore = getChecklistBasePlanScore(state.checklist)
+  const executionScore = getChecklistBasePlanScore(state.checklist)
+  const basePlanLgorPoints = getBasePlanLgorPoints(state.checklist)
   const incrementalScore = getOffShelfIncrementalScore(state.offShelf)
 
-  return Math.max(0, +(basePlanScore + incrementalScore).toFixed(1))
+  return Math.max(0, +(executionScore + basePlanLgorPoints + incrementalScore).toFixed(1))
 }
 
 export function getLgorPct(state: AppState) {
