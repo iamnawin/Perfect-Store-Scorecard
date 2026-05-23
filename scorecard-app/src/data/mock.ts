@@ -117,7 +117,7 @@ export const checklistQuestions: ChecklistQuestion[] = [
     title: 'Fence Line set',
     guidance: 'Confirm Fence Line base plan location is set before evaluating incremental performance.',
     businessWhy: 'Base plan must be set first so incremental gains are measured against a stable execution baseline.',
-    weight: 10,
+    weight: 12.5,
     icon: 'display',
   },
   {
@@ -128,7 +128,7 @@ export const checklistQuestions: ChecklistQuestion[] = [
     title: 'Drive Aisle set',
     guidance: 'Confirm Drive Aisle base plan location is set before evaluating incremental performance.',
     businessWhy: 'Missing drive aisle base setup suppresses seasonal visibility and distorts incremental score credit.',
-    weight: 10,
+    weight: 12.5,
     icon: 'display',
   },
   {
@@ -139,7 +139,7 @@ export const checklistQuestions: ChecklistQuestion[] = [
     title: 'Endcap set',
     guidance: 'Confirm Endcap base plan location is set before evaluating incremental performance.',
     businessWhy: 'Endcap base setup anchors promotional conversion and protects high-value display ranking.',
-    weight: 10,
+    weight: 12.5,
     icon: 'display',
   },
   {
@@ -150,7 +150,7 @@ export const checklistQuestions: ChecklistQuestion[] = [
     title: 'Garden Doors set',
     guidance: 'Confirm Garden Doors base plan location is set before evaluating incremental performance.',
     businessWhy: 'Garden Doors readiness influences seasonal traffic capture and outdoor conversion.',
-    weight: 10,
+    weight: 12.5,
     icon: 'display',
   },
   {
