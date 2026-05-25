@@ -129,85 +129,36 @@ export interface ScorecardSnapshot {
   offShelfItemCount: number
 }
 
+export interface LeaderboardEntry {
+  rank: number
+  store: string
+  rep: string
+  score: number
+  lgorRepPercent: number
+  delta: number
+  openRevisitCount: number
+}
+
+export interface FlaggedStore {
+  store: string
+  rep: string
+  issue: string
+  sku: string
+  peakWeekUnits: number
+  currentQuantity: number
+  gap: number
+  revisitStatus: RevisitStatus
+  owner: string
+}
+
 // --- Legacy types kept for backward compat with remaining components ---
 
 export type ScorecardStatus = 'not-started' | 'in-progress' | 'ready-for-review' | 'completed'
 export type StepState = 'completed' | 'in-progress' | 'pending' | 'locked'
-export type ScorecardStatus = 'not-started' | 'in-progress' | 'ready-for-review' | 'completed'
+export type OffShelfClassification = 'base-plan' | 'incremental' | 'not-sure'
 export type VisitType = 'initial' | 'follow-up'
 export type OffShelfOrigin = 'current-visit' | 'previous-visit'
 export type OffShelfStatus = 'saved' | 'pending-review' | 'retained' | 'updated' | 'removed' | 'added'
-
-export interface OffShelfProduct {
-  id: string
-  categoryId: string
-  name: string
-  subtitle: string
-  recommendedLocations: string[]
-  basePoints: number
-  baseLgor: number
-  peakWeekUnits: number
-}
-
-export interface EvidenceStateItem {
-  captured: boolean
-  note: string
-  photoName: string
-  photoPreviewUrl: string
-}
-
-export interface EvidenceState {
-  [itemId: string]: EvidenceStateItem
-}
-
-export interface EvidenceRequirement {
-  id: string
-  title: string
-  required: boolean
-  relevance: string
-  linkedQuestionIds: string[]
-}
-
-export interface ScorecardSection {
-  id: string
-  title: string
-  description: string
-  route: string
-  kind: string
-}
-
-export interface ChecklistQuestion {
-  id: string
-  sectionId: string
-  group: 'map' | 'pog' | 'display'
-  category: string
-  title: string
-  guidance: string
-  businessWhy: string
-  weight: number
-  icon: 'shelf' | 'alert' | 'display' | 'camera'
-}
-
-export interface QuestionNotesState {
-  [itemId: string]: string
-}
-
-export interface TrellisPromptSet {
-  title: string
-  insight: string
-  prompts: string[]
-}
-
-export type TrellisTone = 'info' | 'success' | 'warning'
-export type TrellisActionIntent = 'primary' | 'secondary' | 'warning'
-
-export interface OffShelfRecommendation {
-  skuId: string
-  location: string
-  quantity: number | string
-  potentialPoints: number
-  rationale: string
-}
 
 export type AgentforceConfidence = 'high' | 'medium' | 'low'
 export type AgentforceQuantityEstimate = 'small' | 'medium' | 'large' | 'unknown'
@@ -303,28 +254,6 @@ export interface EvidenceRequirement {
   guidance: string
   required: boolean
   group: 'map' | 'display' | 'promo'
-}
-
-export interface LeaderboardEntry {
-  rank: number
-  store: string
-  rep: string
-  score: number
-  lgorRepPercent: number
-  delta: number
-  openRevisitCount: number
-}
-
-export interface FlaggedStore {
-  store: string
-  rep: string
-  issue: string
-  sku: string
-  peakWeekUnits: number
-  currentQuantity: number
-  gap: number
-  revisitStatus: RevisitStatus
-  owner: string
 }
 
 export interface AppState {

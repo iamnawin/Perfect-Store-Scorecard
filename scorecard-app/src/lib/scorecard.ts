@@ -8,7 +8,6 @@ import type {
   RevisitItem,
   ScorecardSnapshot,
 } from '../types'
-import { basePlanItems, demoBasePlanLgorPercent, displayCapacity, skuData } from '../data/mock'
 
 // ─── Execution Score ────────────────────────────────────────────────────────
 
