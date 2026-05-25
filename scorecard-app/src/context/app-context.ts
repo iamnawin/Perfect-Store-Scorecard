@@ -1,38 +1,65 @@
 import { createContext } from 'react'
-import type { AppState, ChecklistAnswer, OffShelfEntry, ScorecardStatus, VisitType } from '../types'
+import type {
+  ChecklistAnswer,
+  OffShelfEntry,
+  QuantityUnit,
+  RevisitItem,
+  RevisitStatus,
+  ScorecardSnapshot,
+  ScorecardVisitStatus,
+  AppToast,
+  AppCelebration,
+} from '../types'
 
-export interface AppContextValue extends AppState {
-  setVisitType: (visitType: VisitType) => void
-  setChecklistAnswer: (itemId: string, answer: ChecklistAnswer) => void
-  setQuestionNote: (itemId: string, note: string) => void
-  addOffShelfEntry: (entry: OffShelfEntry) => void
-  updateOffShelfEntry: (entry: OffShelfEntry) => void
-  duplicateOffShelfEntry: (id: string) => void
-  removeOffShelfEntry: (id: string) => void
-  confirmOffShelfReview: () => void
-  setEvidenceCaptured: (itemId: string, captured: boolean) => void
-  setEvidencePhoto: (itemId: string, file: File | null) => void
-  setEvidenceNote: (itemId: string, note: string) => void
-  setSecondaryDisplayImage: (file: File | null) => void
-  setAudioNoteFile: (file: File | null) => void
-  setNotes: (v: string) => void
-  setRevisitRequired: (v: boolean) => void
-  setShelfResetNeeded: (v: boolean) => void
-  saveDraft: () => void
-  submitScorecard: () => void
-  setAgentforceEnabled: (value: boolean) => void
-  showToast: (title: string, message: string) => void
-  answeredChecks: number
-  totalChecks: number
-  totalSections: number
-  requiredPhotos: number
-  capturedRequiredPhotos: number
-  completionPercent: number
-  scorecardStatus: ScorecardStatus
+export interface AppContextValue {
+  // Visit state
+  visitStatus: ScorecardVisitStatus
+  quarter: string
+  visitDate: string
+
+  // Execution (Base Plan)
+  executionAnswers: Record<string, ChecklistAnswer>
+  executionNotes: Record<string, string>
+  setExecutionAnswer: (itemId: string, answer: ChecklistAnswer) => void
+  setExecutionNote: (itemId: string, note: string) => void
+
+  // Computed scores
   executionScore: number
-  totalScore: number
-  lgorPct: number
-  riskDelta: number
+  basePlanLgorPoints: number
+  incrementalOffShelfPoints: number
+  incrementalRawLgorPercent: number
+  finalScore: number
+  lgorRepPercent: number
+
+  // Off-shelf
+  offShelfItems: OffShelfEntry[]
+  offShelfConfirmed: boolean
+  addOffShelfItem: (skuId: string, displayLocation: string, quantity: number, quantityUnit: QuantityUnit, notes?: string) => void
+  removeOffShelfItem: (id: string) => void
+  confirmOffShelf: () => void
+
+  // Revisit
+  revisitRequired: boolean
+  revisitItems: RevisitItem[]
+  setRevisitRequired: (value: boolean) => void
+  addRevisitItem: (item: Omit<RevisitItem, 'id'>) => void
+  updateRevisitItemStatus: (id: string, status: RevisitStatus) => void
+
+  // Submission
+  notes: string
+  setNotes: (notes: string) => void
+  submitted: boolean
+  lastSavedAt: string | null
+  submitScorecard: () => void
+  saveDraft: () => void
+
+  // Snapshots (for retake comparison)
+  snapshots: ScorecardSnapshot[]
+
+  // UI
+  toast: AppToast | null
+  celebration: AppCelebration | null
+  showToast: (title: string, message: string) => void
 }
 
 export const AppContext = createContext<AppContextValue | null>(null)

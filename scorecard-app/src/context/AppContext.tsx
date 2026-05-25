@@ -1,369 +1,165 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import type { AppState, ChecklistAnswer, OffShelfEntry, VisitType } from '../types'
+import type {
+  AppCelebration,
+  AppToast,
+  ChecklistAnswer,
+  OffShelfEntry,
+  QuantityUnit,
+  RevisitItem,
+  RevisitStatus,
+  ScorecardSnapshot,
+  ScorecardVisitStatus,
+} from '../types'
 import { AppContext } from './app-context'
-import { previousOffShelfSeed } from '../data/mock'
+import { store, demoBasePlanLgorPercent } from '../data/mock'
 import {
-  estimateOffShelfImpact,
-  createInitialEvidenceState,
-  getAnsweredChecks,
-  getCapturedRequiredPhotos,
-  getChecklistBasePlanScore,
-  getCompletionPercent,
-  getLgorPct,
-  getMissingRequiredEvidence,
-  getOffShelfProductById,
-  getRequiredPhotoCount,
-  getRiskDelta,
-  getScorecardStatus,
-  getTotalChecks,
-  getTotalScore,
-  getTotalSections,
-  getPendingFollowUpEntries,
-  getOffShelfIncrementalScore,
+  buildOffShelfEntry,
+  buildSnapshot,
+  calculateBasePlanLgorPoints,
+  calculateExecutionScore,
+  calculateFinalPssScore,
+  calculateIncrementalOffShelfPoints,
+  calculateIncrementalRawLgorPercent,
+  calculateLgorRepPercent,
 } from '../lib/scorecard'
 
-function createFollowUpSeedEntries(): OffShelfEntry[] {
-  return previousOffShelfSeed.flatMap(seed => {
-    const product = getOffShelfProductById(seed.skuId)
-    if (!product) return []
-    const categoryLabel = {
-      'grass-seed': 'Grass Seed',
-      'plant-food': 'Plant Food',
-      'weed-feed': 'Weed & Feed',
-      chemical: 'Chemical',
-      'indoor-soil': 'Indoor Soil',
-      'outdoor-soil': 'Outdoor Soil',
-    }[product.categoryId] ?? product.categoryId
-
-    const impact = estimateOffShelfImpact({
-      product,
-      location: seed.location,
-      quantity: seed.quantity,
-      classification: seed.classification,
-    })
-
-    return [{
-      id: crypto.randomUUID(),
-      location: seed.location,
-      category: categoryLabel,
-      skuId: product.id,
-      product: product.name,
-      quantity: seed.quantity,
-      classification: seed.classification,
-      photoCaptured: false,
-      photoName: '',
-      photoPreviewUrl: '',
-      caption: seed.caption,
-      notes: seed.notes,
-      estimatedLgor: impact.estimatedLgor,
-      impactPoints: impact.impactPoints,
-      multiplier: impact.multiplier,
-      multiplierLabel: impact.multiplierLabel,
-      origin: 'previous-visit',
-      status: 'pending-review',
-    }]
-  })
-}
-
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [visitType, setVisitTypeState] = useState<VisitType>('initial')
-  const [checklist, setChecklist] = useState<AppState['checklist']>({})
-  const [questionNotes, setQuestionNotes] = useState<AppState['questionNotes']>({})
-  const [offShelf, setOffShelf] = useState<OffShelfEntry[]>([])
+  const [visitStatus, setVisitStatusState] = useState<ScorecardVisitStatus>('Not Started')
+  const [executionAnswers, setExecutionAnswersState] = useState<Record<string, ChecklistAnswer>>({})
+  const [executionNotes, setExecutionNotesState] = useState<Record<string, string>>({})
+  const [offShelfItems, setOffShelfItems] = useState<OffShelfEntry[]>([])
   const [offShelfConfirmed, setOffShelfConfirmed] = useState(false)
-  const [evidence, setEvidence] = useState<AppState['evidence']>(() => createInitialEvidenceState())
-  const [secondaryDisplayImage, setSecondaryDisplayImageState] = useState<File | null>(null)
-  const [audioNoteFile, setAudioNoteFileState] = useState<File | null>(null)
-  const [notes, setNotes] = useState('')
   const [revisitRequired, setRevisitRequiredState] = useState(false)
-  const [shelfResetNeeded, setShelfResetNeededState] = useState(false)
-  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
+  const [revisitItems, setRevisitItems] = useState<RevisitItem[]>([])
+  const [notes, setNotes] = useState('')
   const [submitted, setSubmitted] = useState(false)
-  const [agentforceEnabled, setAgentforceEnabled] = useState(false)
-  const [toast, setToast] = useState<AppState['toast']>(null)
-  const [celebration, setCelebration] = useState<AppState['celebration']>(null)
+  const [snapshots, setSnapshots] = useState<ScorecardSnapshot[]>([])
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
+  const [toast, setToast] = useState<AppToast | null>(null)
+  const [celebration, setCelebration] = useState<AppCelebration | null>(null)
 
   useEffect(() => {
     if (!toast) return
-    const timer = window.setTimeout(() => setToast(null), 2600)
-    return () => window.clearTimeout(timer)
+    const t = window.setTimeout(() => setToast(null), 2600)
+    return () => window.clearTimeout(t)
   }, [toast])
 
   useEffect(() => {
     if (!celebration) return
-    const timer = window.setTimeout(() => setCelebration(null), 2400)
-    return () => window.clearTimeout(timer)
+    const t = window.setTimeout(() => setCelebration(null), 2400)
+    return () => window.clearTimeout(t)
   }, [celebration])
 
-  function triggerToast(title: string, message: string) {
-    setToast({
-      id: Date.now(),
-      title,
-      message,
-    })
-  }
-
   function showToast(title: string, message: string) {
-    triggerToast(title, message)
+    setToast({ id: Date.now(), title, message })
   }
 
-  function setVisitType(nextVisitType: VisitType) {
-    setVisitTypeState(nextVisitType)
-    setChecklist({})
-    setQuestionNotes({})
-    setOffShelf(nextVisitType === 'follow-up' ? createFollowUpSeedEntries() : [])
-    setOffShelfConfirmed(false)
-    setEvidence(createInitialEvidenceState())
-    setSecondaryDisplayImageState(null)
-    setAudioNoteFileState(null)
-    setNotes('')
-    setRevisitRequiredState(false)
-    setShelfResetNeededState(false)
-    setLastSavedAt(null)
-    setSubmitted(false)
-    setToast(null)
-    setCelebration(null)
+  function setExecutionAnswer(itemId: string, answer: ChecklistAnswer) {
+    setExecutionAnswersState(prev => ({ ...prev, [itemId]: answer }))
+    if (visitStatus === 'Not Started') setVisitStatusState('In Progress')
   }
 
-  function setChecklistAnswer(itemId: string, answer: ChecklistAnswer) {
-    setChecklist(prev => ({ ...prev, [itemId]: answer }))
+  function setExecutionNote(itemId: string, note: string) {
+    setExecutionNotesState(prev => ({ ...prev, [itemId]: note }))
   }
 
-  function setQuestionNote(itemId: string, note: string) {
-    setQuestionNotes(prev => ({ ...prev, [itemId]: note }))
-  }
-
-  function addOffShelfEntry(entry: OffShelfEntry) {
+  function addOffShelfItem(
+    skuId: string,
+    displayLocation: string,
+    quantity: number,
+    quantityUnit: QuantityUnit,
+    itemNotes?: string,
+  ) {
+    const entry = buildOffShelfEntry({ skuId, displayLocation, quantity, quantityUnit, notes: itemNotes })
+    setOffShelfItems(prev => [...prev, entry])
     setOffShelfConfirmed(true)
-    setOffShelf(prev => [...prev, entry])
+    if (visitStatus === 'Not Started') setVisitStatusState('In Progress')
   }
 
-  function updateOffShelfEntry(entry: OffShelfEntry) {
-    setOffShelfConfirmed(true)
-    setOffShelf(prev => prev.map(existing => existing.id === entry.id ? entry : existing))
+  function removeOffShelfItem(id: string) {
+    setOffShelfItems(prev => prev.map(e => e.id === id ? { ...e, status: 'removed' as const } : e))
   }
 
-  function duplicateOffShelfEntry(id: string) {
-    setOffShelfConfirmed(true)
-    setOffShelf(prev => {
-      const target = prev.find(entry => entry.id === id)
-      if (!target) return prev
-
-      return [
-        ...prev,
-        {
-          ...target,
-          id: crypto.randomUUID(),
-          origin: 'current-visit',
-          status: visitType === 'follow-up' ? 'added' : 'saved',
-        },
-      ]
-    })
-  }
-
-  function removeOffShelfEntry(id: string) {
-    setOffShelf(prev => prev.filter(entry => entry.id !== id))
-  }
-
-  function confirmOffShelfReview() {
+  function confirmOffShelf() {
     setOffShelfConfirmed(true)
   }
 
-  function setEvidenceCaptured(itemId: string, captured: boolean) {
-    setEvidence(prev => ({
-      ...prev,
-      [itemId]: {
-        ...prev[itemId],
-        captured,
-        note: captured && !prev[itemId]?.note ? 'Captured during active visit.' : prev[itemId]?.note ?? '',
-        photoName: captured ? prev[itemId]?.photoName ?? '' : '',
-        photoPreviewUrl: captured ? prev[itemId]?.photoPreviewUrl ?? '' : '',
-      },
-    }))
-  }
-
-  function setEvidencePhoto(itemId: string, file: File | null) {
-    if (!file) {
-      setEvidence(prev => ({
-        ...prev,
-        [itemId]: {
-          ...prev[itemId],
-          captured: false,
-          note: prev[itemId]?.note ?? '',
-          photoName: '',
-          photoPreviewUrl: '',
-        },
-      }))
-      return
+  function setRevisitRequired(value: boolean) {
+    setRevisitRequiredState(value)
+    if (value) {
+      setVisitStatusState('Revisit Required')
+      showToast('Revisit flagged', 'This store will be tracked for follow-up execution.')
     }
-
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = typeof reader.result === 'string' ? reader.result : ''
-      setEvidence(prev => ({
-        ...prev,
-        [itemId]: {
-          ...prev[itemId],
-          captured: true,
-          note: prev[itemId]?.note || `Captured during active visit: ${file.name}`,
-          photoName: file.name,
-          photoPreviewUrl: result,
-        },
-      }))
-    }
-    reader.readAsDataURL(file)
   }
 
-  function setEvidenceNote(itemId: string, note: string) {
-    setEvidence(prev => ({
-      ...prev,
-      [itemId]: {
-        ...prev[itemId],
-        note,
-      },
-    }))
+  function addRevisitItem(item: Omit<RevisitItem, 'id'>) {
+    setRevisitItems(prev => [...prev, { ...item, id: crypto.randomUUID() }])
   }
 
-  function setSecondaryDisplayImage(file: File | null) {
-    setSecondaryDisplayImageState(file)
-  }
-
-  function setAudioNoteFile(file: File | null) {
-    setAudioNoteFileState(file)
+  function updateRevisitItemStatus(id: string, status: RevisitStatus) {
+    setRevisitItems(prev => prev.map(r => r.id === id ? { ...r, status } : r))
   }
 
   function saveDraft() {
     setLastSavedAt(new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))
   }
 
-  function setRevisitRequired(nextValue: boolean) {
-    setRevisitRequiredState(prev => {
-      if (nextValue && !prev) {
-        triggerToast(
-          'Revisit flagged successfully.',
-          'This store will be tracked for follow-up execution.'
-        )
-      }
-      return nextValue
-    })
-  }
-
-  function setShelfResetNeeded(nextValue: boolean) {
-    setShelfResetNeededState(prev => {
-      if (nextValue && !prev) {
-        triggerToast(
-          'Shelf reset flagged successfully.',
-          'This store will be marked for layout correction before the next visit.'
-        )
-      }
-      return nextValue
-    })
-  }
+  // Derived scores (computed on each render — clean and no stale state)
+  const executionScore = calculateExecutionScore(executionAnswers)
+  const basePlanLgorPoints = calculateBasePlanLgorPoints(demoBasePlanLgorPercent)
+  const incrementalOffShelfPoints = calculateIncrementalOffShelfPoints(offShelfItems)
+  const incrementalRawLgorPercent = calculateIncrementalRawLgorPercent(offShelfItems)
+  const finalScore = calculateFinalPssScore(executionScore, basePlanLgorPoints, incrementalOffShelfPoints)
+  const lgorRepPercent = calculateLgorRepPercent(demoBasePlanLgorPercent, offShelfItems)
 
   function submitScorecard() {
-    const hasCriticalBlockers = getMissingRequiredEvidence(evidence, offShelf).length > 0 ||
-      (visitType === 'initial' && getAnsweredChecks(checklist) !== getTotalChecks()) ||
-      (visitType === 'follow-up' && getPendingFollowUpEntries(offShelf).length > 0)
-    const hasIncrementalAddedThisRun = offShelf.some(entry => (
-      visitType === 'follow-up'
-        ? entry.status === 'added'
-        : entry.origin === 'current-visit'
-    ))
-    const shouldCelebrate = !hasCriticalBlockers &&
-      hasIncrementalAddedThisRun &&
-      getOffShelfIncrementalScore(offShelf) > 0
-
+    const snapshot = buildSnapshot(executionScore, demoBasePlanLgorPercent, offShelfItems)
+    setSnapshots(prev => [...prev, snapshot])
     setSubmitted(true)
+    setVisitStatusState('Submitted')
     saveDraft()
-    if (shouldCelebrate) {
-      setCelebration({
-        id: Date.now(),
-        title: 'Nice execution!',
-        message: 'You added incremental value to this store.',
-      })
-    }
+    setCelebration({
+      id: Date.now(),
+      title: 'Scorecard submitted!',
+      message: `Score: ${finalScore.toFixed(1)}  |  LGOR Rep: ${lgorRepPercent.toFixed(1)}%`,
+    })
   }
-
-  const appState: AppState = {
-    visitType,
-    checklist,
-    questionNotes,
-    offShelf,
-    offShelfConfirmed,
-    evidence,
-    secondaryDisplayImage,
-    audioNoteFile,
-    notes,
-    revisitRequired,
-    shelfResetNeeded,
-    lastSavedAt,
-    submitted,
-    agentforceEnabled,
-    toast,
-    celebration,
-  }
-
-  const answeredChecks = getAnsweredChecks(checklist)
-  const totalChecks = getTotalChecks()
-  const totalSections = getTotalSections(visitType)
-  const requiredPhotos = getRequiredPhotoCount()
-  const capturedRequiredPhotos = getCapturedRequiredPhotos(evidence, offShelf)
-  const completionPercent = getCompletionPercent(appState)
-  const scorecardStatus = getScorecardStatus(appState)
-  const executionScore = getChecklistBasePlanScore(checklist)
-  const totalScore = getTotalScore(appState)
-  const lgorPct = getLgorPct(appState)
-  const riskDelta = getRiskDelta(appState)
 
   return (
     <AppContext.Provider value={{
-      visitType,
-      checklist,
-      questionNotes,
-      offShelf,
+      visitStatus,
+      quarter: store.quarter,
+      visitDate: store.visitDate,
+      executionAnswers,
+      executionNotes,
+      setExecutionAnswer,
+      setExecutionNote,
+      executionScore,
+      basePlanLgorPoints,
+      incrementalOffShelfPoints,
+      incrementalRawLgorPercent,
+      finalScore,
+      lgorRepPercent,
+      offShelfItems,
       offShelfConfirmed,
-      evidence,
-      secondaryDisplayImage,
-      audioNoteFile,
-      notes,
+      addOffShelfItem,
+      removeOffShelfItem,
+      confirmOffShelf,
       revisitRequired,
-      shelfResetNeeded,
-      lastSavedAt,
+      revisitItems,
+      setRevisitRequired,
+      addRevisitItem,
+      updateRevisitItemStatus,
+      notes,
+      setNotes,
       submitted,
-      agentforceEnabled,
+      lastSavedAt,
+      submitScorecard,
+      saveDraft,
+      snapshots,
       toast,
       celebration,
-      setVisitType,
-      setChecklistAnswer,
-      setQuestionNote,
-      addOffShelfEntry,
-      updateOffShelfEntry,
-      duplicateOffShelfEntry,
-      removeOffShelfEntry,
-      confirmOffShelfReview,
-      setEvidenceCaptured,
-      setEvidencePhoto,
-      setEvidenceNote,
-      setSecondaryDisplayImage,
-      setAudioNoteFile,
-      setNotes,
-      setRevisitRequired,
-      setShelfResetNeeded,
-      saveDraft,
-      submitScorecard,
-      setAgentforceEnabled,
       showToast,
-      answeredChecks,
-      totalChecks,
-      totalSections,
-      requiredPhotos,
-      capturedRequiredPhotos,
-      completionPercent,
-      scorecardStatus,
-      executionScore,
-      totalScore,
-      lgorPct,
-      riskDelta,
     }}>
       {children}
     </AppContext.Provider>

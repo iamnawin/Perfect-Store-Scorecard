@@ -1,457 +1,484 @@
-import { checklistQuestions, evidenceRequirements, offShelfProducts, offShelfRecommendations, scorecardSections } from '../data/mock'
 import type {
-  AppState,
+  BasePlanItem,
   ChecklistAnswer,
-  ChecklistQuestion,
-  ChecklistState,
-  EvidenceState,
-  EvidenceStateItem,
-  OffShelfClassification,
+  ConversionData,
   OffShelfEntry,
-  OffShelfProduct,
-  ScorecardSection,
-  ScorecardStatus,
-  StepState,
-  VisitType,
+  OffShelfStatus,
+  OpportunityItem,
+  QuantityUnit,
+  RecommendationItem,
+  RevisitItem,
+  ScorecardSnapshot,
+  SkuProduct,
 } from '../types'
+import { basePlanItems, demoBasePlanLgorPercent, displayCapacity, skuData } from '../data/mock'
 
-export function createInitialEvidenceState() {
-  return evidenceRequirements.reduce<Record<string, EvidenceStateItem>>((acc, item) => {
-    acc[item.id] = { captured: false, note: '', photoName: '', photoPreviewUrl: '' }
-    return acc
-  }, {})
+// ── Execution Score ───────────────────────────────────────────────────────────
+// Yes = full points, Partial = configurable credit (default 50%), No = 0, N/A = excluded from denominator
+
+export function calculateExecutionScore(
+  answers: Record<string, ChecklistAnswer>,
+  partialCreditPercent = 0.5,
+): number {
+  const eligible = basePlanItems.filter(item => answers[item.id] !== 'na')
+  if (eligible.length === 0) return 0
+
+  const possiblePoints = eligible.reduce((sum, item) => sum + item.possiblePoints, 0)
+  if (possiblePoints === 0) return 0
+
+  const earnedPoints = eligible.reduce((sum, item) => {
+    const answer = answers[item.id]
+    if (answer === 'yes') return sum + item.possiblePoints
+    if (answer === 'partial') return sum + item.possiblePoints * partialCreditPercent
+    return sum
+  }, 0)
+
+  return +((earnedPoints / possiblePoints) * 100).toFixed(1)
 }
 
-export function getTotalChecks() {
-  return checklistQuestions.length
+export function getExecutionEarnedPoints(
+  answers: Record<string, ChecklistAnswer>,
+  partialCreditPercent = 0.5,
+): number {
+  return +basePlanItems.reduce((sum, item) => {
+    const answer = answers[item.id]
+    if (answer === 'yes') return sum + item.possiblePoints
+    if (answer === 'partial') return sum + item.possiblePoints * partialCreditPercent
+    return sum
+  }, 0).toFixed(1)
 }
 
-export function getVisitTypeLabel(visitType: VisitType) {
-  return visitType === 'follow-up' ? 'Revisit' : 'New'
+export function getAnsweredCount(answers: Record<string, ChecklistAnswer>): number {
+  return basePlanItems.filter(item => answers[item.id] !== null && answers[item.id] !== undefined).length
 }
 
-export function getActiveScorecardSections(visitType: VisitType) {
-  if (visitType === 'follow-up') {
-    return scorecardSections.filter(section => (
-      section.id === 'off-shelf-capture' ||
-      section.id === 'photo-evidence' ||
-      section.id === 'review-submit'
-    ))
-  }
-
-  return scorecardSections
+export function getTotalItemCount(): number {
+  return basePlanItems.length
 }
 
-export function getTotalSections(visitType: VisitType = 'initial') {
-  return getActiveScorecardSections(visitType).length
+export function isExecutionComplete(answers: Record<string, ChecklistAnswer>): boolean {
+  return getAnsweredCount(answers) === getTotalItemCount()
 }
 
-export function getAnsweredChecks(checklist: ChecklistState) {
-  return Object.values(checklist).filter(Boolean).length
+// ── Base Plan LGOR ────────────────────────────────────────────────────────────
+// Base Plan LGOR Points = Base Plan LGOR % (direct 1:1 conversion)
+
+export function calculateBasePlanLgorPoints(basePlanLgorPercent = demoBasePlanLgorPercent): number {
+  return +basePlanLgorPercent.toFixed(1)
 }
 
-export function getYesCount(checklist: ChecklistState) {
-  return Object.values(checklist).filter(answer => answer === 'yes').length
-}
+// ── Quantity Conversion ───────────────────────────────────────────────────────
 
-export function getRequiredPhotoCount() {
-  return evidenceRequirements.filter(item => item.required).length
-}
-
-function isActiveOffShelfEntry(entry: OffShelfEntry) {
-  return entry.status !== 'removed' && entry.status !== 'pending-review'
-}
-
-const demoBasePlanLgorPct = 26.3
-
-function hasStartedFollowUpReview(offShelf: OffShelfEntry[]) {
-  return offShelf.some(entry => (
-    entry.origin === 'current-visit' ||
-    entry.status === 'retained' ||
-    entry.status === 'updated' ||
-    entry.status === 'removed' ||
-    entry.status === 'added'
-  ))
-}
-
-export function getPendingFollowUpEntries(offShelf: OffShelfEntry[]) {
-  return offShelf.filter(entry => entry.origin === 'previous-visit' && entry.status === 'pending-review')
-}
-
-function hasOffShelfPhoto(offShelf: OffShelfEntry[]) {
-  return offShelf.some(entry => isActiveOffShelfEntry(entry) && entry.photoCaptured)
-}
-
-function isEvidenceCaptured(itemId: string, evidence: EvidenceState, offShelf: OffShelfEntry[] = []) {
-  if (itemId === 'endcap-photo') {
-    return Boolean(evidence[itemId]?.captured || hasOffShelfPhoto(offShelf))
-  }
-
-  return Boolean(evidence[itemId]?.captured)
-}
-
-export function getCapturedRequiredPhotos(evidence: EvidenceState, offShelf: OffShelfEntry[] = []) {
-  return evidenceRequirements.filter(item => item.required && isEvidenceCaptured(item.id, evidence, offShelf)).length
-}
-
-export function getMissingRequiredEvidence(evidence: EvidenceState, offShelf: OffShelfEntry[] = []) {
-  return evidenceRequirements.filter(item => item.required && !isEvidenceCaptured(item.id, evidence, offShelf))
-}
-
-export function getChecklistQuestionsForSection(sectionId: string) {
-  return checklistQuestions.filter(question => question.sectionId === sectionId)
-}
-
-export function getChecklistSectionValue(sectionId: string) {
-  return getChecklistQuestionsForSection(sectionId).reduce((total, question) => total + question.weight, 0)
-}
-
-export function getChecklistSectionProgress(sectionId: string, checklist: ChecklistState) {
-  const questions = getChecklistQuestionsForSection(sectionId)
-  const answered = questions.filter(question => checklist[question.id]).length
-  return {
-    questions,
-    answered,
-    total: questions.length,
-    started: answered > 0,
-    complete: answered === questions.length,
+export function convertQuantityToUnits(
+  quantity: number,
+  unit: QuantityUnit,
+  conversion: ConversionData,
+): number {
+  switch (unit) {
+    case 'cases':
+      return Math.round(quantity * conversion.unitsPerCase)
+    case 'pallets':
+      return Math.round(quantity * conversion.unitsPerPallet)
+    case 'eaches':
+    case 'estimated':
+    default:
+      return Math.round(quantity)
   }
 }
 
-export function isOffShelfSectionComplete(
-  offShelf: OffShelfEntry[],
-  offShelfConfirmed: boolean,
-  visitType: VisitType = 'initial',
-) {
-  if (visitType === 'follow-up') {
-    return getPendingFollowUpEntries(offShelf).length === 0 && (offShelfConfirmed || offShelf.length > 0)
-  }
+// ── Peak Week Logic ───────────────────────────────────────────────────────────
+// Peak Week Multiplier rewards quantity depth relative to peak demand
 
-  return offShelfConfirmed || offShelf.length > 0
-}
-
-export function parseOffShelfQuantity(quantity: number | string) {
-  if (quantity === '400+') return 400
-  return typeof quantity === 'number' ? quantity : Number.parseInt(quantity, 10)
-}
-
-export function getOffShelfQuantityLabel(quantity: number | string) {
-  const normalizedQuantity = parseOffShelfQuantity(quantity)
-
-  if (normalizedQuantity >= 400) return 'Bulk'
-  if (normalizedQuantity >= 320) return 'Bulk'
-  if (normalizedQuantity >= 200) return 'Pallet'
-  if (normalizedQuantity >= 120) return 'Large Display'
-  if (normalizedQuantity >= 80) return 'Medium Display'
-  return 'Small Display'
-}
-
-export function getOffShelfProductById(productId: string) {
-  return offShelfProducts.find(product => product.id === productId)
-}
-
-function getClassificationMultiplier(classification: OffShelfClassification) {
-  return {
-    'base-plan': 0,
-    incremental: 1,
-    'not-sure': 0,
-  }[classification]
-}
-
-export function getPeakWeekRatio(quantity: number, peakWeekUnits: number) {
+export function calculatePeakWeekRatio(calculatedUnits: number, peakWeekUnits: number): number {
   if (peakWeekUnits <= 0) return 0
-  return +(quantity / peakWeekUnits).toFixed(2)
+  return +(calculatedUnits / peakWeekUnits).toFixed(2)
 }
 
-export function getPeakWeekMultiplier(quantity: number, peakWeekUnits: number) {
-  const ratio = getPeakWeekRatio(quantity, peakWeekUnits)
+export function calculatePeakWeekMultiplier(ratio: number): number {
   if (ratio >= 3) return 3
   if (ratio >= 2) return 2
   if (ratio >= 1) return 1
   return 0
 }
 
-export function estimateOffShelfImpact({
-  product,
-  location,
-  quantity,
-  classification,
-}: {
-  product: OffShelfProduct
-  location: string
-  quantity: number | string
-  classification: OffShelfClassification
-}) {
-  const normalizedQuantity = parseOffShelfQuantity(quantity)
-  const peakWeekRatio = getPeakWeekRatio(normalizedQuantity, product.peakWeekUnits)
-  const peakWeekMultiplier = getPeakWeekMultiplier(normalizedQuantity, product.peakWeekUnits)
-  const classificationMultiplier = getClassificationMultiplier(classification)
-  const multiplier = +(peakWeekMultiplier * classificationMultiplier).toFixed(2)
-  const impactPoints = +(product.baseLgor * multiplier).toFixed(1)
-  const estimatedLgor = classification === 'incremental' ? product.baseLgor : 0
+// ── Incremental Score ─────────────────────────────────────────────────────────
+// Incremental Item Points = SKU LGOR % × Peak Week Multiplier
 
-  const multiplierLabel = classification === 'base-plan'
-    ? 'Base plan LGOR only'
-    : classification === 'not-sure'
-      ? 'Pending classification review'
-      : `${peakWeekMultiplier}x peak week depth | ${location} tracked only`
+export function calculateIncrementalItemPoints(lgorPercent: number, multiplier: number): number {
+  return +(lgorPercent * multiplier).toFixed(1)
+}
+
+export function calculateIncrementalOffShelfPoints(entries: OffShelfEntry[]): number {
+  return +entries
+    .filter(e => e.isIncremental && e.status !== 'removed')
+    .reduce((sum, e) => sum + e.points, 0)
+    .toFixed(1)
+}
+
+export function calculateIncrementalRawLgorPercent(entries: OffShelfEntry[]): number {
+  return +entries
+    .filter(e => e.isIncremental && e.status !== 'removed')
+    .reduce((sum, e) => sum + e.lgorPercent, 0)
+    .toFixed(1)
+}
+
+// ── Final Score ───────────────────────────────────────────────────────────────
+// Final PSS Score = Execution Score + Base Plan LGOR Points + Incremental Off-Shelf Points
+
+export function calculateFinalPssScore(
+  executionScore: number,
+  basePlanLgorPoints: number,
+  incrementalOffShelfPoints: number,
+): number {
+  return +(executionScore + basePlanLgorPoints + incrementalOffShelfPoints).toFixed(1)
+}
+
+// ── LGOR Rep % ────────────────────────────────────────────────────────────────
+// LGOR Rep % = Base Plan LGOR % + Incremental Raw LGOR %
+
+export function calculateLgorRepPercent(
+  basePlanLgorPercent: number,
+  entries: OffShelfEntry[],
+): number {
+  const incrementalRaw = calculateIncrementalRawLgorPercent(entries)
+  return +(basePlanLgorPercent + incrementalRaw).toFixed(1)
+}
+
+// ── Opportunity Layer ─────────────────────────────────────────────────────────
+// Opportunity = Recommended SKU List minus Current Off-Shelf SKU List
+
+export function generateOpportunityItems(entries: OffShelfEntry[]): OpportunityItem[] {
+  const activeSkuIds = new Set(
+    entries.filter(e => e.status !== 'removed').map(e => e.skuId),
+  )
+
+  return skuData
+    .filter(sku => !activeSkuIds.has(sku.id) && sku.isRecommended)
+    .map(sku => ({
+      skuId: sku.id,
+      productName: sku.productName,
+      rank: sku.rank,
+      lgorPercent: sku.lgorPercent,
+      quarterlyUnits: sku.quarterlyUnits,
+      quarterlyDollarValue: sku.quarterlyDollarValue,
+      peakWeekUnits: sku.peakWeekUnits,
+      recommendedAction: `Place ${sku.productName} off-shelf to capture ${sku.lgorPercent}% LGOR`,
+    }))
+}
+
+// ── Recommendations (Rule-Based) ──────────────────────────────────────────────
+// Categories: Missing | Not Enough | Empty Calories | Missing MAP | Peak Week Gap | Capacity Gap
+// Recommendations are guidance only — they do NOT change the numeric score
+
+export function generateRecommendations(
+  answers: Record<string, ChecklistAnswer>,
+  entries: OffShelfEntry[],
+): RecommendationItem[] {
+  const recommendations: RecommendationItem[] = []
+  const activeEntries = entries.filter(e => e.status !== 'removed')
+  const activeSkuIds = new Set(activeEntries.map(e => e.skuId))
+  const recommendedSkus = skuData.filter(s => s.isRecommended)
+  const recommendedSkuIds = new Set(recommendedSkus.map(s => s.id))
+  const capacityMap = new Map(displayCapacity.map(c => [c.location, c]))
+
+  // Missing: recommended SKU not off-shelf
+  recommendedSkus.forEach(sku => {
+    if (!activeSkuIds.has(sku.id)) {
+      recommendations.push({
+        id: `missing-${sku.id}`,
+        type: 'missing',
+        severity: sku.rank <= 2 ? 'high' : 'medium',
+        skuId: sku.id,
+        message: `${sku.productName} (rank #${sku.rank}, ${sku.lgorPercent}% LGOR) is not currently off-shelf`,
+        status: 'active',
+      })
+    }
+  })
+
+  // Missing MAP: required base plan item is No or Partial
+  basePlanItems.forEach(item => {
+    const answer = answers[item.id]
+    if (answer === 'no' || answer === 'partial') {
+      recommendations.push({
+        id: `missing-map-${item.id}`,
+        type: 'missing-map',
+        severity: answer === 'no' ? 'high' : 'medium',
+        message: `${item.itemName} at ${item.requiredLocation}: ${answer === 'no' ? 'not set' : 'partially complete'}`,
+        status: 'active',
+      })
+    }
+  })
+
+  activeEntries.filter(e => e.isIncremental).forEach(entry => {
+    // Not Enough: quantity < peak week units
+    if (entry.calculatedUnits < entry.peakWeekUnits) {
+      recommendations.push({
+        id: `not-enough-${entry.id}`,
+        type: 'not-enough',
+        severity: 'medium',
+        skuId: entry.skuId,
+        displayLocation: entry.displayLocation,
+        message: `${entry.product} at ${entry.displayLocation}: ${entry.calculatedUnits} units placed vs ${entry.peakWeekUnits} peak week demand`,
+        currentValue: entry.calculatedUnits,
+        recommendedValue: entry.peakWeekUnits,
+        status: 'active',
+      })
+      // Peak Week Demand Gap
+      recommendations.push({
+        id: `pwgap-${entry.id}`,
+        type: 'peak-week-gap',
+        severity: 'high',
+        skuId: entry.skuId,
+        displayLocation: entry.displayLocation,
+        message: `Peak demand gap: need ${entry.peakWeekUnits - entry.calculatedUnits} more units of ${entry.product}`,
+        currentValue: entry.calculatedUnits,
+        recommendedValue: entry.peakWeekUnits,
+        status: 'active',
+      })
+    }
+
+    // Capacity Gap: peak week > location capacity
+    const cap = capacityMap.get(entry.displayLocation)
+    if (cap && entry.peakWeekUnits > cap.capacityUnits) {
+      recommendations.push({
+        id: `capacity-${entry.id}`,
+        type: 'capacity-gap',
+        severity: 'medium',
+        skuId: entry.skuId,
+        displayLocation: entry.displayLocation,
+        message: `${entry.displayLocation} capacity (${cap.capacityUnits} units) cannot support peak demand (${entry.peakWeekUnits} units) for ${entry.product}`,
+        currentValue: cap.capacityUnits,
+        recommendedValue: entry.peakWeekUnits,
+        status: 'active',
+      })
+    }
+  })
+
+  // Empty Calories: incremental SKU not in recommended list
+  activeEntries
+    .filter(e => e.isIncremental && !recommendedSkuIds.has(e.skuId))
+    .forEach(entry => {
+      recommendations.push({
+        id: `empty-${entry.id}`,
+        type: 'empty-calories',
+        severity: 'low',
+        skuId: entry.skuId,
+        displayLocation: entry.displayLocation,
+        message: `${entry.product} at ${entry.displayLocation} is not a priority SKU — this space could drive higher LGOR`,
+        status: 'active',
+      })
+    })
+
+  return recommendations
+}
+
+// ── Revisit Suggestions ───────────────────────────────────────────────────────
+
+export function generateRevisitSuggestions(
+  recommendations: RecommendationItem[],
+  entries: OffShelfEntry[],
+): Omit<RevisitItem, 'id' | 'status' | 'notes'>[] {
+  return recommendations
+    .filter(r => r.severity === 'high' || r.type === 'missing-map')
+    .slice(0, 5)
+    .map(rec => {
+      const entry = rec.skuId
+        ? entries.find(e => e.skuId === rec.skuId && e.status !== 'removed')
+        : undefined
+      const sku = rec.skuId ? skuData.find(s => s.id === rec.skuId) : undefined
+      return {
+        skuId: rec.skuId,
+        displayLocation: rec.displayLocation,
+        reason: rec.message,
+        currentQuantity: entry?.calculatedUnits,
+        recommendedQuantity: rec.recommendedValue,
+        quantityGap:
+          rec.recommendedValue !== undefined && rec.currentValue !== undefined
+            ? rec.recommendedValue - rec.currentValue
+            : undefined,
+        peakWeekUnits: sku?.peakWeekUnits ?? entry?.peakWeekUnits,
+      }
+    })
+}
+
+// ── Scorecard Snapshot ────────────────────────────────────────────────────────
+
+export function buildSnapshot(
+  executionScore: number,
+  basePlanLgorPercent: number,
+  entries: OffShelfEntry[],
+): ScorecardSnapshot {
+  const basePlanLgorPoints = calculateBasePlanLgorPoints(basePlanLgorPercent)
+  const incrementalRawLgorPercent = calculateIncrementalRawLgorPercent(entries)
+  const incrementalOffShelfPoints = calculateIncrementalOffShelfPoints(entries)
+  const finalScore = calculateFinalPssScore(executionScore, basePlanLgorPoints, incrementalOffShelfPoints)
+  const lgorRepPercent = calculateLgorRepPercent(basePlanLgorPercent, entries)
 
   return {
-    normalizedQuantity,
-    peakWeekUnits: product.peakWeekUnits,
-    peakWeekRatio,
-    multiplier,
-    multiplierLabel,
-    impactPoints,
-    estimatedLgor,
+    snapshotId: crypto.randomUUID(),
+    submittedAt: new Date().toISOString(),
+    executionScore,
+    basePlanLgorPercent,
+    basePlanLgorPoints,
+    incrementalRawLgorPercent,
+    incrementalOffShelfPoints,
+    finalScore,
+    lgorRepPercent,
   }
+}
+
+// ── SKU helpers ───────────────────────────────────────────────────────────────
+
+export function getSkuById(skuId: string): SkuProduct | undefined {
+  return skuData.find(s => s.id === skuId)
+}
+
+// ── Build off-shelf entry from user inputs ────────────────────────────────────
+
+export function buildOffShelfEntry(params: {
+  skuId: string
+  displayLocation: string
+  quantity: number
+  quantityUnit: QuantityUnit
+  notes?: string
+}): OffShelfEntry {
+  const sku = getSkuById(params.skuId)
+  const conversion: ConversionData = {
+    skuId: params.skuId,
+    unitsPerCase: sku?.unitsPerCase ?? 1,
+    casesPerPallet: sku?.casesPerPallet ?? 1,
+    unitsPerPallet: sku?.unitsPerPallet ?? 1,
+  }
+  const calculatedUnits = convertQuantityToUnits(params.quantity, params.quantityUnit, conversion)
+  const peakWeekUnits = sku?.peakWeekUnits ?? 0
+  const ratio = calculatePeakWeekRatio(calculatedUnits, peakWeekUnits)
+  const multiplier = calculatePeakWeekMultiplier(ratio)
+  const lgorPercent = sku?.lgorPercent ?? 0
+  const points = calculateIncrementalItemPoints(lgorPercent, multiplier)
+
+  return {
+    id: crypto.randomUUID(),
+    displayLocation: params.displayLocation,
+    productCategory: sku?.category ?? 'Other',
+    skuId: params.skuId,
+    product: sku?.productName ?? params.skuId,
+    quantity: params.quantity,
+    quantityUnit: params.quantityUnit,
+    calculatedUnits,
+    lgorPercent,
+    peakWeekUnits,
+    peakWeekRatio: ratio,
+    peakWeekMultiplier: multiplier,
+    points,
+    isIncremental: true,
+    notes: params.notes ?? '',
+    photoIds: [],
+    status: 'saved' as OffShelfStatus,
+  }
+}
+
+// ── Legacy backward-compat shims (used by retained components) ────────────────
+
+export function getOffShelfProductById(productId: string) {
+  return skuData.find(s => s.id === productId)
+}
+
+export function getPeakWeekRatio(quantity: number, peakWeekUnits: number) {
+  return calculatePeakWeekRatio(quantity, peakWeekUnits)
+}
+
+export function getPeakWeekMultiplier(quantity: number, peakWeekUnits: number) {
+  return calculatePeakWeekMultiplier(calculatePeakWeekRatio(quantity, peakWeekUnits))
 }
 
 export function getOffShelfIncrementalScore(entries: OffShelfEntry[]) {
-  const rawIncremental = +entries
-    .filter(isActiveOffShelfEntry)
-    .reduce((total, entry) => total + entry.impactPoints, 0)
-    .toFixed(1)
-
-  return Math.max(0, rawIncremental)
+  return calculateIncrementalOffShelfPoints(entries)
 }
 
-export function getOffShelfOpportunityScore(entries: OffShelfEntry[]) {
-  return +(100 + getOffShelfIncrementalScore(entries)).toFixed(1)
+export function getTotalScore(state: { offShelfItems: OffShelfEntry[]; executionScore?: number }) {
+  const exec = state.executionScore ?? 0
+  const base = calculateBasePlanLgorPoints()
+  const incremental = calculateIncrementalOffShelfPoints(state.offShelfItems)
+  return calculateFinalPssScore(exec, base, incremental)
 }
 
-export function getRemainingOffShelfRecommendations(entries: OffShelfEntry[]) {
-  const capturedKeys = new Set(
-    entries
-      .filter(isActiveOffShelfEntry)
-      .map(entry => `${entry.skuId}:${entry.location}`)
-  )
-
-  return offShelfRecommendations
-    .filter(item => !capturedKeys.has(`${item.skuId}:${item.location}`))
-    .map(item => ({
-      ...item,
-      product: getOffShelfProductById(item.skuId),
-    }))
-    .filter(item => item.product)
+export function getLgorPct(state: { offShelfItems: OffShelfEntry[] }) {
+  return calculateLgorRepPercent(demoBasePlanLgorPercent, state.offShelfItems)
 }
 
-export function getPotentialAdditionalGain(entries: OffShelfEntry[]) {
-  return +getRemainingOffShelfRecommendations(entries)
-    .slice(0, 3)
-    .reduce((total, item) => total + item.potentialPoints, 0)
-    .toFixed(1)
-}
-
-export function isPhotoSectionComplete(evidence: EvidenceState, offShelf: OffShelfEntry[] = []) {
-  return getMissingRequiredEvidence(evidence, offShelf).length === 0
-}
-
-export function isSectionComplete(section: ScorecardSection, state: AppState) {
-  if (section.kind === 'checklist') {
-    return getChecklistSectionProgress(section.id, state.checklist).complete
-  }
-
-  if (section.id === 'off-shelf-capture') {
-    return isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed, state.visitType)
-  }
-
-  if (section.id === 'photo-evidence') {
-    return isPhotoSectionComplete(state.evidence, state.offShelf)
-  }
-
-  return state.submitted
-}
-
-export function getCompletionPercent(state: AppState) {
-  if (state.submitted) return 100
-
-  const totalUnits = state.visitType === 'follow-up'
-    ? getRequiredPhotoCount() + 1
-    : getTotalChecks() + getRequiredPhotoCount() + 1
-  const completedUnits = state.visitType === 'follow-up'
-    ? getCapturedRequiredPhotos(state.evidence, state.offShelf) +
-      (isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed, state.visitType) ? 1 : 0)
-    : getAnsweredChecks(state.checklist) +
-      getCapturedRequiredPhotos(state.evidence, state.offShelf) +
-      (isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed, state.visitType) ? 1 : 0)
-
-  return Math.round((completedUnits / totalUnits) * 100)
-}
-
-export function getScorecardStatus(state: AppState): ScorecardStatus {
-  if (state.submitted) return 'completed'
-
-  const touched = state.visitType === 'follow-up'
-    ? hasStartedFollowUpReview(state.offShelf) ||
-      state.offShelfConfirmed ||
-      getCapturedRequiredPhotos(state.evidence, state.offShelf) > 0 ||
-      state.notes.trim().length > 0 ||
-      state.revisitRequired ||
-      state.shelfResetNeeded
-    : getAnsweredChecks(state.checklist) > 0 ||
-      state.offShelf.length > 0 ||
-      state.offShelfConfirmed ||
-      getCapturedRequiredPhotos(state.evidence, state.offShelf) > 0 ||
-      state.notes.trim().length > 0 ||
-      state.revisitRequired ||
-      state.shelfResetNeeded
-
-  if (!touched) return 'not-started'
-
-  const ready = state.visitType === 'follow-up'
-    ? isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed, state.visitType) &&
-      isPhotoSectionComplete(state.evidence, state.offShelf)
-    : getAnsweredChecks(state.checklist) === getTotalChecks() &&
-      isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed, state.visitType) &&
-      isPhotoSectionComplete(state.evidence, state.offShelf)
-
-  return ready ? 'ready-for-review' : 'in-progress'
-}
-
-export function getCurrentSection(state: AppState) {
-  const activeSections = getActiveScorecardSections(state.visitType)
-  const next = activeSections.find(section => !isSectionComplete(section, state))
-  return next ?? activeSections[activeSections.length - 1]
-}
-
-export function getCurrentSectionNumber(state: AppState) {
-  const current = getCurrentSection(state)
-  return getActiveScorecardSections(state.visitType).findIndex(section => section.id === current.id) + 1
-}
-
-export function getStepState(sectionId: string, state: AppState): StepState {
-  const activeSections = getActiveScorecardSections(state.visitType)
-  const sectionIndex = activeSections.findIndex(section => section.id === sectionId)
-  const currentIndex = getCurrentSectionNumber(state) - 1
-  const status = getScorecardStatus(state)
-  const section = activeSections[sectionIndex]
-
-  if (section && isSectionComplete(section, state)) return 'completed'
-  if (status === 'not-started') return sectionIndex === 0 ? 'pending' : 'locked'
-  if (sectionIndex === currentIndex) return 'in-progress'
-  if (sectionIndex === currentIndex + 1) return 'pending'
-  if (sectionIndex > currentIndex + 1) return 'locked'
-  return 'completed'
-}
-
-export function getExecutionScore(checklist: ChecklistState) {
-  return Math.round((getYesCount(checklist) / getTotalChecks()) * 100)
-}
-
-export function getChecklistImpactValue(weight: number, answer: ChecklistAnswer) {
-  if (answer === 'yes') return weight
-  if (answer === 'no') return -weight
-  return 0
-}
-
-export function getChecklistBasePlanScore(checklist: ChecklistState) {
-  const eligibleQuestions = checklistQuestions.filter(question => checklist[question.id] !== 'na')
-  const possibleWeight = eligibleQuestions.reduce((total, question) => total + question.weight, 0)
-
-  if (possibleWeight === 0) return 0
-
-  const earnedWeight = eligibleQuestions.reduce((total, question) => (
-    total + (checklist[question.id] === 'yes' ? question.weight : 0)
-  ), 0)
-
-  return clampScore((earnedWeight / possibleWeight) * 100)
-}
-
-export function getChecklistDecisionScore(checklist: ChecklistState, offShelf: OffShelfEntry[]) {
-  return +(getChecklistBasePlanScore(checklist) + getOffShelfIncrementalScore(offShelf)).toFixed(1)
-}
-
-export function getBasePlanLgorPoints(checklist: ChecklistState) {
-  return +((getChecklistBasePlanScore(checklist) / 100) * demoBasePlanLgorPct).toFixed(1)
-}
-
-export function getIncrementalRawLgorPct(entries: OffShelfEntry[]) {
-  return +entries
-    .filter(isActiveOffShelfEntry)
-    .filter(entry => entry.classification === 'incremental')
-    .reduce((total, entry) => total + entry.estimatedLgor, 0)
-    .toFixed(1)
-}
-
-export function getTotalScore(state: AppState) {
-  const executionScore = getChecklistBasePlanScore(state.checklist)
-  const basePlanLgorPoints = getBasePlanLgorPoints(state.checklist)
-  const incrementalScore = getOffShelfIncrementalScore(state.offShelf)
-
-  return Math.max(0, +(executionScore + basePlanLgorPoints + incrementalScore).toFixed(1))
-}
-
-export function getLgorPct(state: AppState) {
-  return +(getBasePlanLgorPoints(state.checklist) + getIncrementalRawLgorPct(state.offShelf)).toFixed(1)
-}
-
-function clampScore(value: number) {
-  return +Math.min(100, Math.max(0, value)).toFixed(1)
-}
-
-export function getRiskDelta(state: AppState) {
-  const noCount = Object.values(state.checklist).filter(answer => answer === 'no').length
-  const missingEvidence = getMissingRequiredEvidence(state.evidence, state.offShelf).length
-  const reducedRisk = getYesCount(state.checklist) * 1.4
-  return Math.round(-1 * Math.max(6, 18 + noCount * 4 + missingEvidence * 5 - reducedRisk))
-}
-
-export function getCurrentRiskValue(state: AppState) {
-  const mapMisses = checklistQuestions.filter(question => question.group === 'map' && state.checklist[question.id] !== 'yes').length
-  const missingTopItems = checklistQuestions.filter(question => question.group === 'pog' && state.checklist[question.id] !== 'yes').length
-  const displayMisses = checklistQuestions.filter(question => question.group === 'display' && state.checklist[question.id] === 'no').length
-  const lightDisplays = state.offShelf.filter(entry => parseOffShelfQuantity(entry.quantity) < 80).length
-  const emptyCalories = state.offShelf.filter(entry => entry.classification !== 'incremental').length
-  const missingEvidenceCount = getMissingRequiredEvidence(state.evidence, state.offShelf).length
-
-  return (
-    mapMisses * 180 +
-    missingTopItems * 140 +
-    (displayMisses + lightDisplays) * 120 +
-    emptyCalories * 90 +
-    missingEvidenceCount * 160
-  )
-}
-
-export function getQuestionStatus(answer: ChecklistAnswer) {
-  if (answer === 'no') {
-    return {
-      label: 'Action Required',
-      stripClass: 'bg-[#ba0517]',
-      statusClass: 'text-[#8e030f] bg-[#fef1ee] border-[#f9d6d0]',
-    }
-  }
-
-  if (answer === 'yes' || answer === 'na') {
-    return {
-      label: 'Complete',
-      stripClass: 'bg-[#2e844a]',
-      statusClass: 'text-[#1f5f33] bg-[#edf7ee] border-[#cde8d3]',
-    }
-  }
-
+export function estimateOffShelfImpact(params: {
+  product: { peakWeekUnits: number; baseLgor: number }
+  location: string
+  quantity: number | string
+  classification: string
+}) {
+  const qty = typeof params.quantity === 'string' ? Number.parseInt(params.quantity, 10) : params.quantity
+  const ratio = calculatePeakWeekRatio(qty, params.product.peakWeekUnits)
+  const multiplier = calculatePeakWeekMultiplier(ratio)
+  const isIncremental = params.classification === 'incremental'
+  const impactPoints = isIncremental ? calculateIncrementalItemPoints(params.product.baseLgor, multiplier) : 0
   return {
-    label: 'Not Answered',
-    stripClass: 'bg-[#c9cfd6]',
-    statusClass: 'text-[#52606d] bg-[#f4f6f9] border-[#dde3ea]',
+    normalizedQuantity: qty,
+    peakWeekUnits: params.product.peakWeekUnits,
+    peakWeekRatio: ratio,
+    multiplier: isIncremental ? multiplier : 0,
+    multiplierLabel: isIncremental ? `${multiplier}x peak week depth` : 'Base plan only',
+    impactPoints,
+    estimatedLgor: isIncremental ? params.product.baseLgor : 0,
   }
 }
 
-export function getQuestionEvidenceLabel(question: ChecklistQuestion, evidence: EvidenceState, offShelf: OffShelfEntry[] = []) {
-  const relatedEvidence = evidenceRequirements.filter(item => item.linkedQuestionIds.includes(question.id))
-  const requiredEvidence = relatedEvidence.filter(item => item.required)
-
-  if (requiredEvidence.length === 0) {
-    return 'No photo required'
-  }
-
-  const missing = requiredEvidence.some(item => !isEvidenceCaptured(item.id, evidence, offShelf))
-  return missing ? 'Photo required before submit' : 'Required photo captured'
+export function createInitialEvidenceState() { return {} }
+export function getTotalChecks() { return basePlanItems.length }
+export function getTotalSections() { return 7 }
+export function getAnsweredChecks(checklist: Record<string, ChecklistAnswer>) { return getAnsweredCount(checklist) }
+export function getRequiredPhotoCount() { return 0 }
+export function getCapturedRequiredPhotos() { return 0 }
+export function getMissingRequiredEvidence() { return [] }
+export function isPhotoSectionComplete() { return true }
+export function getCompletionPercent() { return 0 }
+export function getScorecardStatus() { return 'not-started' as const }
+export function getChecklistBasePlanScore(checklist: Record<string, ChecklistAnswer>) {
+  return calculateExecutionScore(checklist)
 }
-
-export function getLinkedQuestionTitles(questionIds: string[]) {
-  return checklistQuestions
-    .filter(question => questionIds.includes(question.id))
-    .map(question => question.title)
+export function getRiskDelta() { return 0 }
+export function getCurrentRiskValue() { return 0 }
+export function getChecklistImpactValue() { return 0 }
+export function getChecklistDecisionScore(checklist: Record<string, ChecklistAnswer>, entries: OffShelfEntry[]) {
+  return calculateFinalPssScore(calculateExecutionScore(checklist), calculateBasePlanLgorPoints(), calculateIncrementalOffShelfPoints(entries))
 }
+export function getBasePlanLgorPoints() { return calculateBasePlanLgorPoints() }
+export function getIncrementalRawLgorPct(entries: OffShelfEntry[]) { return calculateIncrementalRawLgorPercent(entries) }
+export function getActiveScorecardSections() { return [] }
+export function getChecklistSectionProgress() { return { questions: [], answered: 0, total: 0, started: false, complete: false } }
+export function isSectionComplete() { return false }
+export function getCurrentSection() { return null }
+export function getCurrentSectionNumber() { return 1 }
+export function getStepState() { return 'pending' as const }
+export function getPendingFollowUpEntries() { return [] }
+export function isOffShelfSectionComplete() { return false }
+export function parseOffShelfQuantity(q: number | string) { return typeof q === 'number' ? q : Number.parseInt(q, 10) }
+export function getOffShelfQuantityLabel(q: number | string) {
+  const n = typeof q === 'number' ? q : Number.parseInt(q, 10)
+  if (n >= 200) return 'Bulk'
+  if (n >= 120) return 'Large'
+  if (n >= 80) return 'Medium'
+  return 'Small'
+}
+export function getRemainingOffShelfRecommendations() { return [] }
+export function getPotentialAdditionalGain() { return 0 }
+export function getOffShelfOpportunityScore(entries: OffShelfEntry[]) {
+  return 100 + calculateIncrementalOffShelfPoints(entries)
+}
+export function getChecklistQuestionsForSection() { return [] }
+export function getChecklistSectionValue() { return 0 }
+export function getVisitTypeLabel() { return 'New' }
+export function getExecutionScore(checklist: Record<string, ChecklistAnswer>) { return calculateExecutionScore(checklist) }
+export function getQuestionStatus(answer: ChecklistAnswer) {
+  if (answer === 'no') return { label: 'Action Required', stripClass: 'bg-red-500', statusClass: 'text-red-700 bg-red-50 border-red-200' }
+  if (answer === 'yes' || answer === 'na' || answer === 'partial') return { label: 'Complete', stripClass: 'bg-green-500', statusClass: 'text-green-700 bg-green-50 border-green-200' }
+  return { label: 'Not Answered', stripClass: 'bg-gray-300', statusClass: 'text-gray-600 bg-gray-50 border-gray-200' }
+}
+export function getQuestionEvidenceLabel() { return 'No photo required' }
+export function getLinkedQuestionTitles() { return [] }
+duplicate void 0
