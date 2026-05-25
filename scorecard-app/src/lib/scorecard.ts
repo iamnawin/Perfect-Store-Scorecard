@@ -362,8 +362,8 @@ export function getChecklistDecisionScore(checklist: ChecklistState, offShelf: O
   return +(getChecklistBasePlanScore(checklist) + getOffShelfIncrementalScore(offShelf)).toFixed(1)
 }
 
-export function getBasePlanLgorPoints(checklist: ChecklistState) {
-  return +((getChecklistBasePlanScore(checklist) / 100) * demoBasePlanLgorPct).toFixed(1)
+export function getBasePlanLgorPoints(_checklist?: ChecklistState) {
+  return demoBasePlanLgorPct
 }
 
 export function getIncrementalRawLgorPct(entries: OffShelfEntry[]) {
@@ -383,7 +383,7 @@ export function getTotalScore(state: AppState) {
 }
 
 export function getLgorPct(state: AppState) {
-  return +(getBasePlanLgorPoints(state.checklist) + getIncrementalRawLgorPct(state.offShelf)).toFixed(1)
+  return +(demoBasePlanLgorPct + getIncrementalRawLgorPct(state.offShelf)).toFixed(1)
 }
 
 function clampScore(value: number) {
