@@ -1,2 +1,2 @@
-// Legacy screen — replaced by IncrementalOffShelfScreen in MVP rebuild
+// Legacy screen — replaced by IncrementalOffShelfScreen
 export function OffShelfScreen() { return null }

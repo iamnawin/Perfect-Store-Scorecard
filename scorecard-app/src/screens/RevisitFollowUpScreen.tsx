@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/useApp'
-import { generateRecommendations, generateRevisitSuggestions } from '../lib/scorecard'
+import { generateRevisitSuggestions, generateRecommendations } from '../lib/scorecard'
 import type { RevisitStatus } from '../types'
 
-const REVISIT_REASONS = [
+const reasonOptions = [
   'Peak week demand not supported',
   'High-volume SKU missing off-shelf',
   'Not enough quantity placed',
@@ -17,10 +17,10 @@ const REVISIT_REASONS = [
   'Other',
 ]
 
-const STATUS_COLORS: Record<RevisitStatus, string> = {
-  'Open': 'bg-red-100 text-red-700',
-  'In Progress': 'bg-yellow-100 text-yellow-700',
-  'Resolved': 'bg-green-100 text-green-700',
+const statusColors: Record<RevisitStatus, string> = {
+  Open: 'bg-red-100 text-red-700',
+  'In Progress': 'bg-blue-100 text-blue-700',
+  Resolved: 'bg-green-100 text-green-700',
   'Unable to Resolve': 'bg-gray-100 text-gray-600',
 }
 
@@ -36,236 +36,199 @@ export function RevisitFollowUpScreen() {
     offShelfItems,
   } = useApp()
 
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [reason, setReason] = useState('')
-  const [itemNotes, setItemNotes] = useState('')
+  const [reason, setReason] = useState(reasonOptions[0])
   const [owner, setOwner] = useState('')
   const [dueDate, setDueDate] = useState('')
+  const [itemNotes, setItemNotes] = useState('')
 
   const recommendations = generateRecommendations(executionAnswers, offShelfItems)
   const suggestions = generateRevisitSuggestions(recommendations, offShelfItems)
+
   const openItems = revisitItems.filter(r => r.status === 'Open' || r.status === 'In Progress')
   const resolvedItems = revisitItems.filter(r => r.status === 'Resolved' || r.status === 'Unable to Resolve')
 
-  function handleAddManual() {
-    if (!reason) return
+  function handleAdd() {
     addRevisitItem({
+      id: crypto.randomUUID(),
       reason,
-      notes: itemNotes,
-      assignedOwner: owner || undefined,
-      dueDate: dueDate || undefined,
+      assignedOwner: owner,
+      dueDate,
       status: 'Open',
+      notes: itemNotes,
     })
-    setReason('')
-    setItemNotes('')
     setOwner('')
     setDueDate('')
-    setShowAddForm(false)
-    if (!revisitRequired) setRevisitRequired(true)
+    setItemNotes('')
   }
 
-  function addFromSuggestion(suggestion: (typeof suggestions)[0]) {
+  function handleAddSuggestion(suggestion: typeof suggestions[0]) {
     addRevisitItem({
-      skuId: suggestion.skuId,
-      displayLocation: suggestion.displayLocation,
+      id: crypto.randomUUID(),
       reason: suggestion.reason,
-      currentQuantity: suggestion.currentQuantity,
-      recommendedQuantity: suggestion.recommendedQuantity,
-      quantityGap: suggestion.quantityGap,
-      peakWeekUnits: suggestion.peakWeekUnits,
-      notes: '',
+      sku: suggestion.sku,
+      displayLocation: suggestion.displayLocation,
+      assignedOwner: '',
+      dueDate: '',
       status: 'Open',
+      notes: '',
     })
-    if (!revisitRequired) setRevisitRequired(true)
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-28">
-      <div className="max-w-md mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-5">
-          <button onClick={() => navigate('/scorecard/summary')} className="text-blue-600 text-sm font-medium">← Summary</button>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold text-gray-900">Revisit / Follow-Up</h1>
-            <p className="text-xs text-gray-400">{openItems.length} open · {resolvedItems.length} resolved</p>
-          </div>
+    <div className="min-h-screen bg-gray-50 flex justify-center">
+      <div className="w-full max-w-sm bg-white min-h-screen flex flex-col">
+        <div className="bg-blue-700 text-white px-4 pt-10 pb-4">
+          <button onClick={() => navigate('/scorecard/summary')} className="text-blue-200 text-sm mb-3">← Back</button>
+          <h1 className="text-lg font-bold">Revisit Follow-Up</h1>
+          <p className="text-xs text-blue-200 mt-1">Create accountability for gaps that need follow-up</p>
         </div>
 
-        {/* Revisit Required Toggle */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-5 flex items-center justify-between">
-          <div>
-            <p className="font-semibold text-gray-900 text-sm">Revisit Required</p>
-            <p className="text-xs text-gray-400">Flag this store for follow-up execution</p>
-          </div>
-          <button
-            onClick={() => setRevisitRequired(!revisitRequired)}
-            className={`w-12 h-6 rounded-full transition-colors ${revisitRequired ? 'bg-orange-500' : 'bg-gray-200'}`}
-          >
-            <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform mx-0.5 ${revisitRequired ? 'translate-x-6' : 'translate-x-0'}`} />
-          </button>
-        </div>
-
-        {/* MVP Rule note */}
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-5 text-xs text-blue-700">
-          Revisit items create visibility and accountability. They do not automatically change the score. DM / Territory Lead can see all open revisit items.
-        </div>
-
-        {/* System-suggested items */}
-        {suggestions.length > 0 && revisitItems.length === 0 && (
-          <div className="mb-5">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">System-Suggested Revisit Items</p>
-            <div className="space-y-2">
-              {suggestions.slice(0, 4).map((sug, i) => (
-                <div key={i} className="bg-white border border-orange-100 rounded-xl p-3">
-                  <p className="text-xs text-gray-700">{sug.reason}</p>
-                  {sug.quantityGap !== undefined && (
-                    <p className="text-xs text-gray-400 mt-0.5">Gap: {sug.quantityGap} units</p>
-                  )}
-                  <button
-                    onClick={() => addFromSuggestion(sug)}
-                    className="mt-2 text-xs text-blue-600 font-semibold border border-blue-200 rounded-lg px-3 py-1"
-                  >
-                    Add to Revisit List
-                  </button>
-                </div>
-              ))}
+        <div className="flex-1 px-4 py-4 space-y-4">
+          {/* Revisit required toggle */}
+          <div className="border border-gray-200 rounded-lg p-3 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-gray-800">Revisit Required</p>
+              <p className="text-xs text-gray-500">Flag this store for follow-up</p>
             </div>
+            <button
+              onClick={() => setRevisitRequired(!revisitRequired)}
+              className={`w-12 h-6 rounded-full transition-colors ${revisitRequired ? 'bg-orange-500' : 'bg-gray-300'}`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform mx-0.5 ${revisitRequired ? 'translate-x-6' : ''}`} />
+            </button>
           </div>
-        )}
 
-        {/* Open items */}
-        {openItems.length > 0 && (
-          <div className="mb-5">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Open Items</p>
-            <div className="space-y-3">
-              {openItems.map(item => (
-                <div key={item.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-800">{item.reason}</p>
-                      {item.displayLocation && <p className="text-xs text-gray-400 mt-0.5">{item.displayLocation}</p>}
-                      {item.currentQuantity !== undefined && (
-                        <p className="text-xs text-gray-400">Current: {item.currentQuantity} units · Gap: {item.quantityGap ?? '?'} units</p>
-                      )}
-                      {item.assignedOwner && <p className="text-xs text-gray-400">Owner: {item.assignedOwner}</p>}
-                      {item.notes && <p className="text-xs text-gray-500 mt-1">{item.notes}</p>}
+          {/* MVP rule */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-600">
+            <p className="font-semibold text-gray-700 mb-1">MVP Rule</p>
+            <p>Revisit items create visibility and accountability. They do not automatically change the numeric score.</p>
+          </div>
+
+          {/* System-suggested items */}
+          {suggestions.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">System Suggestions</p>
+              <div className="space-y-2">
+                {suggestions.map((sug, i) => (
+                  <div key={i} className="border border-orange-200 bg-orange-50 rounded-lg p-3">
+                    <p className="text-xs text-orange-800">{sug.reason}</p>
+                    {sug.sku && <p className="text-xs text-orange-600 mt-0.5">SKU: {sug.sku}</p>}
+                    <button
+                      onClick={() => handleAddSuggestion(sug)}
+                      className="mt-2 text-xs text-orange-700 border border-orange-400 px-2 py-1 rounded"
+                    >
+                      Add to Revisit List
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Manual add form */}
+          <div className="border border-gray-200 rounded-lg p-3 space-y-3">
+            <p className="text-sm font-semibold text-gray-800">Add Revisit Item</p>
+            <div>
+              <label className="text-xs text-gray-500 block mb-1">Reason</label>
+              <select
+                value={reason}
+                onChange={e => setReason(e.target.value)}
+                className="w-full border border-gray-200 rounded p-2 text-xs"
+              >
+                {reasonOptions.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 block mb-1">Assigned Owner</label>
+              <input
+                type="text"
+                value={owner}
+                onChange={e => setOwner(e.target.value)}
+                placeholder="Name or role"
+                className="w-full border border-gray-200 rounded p-2 text-xs"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 block mb-1">Due Date</label>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={e => setDueDate(e.target.value)}
+                className="w-full border border-gray-200 rounded p-2 text-xs"
+              />
+            </div>
+            <textarea
+              value={itemNotes}
+              onChange={e => setItemNotes(e.target.value)}
+              placeholder="Notes…"
+              className="w-full border border-gray-200 rounded p-2 text-xs resize-none h-14"
+            />
+            <button
+              onClick={handleAdd}
+              className="w-full bg-blue-700 text-white py-2 rounded-lg text-sm font-semibold"
+            >
+              Add Revisit Item
+            </button>
+          </div>
+
+          {/* Open items */}
+          {openItems.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Open Items ({openItems.length})</p>
+              <div className="space-y-2">
+                {openItems.map(item => (
+                  <div key={item.id} className="border border-gray-200 rounded-lg p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-800">{item.reason}</p>
+                        {item.sku && <p className="text-xs text-gray-500 mt-0.5">{item.sku}</p>}
+                        {item.assignedOwner && <p className="text-xs text-gray-400">Owner: {item.assignedOwner}</p>}
+                      </div>
+                      <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 ${statusColors[item.status]}`}>
+                        {item.status}
+                      </span>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold shrink-0 ${STATUS_COLORS[item.status]}`}>
-                      {item.status}
-                    </span>
+                    <div className="flex gap-2 mt-2">
+                      {(['In Progress', 'Resolved', 'Unable to Resolve'] as RevisitStatus[]).map(s => (
+                        <button
+                          key={s}
+                          onClick={() => updateRevisitItemStatus(item.id, s)}
+                          className="text-xs border border-gray-300 text-gray-600 px-2 py-0.5 rounded"
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="mt-3 flex gap-2">
-                    <button
-                      onClick={() => updateRevisitItemStatus(item.id, 'In Progress')}
-                      className="flex-1 border border-yellow-200 text-yellow-700 rounded-lg py-1.5 text-xs font-semibold"
-                    >
-                      In Progress
-                    </button>
-                    <button
-                      onClick={() => updateRevisitItemStatus(item.id, 'Resolved')}
-                      className="flex-1 border border-green-200 text-green-700 rounded-lg py-1.5 text-xs font-semibold"
-                    >
-                      Resolved
-                    </button>
-                    <button
-                      onClick={() => updateRevisitItemStatus(item.id, 'Unable to Resolve')}
-                      className="flex-1 border border-gray-200 text-gray-600 rounded-lg py-1.5 text-xs font-semibold"
-                    >
-                      Unable
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Resolved items */}
-        {resolvedItems.length > 0 && (
-          <div className="mb-5">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Resolved</p>
-            <div className="space-y-2">
-              {resolvedItems.map(item => (
-                <div key={item.id} className="bg-gray-50 rounded-xl border border-gray-100 p-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-500">{item.reason}</p>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${STATUS_COLORS[item.status]}`}>
-                      {item.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Add manual item */}
-        {showAddForm ? (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
-            <p className="font-semibold text-gray-900 mb-4">Add Revisit Item</p>
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs font-medium text-gray-500 block mb-1">Reason</label>
-                <select
-                  className="w-full border border-gray-200 rounded-lg p-2.5 text-sm text-gray-800 focus:outline-none focus:border-blue-400"
-                  value={reason}
-                  onChange={e => setReason(e.target.value)}
-                >
-                  <option value="">Select reason…</option>
-                  {REVISIT_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-500 block mb-1">Assigned Owner (optional)</label>
-                <input
-                  className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:border-blue-400"
-                  placeholder="e.g. Sarah M."
-                  value={owner}
-                  onChange={e => setOwner(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-500 block mb-1">Due Date (optional)</label>
-                <input
-                  type="date"
-                  className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:border-blue-400"
-                  value={dueDate}
-                  onChange={e => setDueDate(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-500 block mb-1">Notes</label>
-                <textarea
-                  className="w-full border border-gray-200 rounded-lg p-2.5 text-sm resize-none focus:outline-none focus:border-blue-400"
-                  rows={2}
-                  placeholder="Describe the gap or action needed…"
-                  value={itemNotes}
-                  onChange={e => setItemNotes(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => setShowAddForm(false)} className="flex-1 border border-gray-200 text-gray-600 rounded-xl py-3 font-medium text-sm">Cancel</button>
-                <button onClick={handleAddManual} disabled={!reason} className="flex-1 bg-blue-600 disabled:opacity-50 text-white rounded-xl py-3 font-semibold text-sm">Add Item</button>
+                ))}
               </div>
             </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="w-full bg-white border-2 border-dashed border-gray-200 text-gray-600 rounded-xl py-3.5 font-medium text-sm hover:border-blue-200 transition-colors"
-          >
-            + Add Revisit Item
-          </button>
-        )}
-      </div>
+          )}
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-4">
-        <div className="max-w-md mx-auto">
+          {/* Resolved items */}
+          {resolvedItems.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Resolved ({resolvedItems.length})</p>
+              <div className="space-y-2">
+                {resolvedItems.map(item => (
+                  <div key={item.id} className="border border-gray-100 bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-xs text-gray-500 flex-1">{item.reason}</p>
+                      <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 ${statusColors[item.status]}`}>
+                        {item.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <button
             onClick={() => navigate('/')}
-            className="w-full bg-blue-600 text-white rounded-xl py-3.5 font-semibold text-sm"
+            className="w-full bg-blue-700 text-white py-3 rounded-lg font-semibold text-sm"
           >
-            Back to Visit →
+            Back to Visit
           </button>
         </div>
       </div>

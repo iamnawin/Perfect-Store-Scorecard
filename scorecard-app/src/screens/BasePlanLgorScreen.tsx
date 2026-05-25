@@ -1,111 +1,113 @@
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/useApp'
-import { demoBasePlanLgorPercent, basePlanItems } from '../data/mock'
+import { demoBasePlanLgorPercent } from '../data/mock'
 
 export function BasePlanLgorScreen() {
   const navigate = useNavigate()
-  const { executionScore, basePlanLgorPoints, executionAnswers } = useApp()
+  const { executionScore, basePlanLgorPoints, finalScore, lgorRepPercent, executionAnswers } = useApp()
 
-  const yesCount = basePlanItems.filter(item => executionAnswers[item.id] === 'yes').length
-  const partialCount = basePlanItems.filter(item => executionAnswers[item.id] === 'partial').length
-  const noCount = basePlanItems.filter(item => executionAnswers[item.id] === 'no').length
-  const naCount = basePlanItems.filter(item => executionAnswers[item.id] === 'na').length
+  const yesCount = Object.values(executionAnswers).filter(a => a === 'yes').length
+  const partialCount = Object.values(executionAnswers).filter(a => a === 'partial').length
+  const noCount = Object.values(executionAnswers).filter(a => a === 'no').length
+  const naCount = Object.values(executionAnswers).filter(a => a === 'na').length
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-28">
-      <div className="max-w-md mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-5">
-          <button onClick={() => navigate('/scorecard/base-plan')} className="text-blue-600 text-sm font-medium">← Execution</button>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold text-gray-900">Base Plan LGOR</h1>
-            <p className="text-xs text-gray-400">Quarterly business coverage from base plan</p>
-          </div>
+    <div className="min-h-screen bg-gray-50 flex justify-center">
+      <div className="w-full max-w-sm bg-white min-h-screen flex flex-col">
+        <div className="bg-blue-700 text-white px-4 pt-10 pb-4">
+          <button onClick={() => navigate('/scorecard/base-plan')} className="text-blue-200 text-sm mb-3">← Back</button>
+          <h1 className="text-lg font-bold">Base Plan LGOR Review</h1>
+          <p className="text-xs text-blue-200 mt-1">Business coverage from base plan setup</p>
         </div>
 
-        {/* LGOR Points Card */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Base Plan LGOR Points</p>
-          <div className="flex items-end gap-2 mb-2">
-            <p className="text-4xl font-bold text-gray-900">{basePlanLgorPoints.toFixed(1)}</p>
-            <p className="text-lg text-gray-400 pb-1">pts</p>
-          </div>
-          <p className="text-sm text-gray-500">
-            Base Plan LGOR % of <span className="font-semibold text-gray-800">{demoBasePlanLgorPercent}%</span> converts directly to <span className="font-semibold text-gray-800">{basePlanLgorPoints.toFixed(1)} points</span>
-          </p>
-          <div className="mt-3 bg-gray-50 rounded-lg p-3">
-            <p className="text-xs font-mono text-gray-600">Base Plan LGOR Points = Base Plan LGOR %</p>
-            <p className="text-xs font-mono text-gray-600 mt-1">{demoBasePlanLgorPercent}% = {basePlanLgorPoints.toFixed(1)} pts</p>
-          </div>
-          <p className="text-xs text-gray-400 italic mt-3">Demo value — pending business confirmation</p>
-        </div>
-
-        {/* Formula Explainer */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">How Base Plan LGOR % is Calculated</p>
-          <div className="space-y-2 text-sm text-gray-600">
-            <p>Base Plan LGOR % comes from business data, calculated as:</p>
-            <div className="bg-gray-50 rounded-lg p-3 font-mono text-xs">
-              <p>Business value of base-plan SKUs</p>
-              <p>÷ Total quarterly business value</p>
-              <p>× 100</p>
+        <div className="flex-1 px-4 py-4 space-y-4">
+          {/* Base Plan LGOR Points */}
+          <div className="border border-blue-200 bg-blue-50 rounded-lg p-4">
+            <p className="text-xs text-blue-600 font-semibold uppercase tracking-wide mb-2">Base Plan LGOR Points</p>
+            <div className="flex items-end gap-2">
+              <p className="text-4xl font-bold text-blue-700">{basePlanLgorPoints.toFixed(1)}</p>
+              <p className="text-sm text-gray-500 mb-1">pts</p>
             </div>
-            <p className="text-xs text-gray-500">Example: $26,300 / $100,000 × 100 = 26.3%</p>
+            <p className="text-xs text-gray-600 mt-2">
+              Base Plan LGOR % ({demoBasePlanLgorPercent}%) → {basePlanLgorPoints.toFixed(1)} pts
+            </p>
+            <p className="text-xs text-gray-500 mt-1">Direct 1:1 conversion</p>
+            <p className="text-xs text-amber-600 italic mt-1">Demo value — pending business confirmation</p>
           </div>
-          <div className="mt-4 space-y-2 text-xs text-gray-500">
-            <p className="font-semibold text-gray-600">Open Questions (pending business confirmation)</p>
-            <ul className="space-y-1 list-disc list-inside">
-              <li>What is the approved source for LGOR %? (POS, forecast, prior-year?)</li>
-              <li>What is the denominator? (Total Scotts quarterly, selected category, MAP-eligible SKUs?)</li>
+
+          {/* Formula explainer */}
+          <div className="border border-gray-200 rounded-lg p-3 space-y-2">
+            <p className="text-xs font-semibold text-gray-700">How this is calculated</p>
+            <p className="text-xs text-gray-600">
+              Base Plan LGOR % represents the quarterly business value of SKUs that are
+              supported by the base plan setup, as a percentage of total selected quarterly business.
+            </p>
+            <div className="bg-gray-50 rounded p-2 text-xs font-mono text-gray-700 space-y-1">
+              <p>Base Plan LGOR % = Base Plan SKU Business</p>
+              <p className="pl-4">/ Total Quarterly Business × 100</p>
+              <p className="mt-1">= $26,300 / $100,000 × 100 = 26.3%</p>
+            </div>
+            <p className="text-xs text-amber-600 italic">Demo values — pending business confirmation</p>
+          </div>
+
+          {/* Open questions */}
+          <div className="border border-orange-200 bg-orange-50 rounded-lg p-3">
+            <p className="text-xs font-semibold text-orange-800 mb-1">Open Business Questions</p>
+            <ul className="text-xs text-orange-700 space-y-1 list-disc list-inside">
+              <li>LGOR source: Dollars? Units? POS? Forecast?</li>
+              <li>Denominator: Total Scotts business? Category? MAP-eligible set?</li>
+              <li>Banner / store / quarter-specific adjustments?</li>
             </ul>
           </div>
-        </div>
 
-        {/* Execution Summary */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Execution Summary</p>
-          <div className="grid grid-cols-4 gap-2 text-center">
-            <div className="bg-green-50 rounded-lg p-2">
-              <p className="text-xl font-bold text-green-600">{yesCount}</p>
-              <p className="text-xs text-gray-400">Yes</p>
+          {/* Execution summary */}
+          <div className="border border-gray-200 rounded-lg p-3">
+            <p className="text-xs font-semibold text-gray-700 mb-2">Execution Summary</p>
+            <div className="grid grid-cols-4 gap-2 text-center text-xs">
+              <div>
+                <p className="text-lg font-bold text-green-600">{yesCount}</p>
+                <p className="text-gray-500">Yes</p>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-yellow-500">{partialCount}</p>
+                <p className="text-gray-500">Partial</p>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-red-500">{noCount}</p>
+                <p className="text-gray-500">No</p>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-400">{naCount}</p>
+                <p className="text-gray-500">N/A</p>
+              </div>
             </div>
-            <div className="bg-yellow-50 rounded-lg p-2">
-              <p className="text-xl font-bold text-yellow-500">{partialCount}</p>
-              <p className="text-xs text-gray-400">Partial</p>
-            </div>
-            <div className="bg-red-50 rounded-lg p-2">
-              <p className="text-xl font-bold text-red-500">{noCount}</p>
-              <p className="text-xs text-gray-400">No</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-2">
-              <p className="text-xl font-bold text-gray-400">{naCount}</p>
-              <p className="text-xs text-gray-400">N/A</p>
+            <div className="border-t border-gray-100 mt-3 pt-2 flex justify-between text-xs">
+              <span className="text-gray-500">Execution Score</span>
+              <span className="font-bold text-gray-900">{executionScore.toFixed(1)} pts</span>
             </div>
           </div>
-          <div className="mt-3 flex items-center justify-between">
-            <p className="text-sm text-gray-500">Execution Score</p>
-            <p className="font-bold text-gray-900">{executionScore.toFixed(1)} / 100</p>
-          </div>
-        </div>
 
-        {/* Key distinction */}
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-          <p className="text-xs font-semibold text-blue-700 mb-2">Score vs LGOR Rep %</p>
-          <div className="space-y-1 text-xs text-blue-600">
-            <p>● <span className="font-semibold">Final PSS Score</span> = internal competitive score (can exceed 100)</p>
-            <p>● <span className="font-semibold">LGOR Rep %</span> = business coverage percentage represented off-shelf</p>
+          {/* Key distinction */}
+          <div className="border border-gray-200 rounded-lg p-3 space-y-2">
+            <p className="text-xs font-semibold text-gray-700">Final Score vs LGOR Rep %</p>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-500">Final PSS Score</span>
+              <span className="font-bold text-gray-900">{finalScore.toFixed(1)}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-500">LGOR Rep %</span>
+              <span className="font-bold text-blue-700">{lgorRepPercent.toFixed(1)}%</span>
+            </div>
+            <p className="text-xs text-gray-500 italic">
+              Score = internal competitive metric · LGOR Rep % = business coverage percentage
+            </p>
           </div>
-        </div>
-      </div>
 
-      {/* Bottom action bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-4">
-        <div className="max-w-md mx-auto">
           <button
             onClick={() => navigate('/scorecard/incremental')}
-            className="w-full bg-blue-600 text-white rounded-xl py-3.5 font-semibold text-sm"
+            className="w-full bg-blue-700 text-white py-3 rounded-lg font-semibold text-sm"
           >
-            Next: Incremental / Off-Shelf Capture →
+            Next: Incremental Off-Shelf →
           </button>
         </div>
       </div>

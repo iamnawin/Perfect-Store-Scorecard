@@ -1,2 +1,2 @@
-// Legacy screen — replaced by BasePlanExecutionScreen in MVP rebuild
+// Legacy screen — replaced by BasePlanExecutionScreen
 export function ChecklistScreen() { return null }

@@ -1,2 +1,2 @@
-// Legacy screen — replaced by ScoreSummaryScreen in MVP rebuild
+// Legacy screen — replaced by ScoreSummaryScreen
 export function SummaryScreen() { return null }

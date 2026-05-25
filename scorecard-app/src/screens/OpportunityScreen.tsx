@@ -5,74 +5,78 @@ import { generateOpportunityItems } from '../lib/scorecard'
 export function OpportunityScreen() {
   const navigate = useNavigate()
   const { offShelfItems } = useApp()
+
   const opportunities = generateOpportunityItems(offShelfItems)
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-28">
-      <div className="max-w-md mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-5">
-          <button onClick={() => navigate('/scorecard/incremental')} className="text-blue-600 text-sm font-medium">← Off-Shelf</button>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold text-gray-900">Opportunity Layer</h1>
-            <p className="text-xs text-gray-400">{opportunities.length} recommended SKU{opportunities.length !== 1 ? 's' : ''} not yet placed</p>
-          </div>
+    <div className="min-h-screen bg-gray-50 flex justify-center">
+      <div className="w-full max-w-sm bg-white min-h-screen flex flex-col">
+        <div className="bg-blue-700 text-white px-4 pt-10 pb-4">
+          <button onClick={() => navigate('/scorecard/incremental')} className="text-blue-200 text-sm mb-3">← Back</button>
+          <h1 className="text-lg font-bold">Opportunity SKUs</h1>
+          <p className="text-xs text-blue-200 mt-1">Recommended SKUs not yet off-shelf</p>
         </div>
 
-        {/* Explainer */}
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-5 text-xs text-blue-700">
-          <p className="font-semibold mb-1">Opportunity = Recommended SKUs − Current Off-Shelf SKUs</p>
-          <p>Adding an opportunity SKU off-shelf and retaking the scorecard will increase Incremental Off-Shelf Points.</p>
-          <p className="mt-1 font-medium">Opportunities are guidance only — they do not change the current score.</p>
-        </div>
-
-        {opportunities.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-green-100 shadow-sm p-6 text-center">
-            <p className="text-3xl mb-2">✅</p>
-            <p className="font-semibold text-green-700">All recommended SKUs are off-shelf!</p>
-            <p className="text-xs text-gray-400 mt-1">No opportunity gaps for this visit.</p>
+        <div className="flex-1 px-4 py-4 space-y-4">
+          {/* Guidance note */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
+            <p className="font-semibold mb-1">Guidance only</p>
+            <p>These SKUs will not change your current score. Add them via Incremental Off-Shelf to earn points.</p>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {opportunities.map(opp => (
-              <div key={opp.skuId} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold">Rank #{opp.rank}</span>
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">{opp.lgorPercent}% LGOR</span>
+
+          {opportunities.length === 0 ? (
+            <div className="border border-green-200 bg-green-50 rounded-lg p-4 text-center">
+              <p className="text-sm font-semibold text-green-700">All recommended SKUs are off-shelf!</p>
+              <p className="text-xs text-green-600 mt-1">Great coverage on priority products.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {opportunities.map(opp => (
+                <div key={opp.skuId} className="border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="bg-blue-700 text-white text-xs font-bold px-1.5 py-0.5 rounded">
+                          #{opp.rank}
+                        </span>
+                        <span className="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200">
+                          {opp.lgorPercent}% LGOR
+                        </span>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-900">{opp.productName}</p>
                     </div>
-                    <p className="font-semibold text-gray-900 text-sm">{opp.productName}</p>
-                    <p className="text-xs text-gray-400 mt-1">Peak week: {opp.peakWeekUnits} units</p>
-                    <p className="text-xs text-gray-400">Quarterly: {opp.quarterlyUnits.toLocaleString()} units · ${opp.quarterlyDollarValue.toLocaleString()}</p>
                   </div>
+                  <div className="grid grid-cols-3 gap-2 mt-2 text-xs text-gray-600">
+                    <div>
+                      <p className="text-gray-400">Peak Week</p>
+                      <p className="font-semibold">{opp.peakWeekUnits} ea</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Quarterly</p>
+                      <p className="font-semibold">{opp.quarterlyUnits} units</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Value</p>
+                      <p className="font-semibold">${(opp.quarterlyDollarValue / 1000).toFixed(1)}K</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-amber-600 italic mt-1">Demo values — pending business confirmation</p>
+                  <button
+                    onClick={() => navigate('/scorecard/incremental')}
+                    className="mt-2 w-full border border-blue-700 text-blue-700 text-xs py-1.5 rounded"
+                  >
+                    Add to Off-Shelf Capture →
+                  </button>
                 </div>
-                <div className="mt-3 bg-gray-50 rounded-lg p-2.5">
-                  <p className="text-xs text-gray-600">
-                    <span className="font-medium">Recommended action:</span> {opp.recommendedAction}
-                  </p>
-                </div>
-                <button
-                  onClick={() => navigate('/scorecard/incremental')}
-                  className="mt-3 w-full border border-blue-200 text-blue-600 rounded-lg py-2 text-xs font-semibold"
-                >
-                  Add to Off-Shelf Capture
-                </button>
-                <p className="text-xs text-gray-400 italic text-center mt-1">Demo values — pending business confirmation</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
 
-      {/* Bottom action bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-4">
-        <div className="max-w-md mx-auto">
           <button
             onClick={() => navigate('/scorecard/recommendations')}
-            className="w-full bg-blue-600 text-white rounded-xl py-3.5 font-semibold text-sm"
+            className="w-full bg-blue-700 text-white py-3 rounded-lg font-semibold text-sm"
           >
-            Next: Demand Signals →
+            Next: Recommendations →
           </button>
         </div>
       </div>

@@ -1,2 +1,2 @@
-// Legacy screen — replaced by VisitStartScreen in MVP rebuild
+// Legacy screen — replaced by VisitStartScreen
 export function EntryScreen() { return null }

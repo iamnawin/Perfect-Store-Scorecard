@@ -1,99 +1,74 @@
+import { displayCapacity, skuData } from '../data/mock'
 import type {
   BasePlanItem,
   ChecklistAnswer,
-  ConversionData,
   OffShelfEntry,
-  OffShelfStatus,
   OpportunityItem,
-  QuantityUnit,
   RecommendationItem,
   RevisitItem,
   ScorecardSnapshot,
-  SkuProduct,
 } from '../types'
 import { basePlanItems, demoBasePlanLgorPercent, displayCapacity, skuData } from '../data/mock'
 
-// ── Execution Score ───────────────────────────────────────────────────────────
-// Yes = full points, Partial = configurable credit (default 50%), No = 0, N/A = excluded from denominator
+// ─── Execution Score ────────────────────────────────────────────────────────
 
 export function calculateExecutionScore(
   answers: Record<string, ChecklistAnswer>,
+  items: BasePlanItem[],
   partialCreditPercent = 0.5,
 ): number {
-  const eligible = basePlanItems.filter(item => answers[item.id] !== 'na')
-  if (eligible.length === 0) return 0
+  let earned = 0
+  let denominator = 0
 
-  const possiblePoints = eligible.reduce((sum, item) => sum + item.possiblePoints, 0)
-  if (possiblePoints === 0) return 0
-
-  const earnedPoints = eligible.reduce((sum, item) => {
+  for (const item of items) {
     const answer = answers[item.id]
-    if (answer === 'yes') return sum + item.possiblePoints
-    if (answer === 'partial') return sum + item.possiblePoints * partialCreditPercent
-    return sum
-  }, 0)
+    if (answer === 'na' || answer === null) continue
+    denominator += item.pointsMax
+    if (answer === 'yes') earned += item.pointsMax
+    else if (answer === 'partial') earned += item.pointsMax * partialCreditPercent
+  }
 
-  return +((earnedPoints / possiblePoints) * 100).toFixed(1)
+  return Math.round(earned * 10) / 10
 }
 
-export function getExecutionEarnedPoints(
-  answers: Record<string, ChecklistAnswer>,
-  partialCreditPercent = 0.5,
-): number {
-  return +basePlanItems.reduce((sum, item) => {
-    const answer = answers[item.id]
-    if (answer === 'yes') return sum + item.possiblePoints
-    if (answer === 'partial') return sum + item.possiblePoints * partialCreditPercent
-    return sum
-  }, 0).toFixed(1)
+// ─── Base Plan LGOR Points ──────────────────────────────────────────────────
+
+// 1:1 direct conversion — demo value pending business confirmation
+export function calculateBasePlanLgorPoints(basePlanLgorPercent: number): number {
+  return Math.round(basePlanLgorPercent * 10) / 10
 }
 
-export function getAnsweredCount(answers: Record<string, ChecklistAnswer>): number {
-  return basePlanItems.filter(item => answers[item.id] !== null && answers[item.id] !== undefined).length
-}
-
-export function getTotalItemCount(): number {
-  return basePlanItems.length
-}
-
-export function isExecutionComplete(answers: Record<string, ChecklistAnswer>): boolean {
-  return getAnsweredCount(answers) === getTotalItemCount()
-}
-
-// ── Base Plan LGOR ────────────────────────────────────────────────────────────
-// Base Plan LGOR Points = Base Plan LGOR % (direct 1:1 conversion)
-
-export function calculateBasePlanLgorPoints(basePlanLgorPercent = demoBasePlanLgorPercent): number {
-  return +basePlanLgorPercent.toFixed(1)
-}
-
-// ── Quantity Conversion ───────────────────────────────────────────────────────
+// ─── Quantity Conversion ────────────────────────────────────────────────────
 
 export function convertQuantityToUnits(
   quantity: number,
-  unit: QuantityUnit,
-  conversion: ConversionData,
+  unit: 'eaches' | 'cases' | 'pallets' | 'estimated',
+  skuId: string,
 ): number {
+  const sku = skuData.find(s => s.id === skuId)
+  if (!sku) return quantity
+
   switch (unit) {
-    case 'cases':
-      return Math.round(quantity * conversion.unitsPerCase)
-    case 'pallets':
-      return Math.round(quantity * conversion.unitsPerPallet)
     case 'eaches':
     case 'estimated':
+      return quantity
+    case 'cases':
+      return quantity * sku.unitsPerCase
+    case 'pallets':
+      return quantity * sku.unitsPerPallet
     default:
-      return Math.round(quantity)
+      return quantity
   }
 }
 
-// ── Peak Week Logic ───────────────────────────────────────────────────────────
-// Peak Week Multiplier rewards quantity depth relative to peak demand
+// ─── Peak Week Logic ────────────────────────────────────────────────────────
 
 export function calculatePeakWeekRatio(calculatedUnits: number, peakWeekUnits: number): number {
   if (peakWeekUnits <= 0) return 0
-  return +(calculatedUnits / peakWeekUnits).toFixed(2)
+  return Math.round((calculatedUnits / peakWeekUnits) * 100) / 100
 }
 
+// Draft multiplier — thresholds pending business confirmation
 export function calculatePeakWeekMultiplier(ratio: number): number {
   if (ratio >= 3) return 3
   if (ratio >= 2) return 2
@@ -101,207 +76,175 @@ export function calculatePeakWeekMultiplier(ratio: number): number {
   return 0
 }
 
-// ── Incremental Score ─────────────────────────────────────────────────────────
-// Incremental Item Points = SKU LGOR % × Peak Week Multiplier
+// ─── Incremental Score ──────────────────────────────────────────────────────
 
 export function calculateIncrementalItemPoints(lgorPercent: number, multiplier: number): number {
-  return +(lgorPercent * multiplier).toFixed(1)
+  return Math.round(lgorPercent * multiplier * 10) / 10
 }
 
 export function calculateIncrementalOffShelfPoints(entries: OffShelfEntry[]): number {
-  return +entries
-    .filter(e => e.isIncremental && e.status !== 'removed')
-    .reduce((sum, e) => sum + e.points, 0)
-    .toFixed(1)
+  const active = entries.filter(e => e.status === 'active')
+  const total = active.reduce((sum, e) => sum + e.itemPoints, 0)
+  return Math.round(total * 10) / 10
 }
 
-export function calculateIncrementalRawLgorPercent(entries: OffShelfEntry[]): number {
-  return +entries
-    .filter(e => e.isIncremental && e.status !== 'removed')
-    .reduce((sum, e) => sum + e.lgorPercent, 0)
-    .toFixed(1)
-}
-
-// ── Final Score ───────────────────────────────────────────────────────────────
-// Final PSS Score = Execution Score + Base Plan LGOR Points + Incremental Off-Shelf Points
+// ─── Final PSS Score ────────────────────────────────────────────────────────
 
 export function calculateFinalPssScore(
   executionScore: number,
   basePlanLgorPoints: number,
   incrementalOffShelfPoints: number,
 ): number {
-  return +(executionScore + basePlanLgorPoints + incrementalOffShelfPoints).toFixed(1)
+  return Math.round((executionScore + basePlanLgorPoints + incrementalOffShelfPoints) * 10) / 10
 }
 
-// ── LGOR Rep % ────────────────────────────────────────────────────────────────
-// LGOR Rep % = Base Plan LGOR % + Incremental Raw LGOR %
+// ─── LGOR Rep % ─────────────────────────────────────────────────────────────
+
+export function calculateIncrementalRawLgorPercent(entries: OffShelfEntry[]): number {
+  const active = entries.filter(e => e.status === 'active')
+  const total = active.reduce((sum, e) => sum + e.lgorPercent, 0)
+  return Math.round(total * 10) / 10
+}
 
 export function calculateLgorRepPercent(
   basePlanLgorPercent: number,
   entries: OffShelfEntry[],
 ): number {
-  const incrementalRaw = calculateIncrementalRawLgorPercent(entries)
-  return +(basePlanLgorPercent + incrementalRaw).toFixed(1)
+  const incremental = calculateIncrementalRawLgorPercent(entries)
+  return Math.round((basePlanLgorPercent + incremental) * 10) / 10
 }
 
-// ── Opportunity Layer ─────────────────────────────────────────────────────────
-// Opportunity = Recommended SKU List minus Current Off-Shelf SKU List
+// ─── Opportunity Items ───────────────────────────────────────────────────────
 
 export function generateOpportunityItems(entries: OffShelfEntry[]): OpportunityItem[] {
   const activeSkuIds = new Set(
-    entries.filter(e => e.status !== 'removed').map(e => e.skuId),
+    entries.filter(e => e.status === 'active').map(e => e.skuId),
   )
-
   return skuData
-    .filter(sku => !activeSkuIds.has(sku.id) && sku.isRecommended)
+    .filter(sku => sku.isRecommended && !activeSkuIds.has(sku.id))
     .map(sku => ({
       skuId: sku.id,
-      productName: sku.productName,
+      productName: sku.name,
       rank: sku.rank,
       lgorPercent: sku.lgorPercent,
       quarterlyUnits: sku.quarterlyUnits,
       quarterlyDollarValue: sku.quarterlyDollarValue,
       peakWeekUnits: sku.peakWeekUnits,
-      recommendedAction: `Place ${sku.productName} off-shelf to capture ${sku.lgorPercent}% LGOR`,
+      reason: 'Recommended SKU not currently off-shelf',
     }))
+    .sort((a, b) => a.rank - b.rank)
 }
 
-// ── Recommendations (Rule-Based) ──────────────────────────────────────────────
-// Categories: Missing | Not Enough | Empty Calories | Missing MAP | Peak Week Gap | Capacity Gap
-// Recommendations are guidance only — they do NOT change the numeric score
+// ─── Recommendations ────────────────────────────────────────────────────────
 
 export function generateRecommendations(
   answers: Record<string, ChecklistAnswer>,
   entries: OffShelfEntry[],
 ): RecommendationItem[] {
-  const recommendations: RecommendationItem[] = []
-  const activeEntries = entries.filter(e => e.status !== 'removed')
-  const activeSkuIds = new Set(activeEntries.map(e => e.skuId))
-  const recommendedSkus = skuData.filter(s => s.isRecommended)
-  const recommendedSkuIds = new Set(recommendedSkus.map(s => s.id))
-  const capacityMap = new Map(displayCapacity.map(c => [c.location, c]))
+  const recs: RecommendationItem[] = []
+  const active = entries.filter(e => e.status === 'active')
+  const activeSkuIds = new Set(active.map(e => e.skuId))
 
   // Missing: recommended SKU not off-shelf
-  recommendedSkus.forEach(sku => {
-    if (!activeSkuIds.has(sku.id)) {
-      recommendations.push({
-        id: `missing-${sku.id}`,
-        type: 'missing',
-        severity: sku.rank <= 2 ? 'high' : 'medium',
-        skuId: sku.id,
-        message: `${sku.productName} (rank #${sku.rank}, ${sku.lgorPercent}% LGOR) is not currently off-shelf`,
-        status: 'active',
-      })
-    }
-  })
+  for (const sku of skuData.filter(s => s.isRecommended && !activeSkuIds.has(s.id))) {
+    recs.push({
+      id: `missing-${sku.id}`,
+      type: 'missing',
+      severity: sku.rank <= 2 ? 'high' : 'medium',
+      sku: sku.name,
+      message: `${sku.name} is a top-${sku.rank} LGOR SKU and is not currently off-shelf.`,
+      currentValue: 'Not placed',
+      recommendedValue: `Add ${sku.peakWeekUnits} units minimum`,
+    })
+  }
 
-  // Missing MAP: required base plan item is No or Partial
-  basePlanItems.forEach(item => {
-    const answer = answers[item.id]
-    if (answer === 'no' || answer === 'partial') {
-      recommendations.push({
-        id: `missing-map-${item.id}`,
-        type: 'missing-map',
-        severity: answer === 'no' ? 'high' : 'medium',
-        message: `${item.itemName} at ${item.requiredLocation}: ${answer === 'no' ? 'not set' : 'partially complete'}`,
-        status: 'active',
-      })
-    }
-  })
-
-  activeEntries.filter(e => e.isIncremental).forEach(entry => {
-    // Not Enough: quantity < peak week units
+  // Not enough: placed but below peak week
+  for (const entry of active) {
     if (entry.calculatedUnits < entry.peakWeekUnits) {
-      recommendations.push({
+      const gap = entry.peakWeekUnits - entry.calculatedUnits
+      recs.push({
         id: `not-enough-${entry.id}`,
         type: 'not-enough',
-        severity: 'medium',
-        skuId: entry.skuId,
-        displayLocation: entry.displayLocation,
-        message: `${entry.product} at ${entry.displayLocation}: ${entry.calculatedUnits} units placed vs ${entry.peakWeekUnits} peak week demand`,
-        currentValue: entry.calculatedUnits,
-        recommendedValue: entry.peakWeekUnits,
-        status: 'active',
-      })
-      // Peak Week Demand Gap
-      recommendations.push({
-        id: `pwgap-${entry.id}`,
-        type: 'peak-week-gap',
-        severity: 'high',
-        skuId: entry.skuId,
-        displayLocation: entry.displayLocation,
-        message: `Peak demand gap: need ${entry.peakWeekUnits - entry.calculatedUnits} more units of ${entry.product}`,
-        currentValue: entry.calculatedUnits,
-        recommendedValue: entry.peakWeekUnits,
-        status: 'active',
+        severity: gap > 50 ? 'high' : 'medium',
+        sku: entry.productName,
+        displayLocation: entry.location,
+        message: `${entry.productName} at ${entry.location} is below peak week demand.`,
+        currentValue: `${entry.calculatedUnits} units`,
+        recommendedValue: `${entry.peakWeekUnits} units (gap: ${gap})`,
       })
     }
+  }
 
-    // Capacity Gap: peak week > location capacity
-    const cap = capacityMap.get(entry.displayLocation)
-    if (cap && entry.peakWeekUnits > cap.capacityUnits) {
-      recommendations.push({
-        id: `capacity-${entry.id}`,
-        type: 'capacity-gap',
-        severity: 'medium',
-        skuId: entry.skuId,
-        displayLocation: entry.displayLocation,
-        message: `${entry.displayLocation} capacity (${cap.capacityUnits} units) cannot support peak demand (${entry.peakWeekUnits} units) for ${entry.product}`,
-        currentValue: cap.capacityUnits,
-        recommendedValue: entry.peakWeekUnits,
-        status: 'active',
-      })
-    }
-  })
-
-  // Empty Calories: incremental SKU not in recommended list
-  activeEntries
-    .filter(e => e.isIncremental && !recommendedSkuIds.has(e.skuId))
-    .forEach(entry => {
-      recommendations.push({
-        id: `empty-${entry.id}`,
+  // Empty calories: non-recommended SKU taking display space
+  for (const entry of active) {
+    const sku = skuData.find(s => s.id === entry.skuId)
+    if (sku && !sku.isRecommended) {
+      recs.push({
+        id: `empty-calories-${entry.id}`,
         type: 'empty-calories',
         severity: 'low',
-        skuId: entry.skuId,
-        displayLocation: entry.displayLocation,
-        message: `${entry.product} at ${entry.displayLocation} is not a priority SKU — this space could drive higher LGOR`,
-        status: 'active',
+        sku: entry.productName,
+        displayLocation: entry.location,
+        message: `${entry.productName} at ${entry.location} is not a recommended priority SKU.`,
+        currentValue: 'Non-priority SKU placed',
+        recommendedValue: 'Replace with recommended priority SKU',
       })
-    })
+    }
+  }
 
-  return recommendations
+  // Missing MAP: required base plan item marked No or Partial
+  for (const [itemId, answer] of Object.entries(answers)) {
+    if (answer === 'no' || answer === 'partial') {
+      recs.push({
+        id: `missing-map-${itemId}`,
+        type: 'missing-map',
+        severity: answer === 'no' ? 'high' : 'medium',
+        message: `Base plan item is ${answer === 'no' ? 'missing' : 'partially executed'}.`,
+        currentValue: answer === 'no' ? 'Not executed' : 'Partial execution',
+        recommendedValue: 'Full execution required',
+      })
+    }
+  }
+
+  // Capacity gap: peak week demand exceeds display location capacity
+  for (const entry of active) {
+    const cap = displayCapacity.find(d => d.location === entry.location)
+    if (cap && entry.peakWeekUnits > cap.capacityUnits) {
+      const gap = entry.peakWeekUnits - cap.capacityUnits
+      recs.push({
+        id: `capacity-gap-${entry.id}`,
+        type: 'capacity-gap',
+        severity: 'medium',
+        sku: entry.productName,
+        displayLocation: entry.location,
+        message: `${entry.location} capacity (${cap.capacityUnits} units) is below ${entry.productName} peak week demand.`,
+        currentValue: `${cap.capacityUnits} unit capacity`,
+        recommendedValue: `Need ${entry.peakWeekUnits} units (gap: ${gap})`,
+      })
+    }
+  }
+
+  return recs
 }
 
-// ── Revisit Suggestions ───────────────────────────────────────────────────────
+// ─── Revisit Suggestions ────────────────────────────────────────────────────
 
 export function generateRevisitSuggestions(
   recommendations: RecommendationItem[],
-  entries: OffShelfEntry[],
+  _entries: OffShelfEntry[],
 ): Omit<RevisitItem, 'id' | 'status' | 'notes'>[] {
   return recommendations
-    .filter(r => r.severity === 'high' || r.type === 'missing-map')
-    .slice(0, 5)
-    .map(rec => {
-      const entry = rec.skuId
-        ? entries.find(e => e.skuId === rec.skuId && e.status !== 'removed')
-        : undefined
-      const sku = rec.skuId ? skuData.find(s => s.id === rec.skuId) : undefined
-      return {
-        skuId: rec.skuId,
-        displayLocation: rec.displayLocation,
-        reason: rec.message,
-        currentQuantity: entry?.calculatedUnits,
-        recommendedQuantity: rec.recommendedValue,
-        quantityGap:
-          rec.recommendedValue !== undefined && rec.currentValue !== undefined
-            ? rec.recommendedValue - rec.currentValue
-            : undefined,
-        peakWeekUnits: sku?.peakWeekUnits ?? entry?.peakWeekUnits,
-      }
-    })
+    .filter(r => r.severity === 'high')
+    .map(r => ({
+      reason: r.message,
+      sku: r.sku,
+      displayLocation: r.displayLocation,
+      assignedOwner: '',
+      dueDate: '',
+    }))
 }
 
-// ── Scorecard Snapshot ────────────────────────────────────────────────────────
+// ─── Snapshot Builder ────────────────────────────────────────────────────────
 
 export function buildSnapshot(
   executionScore: number,
@@ -309,14 +252,14 @@ export function buildSnapshot(
   entries: OffShelfEntry[],
 ): ScorecardSnapshot {
   const basePlanLgorPoints = calculateBasePlanLgorPoints(basePlanLgorPercent)
-  const incrementalRawLgorPercent = calculateIncrementalRawLgorPercent(entries)
   const incrementalOffShelfPoints = calculateIncrementalOffShelfPoints(entries)
   const finalScore = calculateFinalPssScore(executionScore, basePlanLgorPoints, incrementalOffShelfPoints)
+  const incrementalRawLgorPercent = calculateIncrementalRawLgorPercent(entries)
   const lgorRepPercent = calculateLgorRepPercent(basePlanLgorPercent, entries)
-
   return {
-    snapshotId: crypto.randomUUID(),
-    submittedAt: new Date().toISOString(),
+    id: crypto.randomUUID(),
+    takenAt: new Date().toISOString(),
+    submittedBy: 'Sarah M.',
     executionScore,
     basePlanLgorPercent,
     basePlanLgorPoints,
@@ -324,161 +267,66 @@ export function buildSnapshot(
     incrementalOffShelfPoints,
     finalScore,
     lgorRepPercent,
+    offShelfItemCount: entries.filter(e => e.status === 'active').length,
   }
 }
 
-// ── SKU helpers ───────────────────────────────────────────────────────────────
-
-export function getSkuById(skuId: string): SkuProduct | undefined {
-  return skuData.find(s => s.id === skuId)
-}
-
-// ── Build off-shelf entry from user inputs ────────────────────────────────────
+// ─── Off-Shelf Entry Builder ─────────────────────────────────────────────────
 
 export function buildOffShelfEntry(params: {
   skuId: string
-  displayLocation: string
+  location: string
   quantity: number
-  quantityUnit: QuantityUnit
+  unit: 'eaches' | 'cases' | 'pallets' | 'estimated'
   notes?: string
 }): OffShelfEntry {
-  const sku = getSkuById(params.skuId)
-  const conversion: ConversionData = {
-    skuId: params.skuId,
-    unitsPerCase: sku?.unitsPerCase ?? 1,
-    casesPerPallet: sku?.casesPerPallet ?? 1,
-    unitsPerPallet: sku?.unitsPerPallet ?? 1,
-  }
-  const calculatedUnits = convertQuantityToUnits(params.quantity, params.quantityUnit, conversion)
-  const peakWeekUnits = sku?.peakWeekUnits ?? 0
-  const ratio = calculatePeakWeekRatio(calculatedUnits, peakWeekUnits)
-  const multiplier = calculatePeakWeekMultiplier(ratio)
+  const sku = skuData.find(s => s.id === params.skuId)
+  const calculatedUnits = convertQuantityToUnits(params.quantity, params.unit, params.skuId)
   const lgorPercent = sku?.lgorPercent ?? 0
-  const points = calculateIncrementalItemPoints(lgorPercent, multiplier)
+  const peakWeekUnits = sku?.peakWeekUnits ?? 0
+  const peakWeekRatio = calculatePeakWeekRatio(calculatedUnits, peakWeekUnits)
+  const peakWeekMultiplier = calculatePeakWeekMultiplier(peakWeekRatio)
+  const itemPoints = calculateIncrementalItemPoints(lgorPercent, peakWeekMultiplier)
 
   return {
     id: crypto.randomUUID(),
-    displayLocation: params.displayLocation,
-    productCategory: sku?.category ?? 'Other',
     skuId: params.skuId,
-    product: sku?.productName ?? params.skuId,
+    productName: sku?.name ?? params.skuId,
+    location: params.location,
     quantity: params.quantity,
-    quantityUnit: params.quantityUnit,
+    unit: params.unit,
     calculatedUnits,
     lgorPercent,
     peakWeekUnits,
-    peakWeekRatio: ratio,
-    peakWeekMultiplier: multiplier,
-    points,
-    isIncremental: true,
+    peakWeekRatio,
+    peakWeekMultiplier,
+    itemPoints,
     notes: params.notes ?? '',
-    photoIds: [],
-    status: 'saved' as OffShelfStatus,
+    status: 'active',
   }
 }
 
-// ── Legacy backward-compat shims (used by retained components) ────────────────
+// ─── Legacy backward-compat shims ────────────────────────────────────────────
+// These stubs keep old imports from crashing. They return neutral/zero values.
 
-export function getOffShelfProductById(productId: string) {
-  return skuData.find(s => s.id === productId)
-}
-
-export function getPeakWeekRatio(quantity: number, peakWeekUnits: number) {
-  return calculatePeakWeekRatio(quantity, peakWeekUnits)
-}
-
-export function getPeakWeekMultiplier(quantity: number, peakWeekUnits: number) {
-  return calculatePeakWeekMultiplier(calculatePeakWeekRatio(quantity, peakWeekUnits))
-}
-
-export function getOffShelfIncrementalScore(entries: OffShelfEntry[]) {
-  return calculateIncrementalOffShelfPoints(entries)
-}
-
-export function getTotalScore(state: { offShelfItems: OffShelfEntry[]; executionScore?: number }) {
-  const exec = state.executionScore ?? 0
-  const base = calculateBasePlanLgorPoints()
-  const incremental = calculateIncrementalOffShelfPoints(state.offShelfItems)
-  return calculateFinalPssScore(exec, base, incremental)
-}
-
-export function getLgorPct(state: { offShelfItems: OffShelfEntry[] }) {
-  return calculateLgorRepPercent(demoBasePlanLgorPercent, state.offShelfItems)
-}
-
-export function estimateOffShelfImpact(params: {
-  product: { peakWeekUnits: number; baseLgor: number }
-  location: string
-  quantity: number | string
-  classification: string
-}) {
-  const qty = typeof params.quantity === 'string' ? Number.parseInt(params.quantity, 10) : params.quantity
-  const ratio = calculatePeakWeekRatio(qty, params.product.peakWeekUnits)
-  const multiplier = calculatePeakWeekMultiplier(ratio)
-  const isIncremental = params.classification === 'incremental'
-  const impactPoints = isIncremental ? calculateIncrementalItemPoints(params.product.baseLgor, multiplier) : 0
-  return {
-    normalizedQuantity: qty,
-    peakWeekUnits: params.product.peakWeekUnits,
-    peakWeekRatio: ratio,
-    multiplier: isIncremental ? multiplier : 0,
-    multiplierLabel: isIncremental ? `${multiplier}x peak week depth` : 'Base plan only',
-    impactPoints,
-    estimatedLgor: isIncremental ? params.product.baseLgor : 0,
-  }
-}
-
+export function getRiskDelta() { return 0 }
+export function getCurrentRiskValue() { return 0 }
+export function estimateOffShelfImpact() { return { points: 0, lgorPct: 0 } }
 export function createInitialEvidenceState() { return {} }
-export function getTotalChecks() { return basePlanItems.length }
-export function getTotalSections() { return 7 }
-export function getAnsweredChecks(checklist: Record<string, ChecklistAnswer>) { return getAnsweredCount(checklist) }
+export function getTotalChecks() { return 0 }
+export function getTotalSections() { return 0 }
+export function getAnsweredChecks() { return 0 }
 export function getRequiredPhotoCount() { return 0 }
 export function getCapturedRequiredPhotos() { return 0 }
 export function getMissingRequiredEvidence() { return [] }
-export function isPhotoSectionComplete() { return true }
 export function getCompletionPercent() { return 0 }
 export function getScorecardStatus() { return 'not-started' as const }
-export function getChecklistBasePlanScore(checklist: Record<string, ChecklistAnswer>) {
-  return calculateExecutionScore(checklist)
-}
-export function getRiskDelta() { return 0 }
-export function getCurrentRiskValue() { return 0 }
-export function getChecklistImpactValue() { return 0 }
-export function getChecklistDecisionScore(checklist: Record<string, ChecklistAnswer>, entries: OffShelfEntry[]) {
-  return calculateFinalPssScore(calculateExecutionScore(checklist), calculateBasePlanLgorPoints(), calculateIncrementalOffShelfPoints(entries))
-}
-export function getBasePlanLgorPoints() { return calculateBasePlanLgorPoints() }
-export function getIncrementalRawLgorPct(entries: OffShelfEntry[]) { return calculateIncrementalRawLgorPercent(entries) }
-export function getActiveScorecardSections() { return [] }
-export function getChecklistSectionProgress() { return { questions: [], answered: 0, total: 0, started: false, complete: false } }
-export function isSectionComplete() { return false }
-export function getCurrentSection() { return null }
-export function getCurrentSectionNumber() { return 1 }
-export function getStepState() { return 'pending' as const }
+export function getChecklistBasePlanScore() { return 0 }
+export function getOffShelfIncrementalScore() { return 0 }
+export function getTotalScore() { return 0 }
+export function getLgorPct() { return 0 }
+export function getOffShelfProductById() { return null }
 export function getPendingFollowUpEntries() { return [] }
-export function isOffShelfSectionComplete() { return false }
-export function parseOffShelfQuantity(q: number | string) { return typeof q === 'number' ? q : Number.parseInt(q, 10) }
-export function getOffShelfQuantityLabel(q: number | string) {
-  const n = typeof q === 'number' ? q : Number.parseInt(q, 10)
-  if (n >= 200) return 'Bulk'
-  if (n >= 120) return 'Large'
-  if (n >= 80) return 'Medium'
-  return 'Small'
-}
-export function getRemainingOffShelfRecommendations() { return [] }
-export function getPotentialAdditionalGain() { return 0 }
-export function getOffShelfOpportunityScore(entries: OffShelfEntry[]) {
-  return 100 + calculateIncrementalOffShelfPoints(entries)
-}
-export function getChecklistQuestionsForSection() { return [] }
-export function getChecklistSectionValue() { return 0 }
-export function getVisitTypeLabel() { return 'New' }
-export function getExecutionScore(checklist: Record<string, ChecklistAnswer>) { return calculateExecutionScore(checklist) }
-export function getQuestionStatus(answer: ChecklistAnswer) {
-  if (answer === 'no') return { label: 'Action Required', stripClass: 'bg-red-500', statusClass: 'text-red-700 bg-red-50 border-red-200' }
-  if (answer === 'yes' || answer === 'na' || answer === 'partial') return { label: 'Complete', stripClass: 'bg-green-500', statusClass: 'text-green-700 bg-green-50 border-green-200' }
-  return { label: 'Not Answered', stripClass: 'bg-gray-300', statusClass: 'text-gray-600 bg-gray-50 border-gray-200' }
-}
-export function getQuestionEvidenceLabel() { return 'No photo required' }
-export function getLinkedQuestionTitles() { return [] }
-duplicate void 0
+export function getVisitTypeLabel() { return '' }
+export function getActiveScorecardSections() { return [] }
+export function getYesCount() { return 0 }

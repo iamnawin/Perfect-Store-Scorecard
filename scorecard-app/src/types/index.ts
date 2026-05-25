@@ -1,8 +1,7 @@
-// ── Execution answer types ───────────────────────────────────────────────────
-export type ChecklistAnswer = 'yes' | 'no' | 'partial' | 'na' | null
-export type ExecutionItemType = 'standard' | 'display'
+// --- New MVP types ---
 
-// ── Visit / Scorecard status ──────────────────────────────────────────────────
+export type ChecklistAnswer = 'yes' | 'no' | 'partial' | 'na' | null
+
 export type ScorecardVisitStatus =
   | 'Not Started'
   | 'In Progress'
@@ -11,7 +10,8 @@ export type ScorecardVisitStatus =
   | 'Retake In Progress'
   | 'Resolved'
 
-// ── Recommendation types ──────────────────────────────────────────────────────
+export type RevisitStatus = 'Open' | 'In Progress' | 'Resolved' | 'Unable to Resolve'
+
 export type RecommendationType =
   | 'missing'
   | 'not-enough'
@@ -20,35 +20,23 @@ export type RecommendationType =
   | 'peak-week-gap'
   | 'capacity-gap'
 
-export type RecommendationSeverity = 'high' | 'medium' | 'low'
-
-// ── Revisit ───────────────────────────────────────────────────────────────────
-export type RevisitStatus = 'Open' | 'In Progress' | 'Resolved' | 'Unable to Resolve'
-
-// ── Quantity units ────────────────────────────────────────────────────────────
 export type QuantityUnit = 'eaches' | 'cases' | 'pallets' | 'estimated'
 
-// ── Off-shelf status ──────────────────────────────────────────────────────────
-export type OffShelfStatus = 'saved' | 'removed'
+export type OffShelfItemStatus = 'active' | 'removed'
 
-// ── Base Plan execution item ──────────────────────────────────────────────────
 export interface BasePlanItem {
   id: string
-  itemName: string
-  itemType: ExecutionItemType
-  requiredLocation: string
-  requiredSkus?: string[]
-  possiblePoints: number
+  name: string
+  type: 'standard' | 'display'
+  location: string
+  pointsMax: number
   guidance: string
 }
 
-// ── SKU / Product ─────────────────────────────────────────────────────────────
 export interface SkuProduct {
   id: string
-  sku: string
-  productName: string
+  name: string
   category: string
-  productSize: string
   lgorPercent: number
   quarterlyUnits: number
   quarterlyDollarValue: number
@@ -60,7 +48,6 @@ export interface SkuProduct {
   isRecommended: boolean
 }
 
-// ── Conversion data ───────────────────────────────────────────────────────────
 export interface ConversionData {
   skuId: string
   unitsPerCase: number
@@ -68,35 +55,28 @@ export interface ConversionData {
   unitsPerPallet: number
 }
 
-// ── Display capacity ──────────────────────────────────────────────────────────
-export interface DisplayCapacity {
+export interface DisplayCapacityData {
   location: string
   capacityUnits: number
-  rackingDepth: number
 }
 
-// ── Off-shelf entry ───────────────────────────────────────────────────────────
 export interface OffShelfEntry {
   id: string
-  displayLocation: string
-  productCategory: string
   skuId: string
-  product: string
+  productName: string
+  location: string
   quantity: number
-  quantityUnit: QuantityUnit
+  unit: QuantityUnit
   calculatedUnits: number
   lgorPercent: number
   peakWeekUnits: number
   peakWeekRatio: number
   peakWeekMultiplier: number
-  points: number
-  isIncremental: boolean
+  itemPoints: number
   notes: string
-  photoIds: string[]
-  status: OffShelfStatus
+  status: OffShelfItemStatus
 }
 
-// ── Opportunity item ──────────────────────────────────────────────────────────
 export interface OpportunityItem {
   skuId: string
   productName: string
@@ -105,43 +85,40 @@ export interface OpportunityItem {
   quarterlyUnits: number
   quarterlyDollarValue: number
   peakWeekUnits: number
-  recommendedAction: string
+  reason: string
 }
 
-// ── Recommendation ────────────────────────────────────────────────────────────
 export interface RecommendationItem {
   id: string
   type: RecommendationType
-  severity: RecommendationSeverity
-  skuId?: string
+  severity: 'high' | 'medium' | 'low'
+  sku?: string
   displayLocation?: string
   message: string
-  currentValue?: number
-  recommendedValue?: number
-  status: 'active' | 'dismissed'
+  currentValue?: string
+  recommendedValue?: string
 }
 
-// ── Revisit item ──────────────────────────────────────────────────────────────
 export interface RevisitItem {
   id: string
-  skuId?: string
-  displayLocation?: string
   reason: string
+  sku?: string
+  displayLocation?: string
   currentQuantity?: number
   recommendedQuantity?: number
   quantityGap?: number
   peakWeekUnits?: number
   displayCapacity?: number
-  assignedOwner?: string
-  dueDate?: string
+  assignedOwner: string
+  dueDate: string
   status: RevisitStatus
   notes: string
 }
 
-// ── Scorecard snapshot (for retake comparison) ────────────────────────────────
 export interface ScorecardSnapshot {
-  snapshotId: string
-  submittedAt: string
+  id: string
+  takenAt: string
+  submittedBy: string
   executionScore: number
   basePlanLgorPercent: number
   basePlanLgorPoints: number
@@ -149,53 +126,17 @@ export interface ScorecardSnapshot {
   incrementalOffShelfPoints: number
   finalScore: number
   lgorRepPercent: number
+  offShelfItemCount: number
 }
 
-// ── UI feedback ───────────────────────────────────────────────────────────────
-export interface AppToast {
-  id: number
-  title: string
-  message: string
-}
+// --- Legacy types kept for backward compat with remaining components ---
 
-export interface AppCelebration {
-  id: number
-  title: string
-  message: string
-}
-
-// ── Leaderboard / Manager ─────────────────────────────────────────────────────
-export interface LeaderboardEntry {
-  rank: number
-  store: string
-  rep: string
-  score: number
-  lgorRepPercent: number
-  delta: number
-  openRevisitCount: number
-}
-
-export interface FlaggedStore {
-  storeId: string
-  storeName: string
-  score: number
-  lgorRepPercent: number
-  issue: string
-  skuId?: string
-  peakWeekUnits?: number
-  currentQuantity?: number
-  gap?: number
-  revisitStatus: RevisitStatus
-  owner?: string
-}
-
-// ── Legacy types kept for backward compat ────────────────────────────────────
-export type ChecklistState = Record<string, ChecklistAnswer>
+export type ScorecardStatus = 'not-started' | 'in-progress' | 'ready-for-review' | 'completed'
 export type StepState = 'completed' | 'in-progress' | 'pending' | 'locked'
 export type ScorecardStatus = 'not-started' | 'in-progress' | 'ready-for-review' | 'completed'
 export type VisitType = 'initial' | 'follow-up'
-export type OffShelfClassification = 'base-plan' | 'incremental' | 'not-sure'
 export type OffShelfOrigin = 'current-visit' | 'previous-visit'
+export type OffShelfStatus = 'saved' | 'pending-review' | 'retained' | 'updated' | 'removed' | 'added'
 
 export interface OffShelfProduct {
   id: string
@@ -275,10 +216,7 @@ export type AgentforceDisplayType = 'endcap' | 'stack' | 'shelf' | 'unknown'
 
 export interface AgentforceSecondaryDisplayAnalysis {
   analysisStatus: 'success' | 'error'
-  displayType: {
-    value: AgentforceDisplayType
-    confidence: AgentforceConfidence
-  }
+  displayType: { value: AgentforceDisplayType; confidence: AgentforceConfidence }
   products: Array<{
     productName: string
     brand: string
@@ -290,38 +228,134 @@ export interface AgentforceSecondaryDisplayAnalysis {
   notes: string[]
 }
 
+export interface ChecklistState {
+  [itemId: string]: ChecklistAnswer
+}
+
+export interface ChecklistQuestion {
+  id: string
+  sectionId: string
+  group: 'map' | 'pog' | 'display'
+  category: string
+  title: string
+  guidance: string
+  businessWhy: string
+  weight: number
+  icon: 'shelf' | 'alert' | 'display' | 'camera'
+}
+
+export interface ScorecardSection {
+  id: string
+  title: string
+  description: string
+  route: string
+  kind: 'checklist' | 'capture' | 'evidence' | 'review'
+}
+
+export interface LegacyOffShelfEntry {
+  id: string
+  location: string
+  category: string
+  skuId: string
+  product: string
+  quantity: number | string
+  classification: OffShelfClassification
+  photoCaptured: boolean
+  photoName: string
+  photoPreviewUrl: string
+  caption: string
+  notes: string
+  estimatedLgor: number
+  impactPoints: number
+  multiplier: number
+  multiplierLabel: string
+  origin: OffShelfOrigin
+  status: OffShelfStatus
+}
+
+export interface OffShelfProduct {
+  id: string
+  categoryId: string
+  name: string
+  subtitle: string
+  size: string
+  lgorPct: number
+  isPriority: boolean
+  impactScore: number
+  imagePlaceholder: string
+}
+
+export interface EvidenceStateItem {
+  captured: boolean
+  note: string
+  photoName: string
+  photoPreviewUrl: string
+}
+
+export interface EvidenceState {
+  [requirementId: string]: EvidenceStateItem
+}
+
+export interface EvidenceRequirement {
+  id: string
+  sectionId: string
+  label: string
+  guidance: string
+  required: boolean
+  group: 'map' | 'display' | 'promo'
+}
+
+export interface LeaderboardEntry {
+  rank: number
+  store: string
+  rep: string
+  score: number
+  lgorRepPercent: number
+  delta: number
+  openRevisitCount: number
+}
+
+export interface FlaggedStore {
+  store: string
+  rep: string
+  issue: string
+  sku: string
+  peakWeekUnits: number
+  currentQuantity: number
+  gap: number
+  revisitStatus: RevisitStatus
+  owner: string
+}
+
 export interface AppState {
   visitType: VisitType
   checklist: ChecklistState
-  questionNotes: QuestionNotesState
-  offShelf: OffShelfEntry[]
-  offShelfConfirmed: boolean
+  offShelf: LegacyOffShelfEntry[]
   evidence: EvidenceState
-  secondaryDisplayImage: File | null
-  audioNoteFile: File | null
   notes: string
-  revisitRequired: boolean
-  shelfResetNeeded: boolean
-  lastSavedAt: string | null
   submitted: boolean
+  lastSavedAt: string | null
   agentforceEnabled: boolean
-  toast: AppToast | null
-  celebration: AppCelebration | null
+  secondaryDisplayImage: string | null
+  agentforceAnalysis: AgentforceSecondaryDisplayAnalysis | null
 }
+
+// --- Trellis types kept for TrellisBot component ---
+
+export type TrellisTone = 'info' | 'success' | 'warning' | 'critical'
+export type TrellisActionIntent = 'primary' | 'secondary' | 'warning'
 
 export interface TrellisMetric {
   label: string
-  value: string
+  value: string | number
+  delta?: string
+  highlight?: boolean
   detail?: string
 }
 
 export interface TrellisDetailItem {
   label: string
   value: string
+  badge?: string
   tone?: TrellisTone
-}
-
-export interface TrellisAction {
-  label: string
-  intent?: TrellisActionIntent
 }

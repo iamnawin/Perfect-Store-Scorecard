@@ -31,6 +31,13 @@ const toneStyles: Record<TrellisTone, {
     accent: 'text-[#8b5d00]',
     row: 'border-[#f1dfba] bg-white',
   },
+  critical: {
+    card: 'border-[#f9d6d0] bg-[#fef1ee]',
+    badge: 'border-[#f9d6d0] bg-[#fef1ee] text-[#ba0517]',
+    icon: 'border-[#f9d6d0] bg-[#fef1ee] text-[#ba0517]',
+    accent: 'text-[#ba0517]',
+    row: 'border-[#f9d6d0] bg-white',
+  },
 }
 
 const actionStyles: Record<TrellisActionIntent, string> = {

@@ -37,7 +37,7 @@ export function TopBar({ title, subtitle, showBack = false, rightSlot }: TopBarP
                 <h1 className="mt-1 text-[15px] font-semibold leading-tight text-on-surface truncate">{title}</h1>
               </div>
               <span className="shrink-0 rounded-full border border-[#c9d8ea] bg-[#edf4ff] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
-                {store.visitStatus}
+                {store.quarter}
               </span>
           </div>
           {subtitle && <p className="text-[11px] text-on-surface-variant mt-1">{subtitle}</p>}

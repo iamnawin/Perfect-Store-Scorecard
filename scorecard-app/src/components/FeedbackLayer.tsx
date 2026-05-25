@@ -33,8 +33,8 @@ export function FeedbackLayer() {
               <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-[#edf7ee] text-[#2e844a]">
                 <CheckCircle2 size={20} />
               </div>
-              <p className="mt-3 text-[16px] font-semibold text-on-surface">{celebration.title}</p>
-              <p className="mt-1 text-[13px] leading-snug text-on-surface-variant">{celebration.message}</p>
+              <p className="mt-3 text-[16px] font-semibold text-on-surface">Scorecard submitted!</p>
+              <p className="mt-1 text-[13px] leading-snug text-on-surface-variant">Great execution this visit.</p>
             </div>
           </div>
           <div className="absolute inset-x-0 top-14 flex justify-center">
