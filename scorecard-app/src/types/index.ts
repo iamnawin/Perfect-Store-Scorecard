@@ -1,4 +1,4 @@
-export type ChecklistAnswer = 'yes' | 'no' | 'na' | null
+export type ChecklistAnswer = 'yes' | 'no' | 'partial' | 'na' | null
 export type ScorecardStatus = 'not-started' | 'in-progress' | 'ready-for-review' | 'completed'
 export type StepState = 'completed' | 'in-progress' | 'pending' | 'locked'
 export type OffShelfClassification = 'base-plan' | 'incremental' | 'not-sure'
@@ -59,6 +59,7 @@ export interface OffShelfEntry {
   skuId: string
   product: string
   quantity: number | string
+  quantityUnit?: 'eaches' | 'cases' | 'pallets'
   classification: OffShelfClassification
   photoCaptured: boolean
   photoName: string
@@ -73,6 +74,16 @@ export interface OffShelfEntry {
   status: OffShelfStatus
 }
 
+export type RecommendationType = 'missing' | 'not-enough' | 'empty-calories' | 'missing-map' | 'demand-gap'
+
+export interface Recommendation {
+  type: RecommendationType
+  severity: 'high' | 'medium' | 'low'
+  message: string
+  skuId?: string
+  displayLocation?: string
+}
+
 export interface OffShelfProduct {
   id: string
   categoryId: string
@@ -82,6 +93,8 @@ export interface OffShelfProduct {
   basePoints: number
   baseLgor: number
   peakWeekUnits: number
+  unitsPerCase?: number
+  unitsPerPallet?: number
 }
 
 export interface OffShelfRecommendation {

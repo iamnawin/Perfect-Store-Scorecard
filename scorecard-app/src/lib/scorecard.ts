@@ -9,6 +9,7 @@ import type {
   OffShelfClassification,
   OffShelfEntry,
   OffShelfProduct,
+  Recommendation,
   ScorecardSection,
   ScorecardStatus,
   StepState,
@@ -341,6 +342,7 @@ export function getExecutionScore(checklist: ChecklistState) {
 
 export function getChecklistImpactValue(weight: number, answer: ChecklistAnswer) {
   if (answer === 'yes') return weight
+  if (answer === 'partial') return +(weight * 0.5).toFixed(1)
   if (answer === 'no') return -weight
   return 0
 }
@@ -351,9 +353,11 @@ export function getChecklistBasePlanScore(checklist: ChecklistState) {
 
   if (possibleWeight === 0) return 0
 
-  const earnedWeight = eligibleQuestions.reduce((total, question) => (
-    total + (checklist[question.id] === 'yes' ? question.weight : 0)
-  ), 0)
+  const earnedWeight = eligibleQuestions.reduce((total, question) => {
+    if (checklist[question.id] === 'yes') return total + question.weight
+    if (checklist[question.id] === 'partial') return total + question.weight * 0.5
+    return total
+  }, 0)
 
   return clampScore((earnedWeight / possibleWeight) * 100)
 }
@@ -423,6 +427,14 @@ export function getQuestionStatus(answer: ChecklistAnswer) {
     }
   }
 
+  if (answer === 'partial') {
+    return {
+      label: 'Partial',
+      stripClass: 'bg-[#8b5d00]',
+      statusClass: 'text-[#8b5d00] bg-[#f9f2e7] border-[#ead7b1]',
+    }
+  }
+
   if (answer === 'yes' || answer === 'na') {
     return {
       label: 'Complete',
@@ -454,4 +466,108 @@ export function getLinkedQuestionTitles(questionIds: string[]) {
   return checklistQuestions
     .filter(question => questionIds.includes(question.id))
     .map(question => question.title)
+}
+
+export function convertQuantityToUnits(
+  quantity: number,
+  unit: 'eaches' | 'cases' | 'pallets' | undefined,
+  product: OffShelfProduct,
+): number {
+  if (unit === 'pallets') return quantity * (product.unitsPerPallet ?? quantity)
+  if (unit === 'cases') return quantity * (product.unitsPerCase ?? quantity)
+  return quantity
+}
+
+export function getMissingMapItems(checklist: ChecklistState) {
+  return checklistQuestions.filter(
+    question => question.group === 'map' && checklist[question.id] !== 'yes' && checklist[question.id] !== 'na',
+  )
+}
+
+export function getNotEnoughEntries(entries: OffShelfEntry[]) {
+  return entries.filter(entry => {
+    if (!isActiveOffShelfEntry(entry)) return false
+    const product = getOffShelfProductById(entry.skuId)
+    if (!product) return false
+    return parseOffShelfQuantity(entry.quantity) < product.peakWeekUnits
+  })
+}
+
+export function getEmptyCaloriesEntries(entries: OffShelfEntry[]) {
+  return entries.filter(entry => isActiveOffShelfEntry(entry) && entry.classification !== 'incremental')
+}
+
+export function getPeakWeekDemandGapEntries(entries: OffShelfEntry[]) {
+  return entries.filter(entry => {
+    if (!isActiveOffShelfEntry(entry)) return false
+    const product = getOffShelfProductById(entry.skuId)
+    if (!product) return false
+    return product.peakWeekUnits > parseOffShelfQuantity(entry.quantity)
+  })
+}
+
+export function getOpportunitySkus(entries: OffShelfEntry[]) {
+  const capturedIds = new Set(entries.filter(isActiveOffShelfEntry).map(e => e.skuId))
+  return offShelfProducts.filter(product => !capturedIds.has(product.id))
+}
+
+export function generateRecommendations(state: AppState): Recommendation[] {
+  const recommendations: Recommendation[] = []
+
+  getMissingMapItems(state.checklist).forEach(question => {
+    recommendations.push({
+      type: 'missing-map',
+      severity: 'high',
+      message: `${question.title} is not confirmed — required base plan execution item.`,
+    })
+  })
+
+  getRemainingOffShelfRecommendations(state.offShelf).forEach(rec => {
+    if (rec.product) {
+      recommendations.push({
+        type: 'missing',
+        severity: 'high',
+        message: `${rec.product.name} at ${rec.location} is recommended but not yet captured.`,
+        skuId: rec.skuId,
+        displayLocation: rec.location,
+      })
+    }
+  })
+
+  getNotEnoughEntries(state.offShelf).forEach(entry => {
+    const product = getOffShelfProductById(entry.skuId)
+    if (product) {
+      recommendations.push({
+        type: 'not-enough',
+        severity: 'medium',
+        message: `${entry.product} at ${entry.location}: ${parseOffShelfQuantity(entry.quantity)} units captured vs ${product.peakWeekUnits} peak week demand. (Demo value — pending business confirmation)`,
+        skuId: entry.skuId,
+        displayLocation: entry.location,
+      })
+    }
+  })
+
+  getEmptyCaloriesEntries(state.offShelf).forEach(entry => {
+    recommendations.push({
+      type: 'empty-calories',
+      severity: 'low',
+      message: `${entry.product} at ${entry.location} is not classified as incremental — not contributing to off-shelf points.`,
+      skuId: entry.skuId,
+      displayLocation: entry.location,
+    })
+  })
+
+  return recommendations
+}
+
+export function generateRevisitSuggestions(state: AppState): string[] {
+  const suggestions: string[] = []
+
+  if (getMissingMapItems(state.checklist).length > 0) suggestions.push('Missing MAP setup')
+  if (getNotEnoughEntries(state.offShelf).length > 0) suggestions.push('Not enough quantity placed')
+  if (getPeakWeekDemandGapEntries(state.offShelf).length > 0) suggestions.push('Peak week demand not supported')
+  if (getEmptyCaloriesEntries(state.offShelf).length > 0) suggestions.push('Empty calories taking display space')
+  if (getRemainingOffShelfRecommendations(state.offShelf).length > 0) suggestions.push('High-volume SKU missing off-shelf')
+
+  return suggestions
 }

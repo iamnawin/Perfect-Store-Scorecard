@@ -31,6 +31,13 @@ const OPTIONS: { value: ChecklistAnswer; label: string }[] = [
   { value: 'na', label: 'N/A' },
 ]
 
+const OPTIONS_WITH_PARTIAL: { value: ChecklistAnswer; label: string }[] = [
+  { value: 'yes', label: 'Yes' },
+  { value: 'no', label: 'No' },
+  { value: 'partial', label: 'Partial' },
+  { value: 'na', label: 'N/A' },
+]
+
 const COMPACT_OPTIONS: { value: Exclude<ChecklistAnswer, null>; label: string }[] = [
   { value: 'yes', label: 'Yes' },
   { value: 'no', label: 'No' },
@@ -372,13 +379,17 @@ function QuestionCard({
   const statusClassName = evidenceMissing && answer !== null
     ? 'text-[#8b5d00] bg-[#f9f2e7] border-[#ead7b1]'
     : status.statusClass
+  const isDisplayQuestion = question.group === 'display'
+  const questionOptions = isDisplayQuestion ? OPTIONS_WITH_PARTIAL : OPTIONS
   const scoreFeedback = answer === 'yes'
     ? 'Good execution | contributes to score'
-    : answer === 'no'
-      ? 'Missed opportunity | reduces score'
-      : answer === 'na'
-        ? 'Marked N/A | excluded from score impact'
-        : 'Awaiting response'
+    : answer === 'partial'
+      ? 'Partial execution | half credit applied'
+      : answer === 'no'
+        ? 'Missed opportunity | reduces score'
+        : answer === 'na'
+          ? 'Marked N/A | excluded from score impact'
+          : 'Awaiting response'
   const trellisSuggestion = agentforceEnabled ? getChecklistSuggestion(question, answer) : null
 
   return (
@@ -407,8 +418,8 @@ function QuestionCard({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2 mt-4">
-          {OPTIONS.map(({ value, label }) => (
+        <div className={`grid gap-2 mt-4 ${isDisplayQuestion ? 'grid-cols-2' : 'grid-cols-3'}`}>
+          {questionOptions.map(({ value, label }) => (
             <button
               key={value}
               type="button"
@@ -420,7 +431,9 @@ function QuestionCard({
                     ? 'border-[#2e844a] bg-[#edf7ee] text-[#1f5f33]'
                     : value === 'no'
                       ? 'border-[#ba0517] bg-[#fef1ee] text-[#8e030f]'
-                      : 'border-[#8b939d] bg-[#f4f6f9] text-[#39414a]'
+                      : value === 'partial'
+                        ? 'border-[#8b5d00] bg-[#f9f2e7] text-[#8b5d00]'
+                        : 'border-[#8b939d] bg-[#f4f6f9] text-[#39414a]'
                   : 'border-outline bg-[#f7f9fb] text-on-surface-variant'
               )}
             >
@@ -666,6 +679,7 @@ function priorityTone(weight: number) {
 
 function impactPanelTone(answer: ChecklistAnswer) {
   if (answer === 'yes') return 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
+  if (answer === 'partial') return 'border-[#ead7b1] bg-[#f9f2e7] text-[#8b5d00]'
   if (answer === 'no') return 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'
   return 'border-[#dde3ea] bg-[#f4f6f9] text-[#52606d]'
 }
