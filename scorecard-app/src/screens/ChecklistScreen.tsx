@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from 'react'
+import { useEffect, useState, type ChangeEvent } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import clsx from 'clsx'
 import { Camera, ClipboardCheck, FilePenLine, Layers3, ShieldAlert } from 'lucide-react'
@@ -28,6 +28,7 @@ import type { ChecklistAnswer, ChecklistQuestion } from '../types'
 const OPTIONS: { value: ChecklistAnswer; label: string }[] = [
   { value: 'yes', label: 'Yes' },
   { value: 'no', label: 'No' },
+  { value: 'partial', label: 'Partial' },
   { value: 'na', label: 'N/A' },
 ]
 
@@ -41,6 +42,7 @@ const OPTIONS_WITH_PARTIAL: { value: ChecklistAnswer; label: string }[] = [
 const COMPACT_OPTIONS: { value: Exclude<ChecklistAnswer, null>; label: string }[] = [
   { value: 'yes', label: 'Yes' },
   { value: 'no', label: 'No' },
+  { value: 'partial', label: 'Partial' },
   { value: 'na', label: 'N/A' },
 ]
 
@@ -367,12 +369,17 @@ function QuestionCard({
   onFollowSuggestion: (route: string) => void
   onOpenPhoto: () => void
 }) {
+  useEffect(() => {
+    if (answer === 'partial' && !noteOpen) onToggleNote()
+  }, [answer])
+
   const status = getQuestionStatus(answer)
   const evidenceLabel = getQuestionEvidenceLabel(question, evidence, [])
   const relatedEvidence = evidenceRequirements.filter(item => item.linkedQuestionIds.includes(question.id))
   const primaryEvidence = relatedEvidence.find(item => item.required) ?? relatedEvidence[0]
   const quickPhotoCaptured = Boolean(primaryEvidence && evidence[primaryEvidence.id]?.captured)
   const impactValue = getChecklistImpactValue(question.weight, answer)
+  const isComplianceGate = question.weight === 0
   const priority = question.weight >= 15 ? 'High' : 'Med'
   const evidenceMissing = evidenceLabel === 'Photo required before submit'
   const statusLabel = evidenceMissing && answer !== null ? 'Photo Missing' : status.label
@@ -388,7 +395,7 @@ function QuestionCard({
       : answer === 'no'
         ? 'Missed opportunity | reduces score'
         : answer === 'na'
-          ? 'Marked N/A | excluded from score impact'
+          ? 'Marked N/A | excluded from score'
           : 'Awaiting response'
   const trellisSuggestion = agentforceEnabled ? getChecklistSuggestion(question, answer) : null
 
@@ -407,10 +414,10 @@ function QuestionCard({
                 <p className="text-[15px] font-semibold text-on-surface mt-1">{question.title}</p>
               </div>
               <div className="text-right">
-                <span className={`whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] ${priorityTone(question.weight)}`}>
-                  {priority}
+                <span className={`whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] ${isComplianceGate ? 'border-[#c9cfd6] bg-[#f4f6f9] text-[#52606d]' : priorityTone(question.weight)}`}>
+                  {isComplianceGate ? 'Gate' : priority}
                 </span>
-                <p className="text-[11px] font-semibold text-on-surface mt-1">{question.weight} pts</p>
+                <p className="text-[11px] font-semibold text-on-surface mt-1">{isComplianceGate ? 'Compliance' : `${question.weight} pts`}</p>
               </div>
             </div>
             <p className="text-[12px] text-on-surface-variant mt-2 leading-snug">{question.guidance}</p>
@@ -425,14 +432,14 @@ function QuestionCard({
               type="button"
               onClick={() => onAnswer(value)}
               className={clsx(
-                'min-h-11 rounded-md border text-[13px] font-semibold transition-colors',
+                'min-h-11 rounded-md border text-[12px] font-semibold transition-colors',
                 answer === value
                   ? value === 'yes'
                     ? 'border-[#2e844a] bg-[#edf7ee] text-[#1f5f33]'
                     : value === 'no'
                       ? 'border-[#ba0517] bg-[#fef1ee] text-[#8e030f]'
                       : value === 'partial'
-                        ? 'border-[#8b5d00] bg-[#f9f2e7] text-[#8b5d00]'
+                        ? 'border-[#e8a600] bg-[#fdf5e4] text-[#7a4800]'
                         : 'border-[#8b939d] bg-[#f4f6f9] text-[#39414a]'
                   : 'border-outline bg-[#f7f9fb] text-on-surface-variant'
               )}
@@ -625,18 +632,22 @@ function CompactQuestionRow({
           {status.label}
         </span>
       </div>
-      <div className="mt-3 grid grid-cols-3 gap-2">
+      <div className="mt-3 grid grid-cols-4 gap-2">
         {COMPACT_OPTIONS.map(({ value, label }) => (
           <button
             key={value}
             type="button"
             onClick={() => onAnswer(value)}
             className={clsx(
-              'min-h-10 rounded-md border text-[12px] font-semibold transition-colors',
+              'min-h-10 rounded-md border text-[11px] font-semibold transition-colors',
               answer === value
                 ? value === 'yes'
                   ? 'border-[#2e844a] bg-[#edf7ee] text-[#1f5f33]'
-                  : 'border-[#ba0517] bg-[#fef1ee] text-[#8e030f]'
+                  : value === 'no'
+                    ? 'border-[#ba0517] bg-[#fef1ee] text-[#8e030f]'
+                    : value === 'partial'
+                      ? 'border-[#e8a600] bg-[#fdf5e4] text-[#7a4800]'
+                      : 'border-[#8b939d] bg-[#f4f6f9] text-[#39414a]'
                 : 'border-outline bg-white text-on-surface-variant'
             )}
           >

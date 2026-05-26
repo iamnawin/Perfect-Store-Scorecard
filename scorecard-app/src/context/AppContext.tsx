@@ -27,12 +27,12 @@ function createFollowUpSeedEntries(): OffShelfEntry[] {
     const product = getOffShelfProductById(seed.skuId)
     if (!product) return []
     const categoryLabel = {
-      'grass-seed': 'Grass Seed',
-      'plant-food': 'Plant Food',
-      'weed-feed': 'Weed & Feed',
-      chemical: 'Chemical',
-      'indoor-soil': 'Indoor Soil',
-      'outdoor-soil': 'Outdoor Soil',
+      'turf-builder': 'Turf Builder',
+      'ez-seed': 'EZ Seed',
+      'thickr-lawn': "Thick'R Lawn",
+      'rapid-grass': 'Rapid Grass',
+      'classic': 'Classic',
+      'om-scotts': 'O.M. Scott & Sons',
     }[product.categoryId] ?? product.categoryId
 
     const impact = estimateOffShelfImpact({

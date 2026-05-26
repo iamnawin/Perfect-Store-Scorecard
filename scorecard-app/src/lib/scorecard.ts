@@ -348,7 +348,9 @@ export function getChecklistImpactValue(weight: number, answer: ChecklistAnswer)
 }
 
 export function getChecklistBasePlanScore(checklist: ChecklistState) {
-  const eligibleQuestions = checklistQuestions.filter(question => checklist[question.id] !== 'na')
+  const eligibleQuestions = checklistQuestions.filter(question =>
+    checklist[question.id] !== 'partial' && checklist[question.id] !== 'na'
+  )
   const possibleWeight = eligibleQuestions.reduce((total, question) => total + question.weight, 0)
 
   if (possibleWeight === 0) return 0
@@ -430,16 +432,24 @@ export function getQuestionStatus(answer: ChecklistAnswer) {
   if (answer === 'partial') {
     return {
       label: 'Partial',
-      stripClass: 'bg-[#8b5d00]',
-      statusClass: 'text-[#8b5d00] bg-[#f9f2e7] border-[#ead7b1]',
+      stripClass: 'bg-[#e8a600]',
+      statusClass: 'text-[#7a4800] bg-[#fdf5e4] border-[#f5d78a]',
     }
   }
 
-  if (answer === 'yes' || answer === 'na') {
+  if (answer === 'yes') {
     return {
       label: 'Complete',
       stripClass: 'bg-[#2e844a]',
       statusClass: 'text-[#1f5f33] bg-[#edf7ee] border-[#cde8d3]',
+    }
+  }
+
+  if (answer === 'na') {
+    return {
+      label: 'N/A',
+      stripClass: 'bg-[#8b939d]',
+      statusClass: 'text-[#39414a] bg-[#f4f6f9] border-[#c9cfd6]',
     }
   }
 
