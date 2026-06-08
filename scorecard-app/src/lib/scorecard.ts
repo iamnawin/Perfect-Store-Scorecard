@@ -17,6 +17,8 @@ import type {
   CalculationTrace,
   RiskLevel,
   RecalculatedScorecard,
+  CsvUploadSummary,
+  CsvSkuContext,
 } from '../types'
 
 export function createInitialEvidenceState() {
@@ -62,6 +64,11 @@ function isActiveOffShelfEntry(entry: OffShelfEntry) {
   return entry.status !== 'removed' && entry.status !== 'pending-review'
 }
 
+export function getSkuContextFromCsv(skuId: string, csvSummary: CsvUploadSummary | null): CsvSkuContext | null {
+  if (!csvSummary || !csvSummary.matchedSkus[skuId]) return null
+  return csvSummary.matchedSkus[skuId]
+}
+
 const demoBasePlanLgorPct = 26.3
 
 const displayFactors: Record<string, number> = {
@@ -73,8 +80,10 @@ const displayFactors: Record<string, number> = {
   'default': 0.5
 }
 
-export function getDisplayFactor(location: string, product?: OffShelfProduct): number {
-  if (product && product.recommendedLocations.includes(location)) return 1.0
+export function getDisplayFactor(location: string, product?: OffShelfProduct, csvContext?: CsvSkuContext | null): number {
+  const recommended = csvContext?.recommendedDisplay || product?.recommendedLocations[0] || ''
+  if (location === recommended) return 1.0
+  
   return displayFactors[location] || displayFactors['default']
 }
 
@@ -86,26 +95,37 @@ export function getQuantityFactor(quantity: number, peakWeekUnits: number): { fa
   return { factor: 0.5, risk: 'High' }
 }
 
-export function getMultiplier(entry: Partial<OffShelfEntry>, product?: OffShelfProduct): number {
-  const isHighPriority = (product?.basePoints ?? 0) >= 15
-  const isRecommendedLocation = product && entry.location && product.recommendedLocations.includes(entry.location)
+export function getMultiplier(entry: Partial<OffShelfEntry>, product?: OffShelfProduct, csvContext?: CsvSkuContext | null): number {
+  if (csvContext && csvContext.multiplier > 1) return csvContext.multiplier
 
-  if (isHighPriority && isRecommendedLocation) return 3
-  if (isHighPriority || isRecommendedLocation) return 2
+  const priority = csvContext?.priority || ((product?.basePoints ?? 0) >= 15 ? 'High' : 'Medium')
+  const recommended = csvContext?.recommendedDisplay || product?.recommendedLocations[0] || ''
+  const isRecommendedLocation = entry.location === recommended
+
+  if (priority === 'High' && isRecommendedLocation) return 3
+  if (priority === 'High' || isRecommendedLocation || csvContext?.isClusterMatch) return 2
   return 1
 }
 
-export function calculateSkuScoreImpact(entry: Partial<OffShelfEntry>, product?: OffShelfProduct) {
-  const lgor = product?.baseLgor ?? 0
-  const displayFactor = getDisplayFactor(entry.location || '', product)
-  const quantity = getOffShelfEntryUnits(entry as OffShelfEntry)
-  const { factor: quantityFactor, risk } = getQuantityFactor(quantity, product?.peakWeekUnits ?? 0)
-  const multiplier = getMultiplier(entry, product)
+export function calculateSkuScoreImpact(entry: Partial<OffShelfEntry>, product?: OffShelfProduct, csvContext?: CsvSkuContext | null) {
+  const lgor = csvContext?.lgor ?? product?.baseLgor ?? 0
+  const displayFactor = getDisplayFactor(entry.location || '', product, csvContext)
+  const normalizedQuantity = calculateOffShelfUnits({
+    product: product!,
+    quantity: entry.quantity ?? 0,
+    unit: entry.quantityUnit ?? 'eaches'
+  })
+  const peakWeekUnits = csvContext?.peakWeekUnits ?? product?.peakWeekUnits ?? 0
+  const { factor: quantityFactor, risk } = getQuantityFactor(normalizedQuantity, peakWeekUnits)
+  const multiplier = getMultiplier(entry, product, csvContext)
 
   const baseImpact = +(lgor * displayFactor * quantityFactor).toFixed(2)
   const finalImpact = +(baseImpact * multiplier).toFixed(1)
 
-  const { tags, explanations } = generateSkuTags({ ...entry, multiplier, impactPoints: finalImpact }, product)
+  const { tags, explanations } = generateSkuTags({ ...entry, multiplier, impactPoints: finalImpact }, product, csvContext)
+  
+  const peakWeekRatio = peakWeekUnits > 0 ? +(normalizedQuantity / peakWeekUnits).toFixed(2) : 0
+  const multiplierLabel = `${multiplier}x multiplier | ${entry.location || 'Unknown location'}`
 
   return {
     baseImpact,
@@ -115,7 +135,14 @@ export function calculateSkuScoreImpact(entry: Partial<OffShelfEntry>, product?:
     quantityFactor,
     riskLevel: risk,
     tags,
-    tagExplanations: explanations
+    tagExplanations: explanations,
+    planType: csvContext?.planType || (entry.classification === 'base-plan' ? 'Base Plan' : 'Incremental'),
+    normalizedQuantity,
+    peakWeekUnits,
+    peakWeekRatio,
+    estimatedLgor: lgor,
+    impactPoints: finalImpact,
+    multiplierLabel,
   }
 }
 
@@ -123,20 +150,20 @@ export function recalculateScorecard(state: AppState): RecalculatedScorecard {
   // 1. Execution Score
   const executionScore = getChecklistBasePlanScore(state.checklist)
 
-  // 2. Base Plan Score (Simple MVP logic)
-  // For now we use the demo baseline, but we could make it dynamic based on base plan SKUs
+  // 2. Base Plan Score
   const basePlanScore = demoBasePlanLgorPct
 
   // 3. Incremental Score
   const scoredOffShelf = state.offShelf.map(entry => {
     const product = getOffShelfProductById(entry.skuId)
-    const impact = calculateSkuScoreImpact(entry, product)
+    const csvContext = getSkuContextFromCsv(entry.skuId, state.csvSummary)
+    const impact = calculateSkuScoreImpact(entry, product, csvContext)
     
     return {
       ...entry,
       ...impact,
-      impactPoints: entry.classification === 'incremental' ? impact.finalImpact : 0,
-      estimatedLgor: entry.classification === 'incremental' ? (product?.baseLgor ?? 0) : 0
+      impactPoints: impact.planType === 'Incremental' ? impact.finalImpact : 0,
+      estimatedLgor: impact.planType === 'Incremental' ? (csvContext?.lgor ?? product?.baseLgor ?? 0) : 0
     }
   })
 
@@ -344,23 +371,25 @@ export function getOffShelfIncrementalScore(entries: OffShelfEntry[]) {
   return Math.max(0, rawIncremental)
 }
 
-export function generateSkuTags(entry: Partial<OffShelfEntry>, product?: OffShelfProduct): { tags: string[]; explanations: Record<string, string> } {
+export function generateSkuTags(entry: Partial<OffShelfEntry>, product?: OffShelfProduct, csvContext?: CsvSkuContext | null): { tags: string[]; explanations: Record<string, string> } {
   const tags: string[] = []
   const explanations: Record<string, string> = {}
+  
+  if (!csvContext && !product) {
+    tags.push('Unmatched SKU')
+    explanations['Unmatched SKU'] = 'This SKU was not found in the uploaded store data. Score impact may be limited.'
+    return { tags, explanations }
+  }
+
   const multiplier = entry.multiplier || 1
   const impactPoints = entry.impactPoints || 0
+  const priority = csvContext?.priority || ((product?.basePoints ?? 0) >= 15 ? 'High' : 'Medium')
   
   // Priority Tags
-  if (impactPoints >= 15 || (product?.basePoints || 0) >= 15) {
-    tags.push('High')
-    explanations['High'] = 'This SKU has high LGOR contribution for the selected cluster.'
-  } else if (impactPoints >= 5) {
-    tags.push('Medium')
-    explanations['Medium'] = 'This SKU has moderate LGOR contribution.'
-  } else if (impactPoints > 0) {
-    tags.push('Low')
-    explanations['Low'] = 'This SKU has low LGOR contribution.'
-  }
+  tags.push(priority)
+  explanations[priority] = priority === 'High' 
+    ? 'This SKU has high LGOR contribution for the selected cluster.' 
+    : priority === 'Medium' ? 'This SKU has moderate LGOR contribution.' : 'This SKU has low LGOR contribution.'
 
   // Multiplier Tags
   if (multiplier >= 3) {
@@ -372,13 +401,11 @@ export function generateSkuTags(entry: Partial<OffShelfEntry>, product?: OffShel
   }
 
   // Plan Type
-  if (entry.classification === 'incremental') {
-    tags.push('Incremental')
-    explanations['Incremental'] = 'This SKU is not part of the base plan but contributes additional off-shelf opportunity.'
-  } else if (entry.classification === 'base-plan') {
-    tags.push('Base Plan')
-    explanations['Base Plan'] = 'This SKU is part of the required base plan for this cycle.'
-  }
+  const planType = csvContext?.planType || (entry.classification === 'base-plan' ? 'Base Plan' : 'Incremental')
+  tags.push(planType)
+  explanations[planType] = planType === 'Incremental' 
+    ? 'This SKU is not part of the base plan but contributes additional off-shelf opportunity.' 
+    : 'This SKU is part of the required base plan for this cycle.'
 
   // Opportunity/Risk Tags
   if (impactPoints > 10) {
@@ -386,15 +413,20 @@ export function generateSkuTags(entry: Partial<OffShelfEntry>, product?: OffShel
     explanations['Opportunity'] = 'This SKU creates significant score opportunity due to high volume/multiplier alignment.'
   }
   
-  if (entry.quantity && product && Number(entry.quantity) < product.peakWeekUnits) {
-    tags.push('Risk')
-    explanations['Risk'] = 'Current quantity is below the peak week baseline, indicating potential out-of-stock risk during high demand.'
+  const quantity = getOffShelfEntryUnits(entry as OffShelfEntry)
+  const peakWeekUnits = csvContext?.peakWeekUnits ?? product?.peakWeekUnits ?? 0
+  if (quantity > 0 && peakWeekUnits > 0 && quantity < peakWeekUnits) {
+    const coverage = Math.round((quantity / peakWeekUnits) * 100)
+    if (coverage < 30) {
+      tags.push('Risk')
+      explanations['Risk'] = `Current quantity (${quantity}) is below 30% of the peak week baseline (${peakWeekUnits}), indicating high out-of-stock risk.`
+    }
     tags.push('Peak Week')
-    explanations['Peak Week'] = `Quantity is measured against a peak week target of ${product.peakWeekUnits} units.`
+    explanations['Peak Week'] = `Quantity is measured against a peak week target of ${peakWeekUnits} units.`
   }
 
   // Cluster match
-  if (product && entry.location && product.recommendedLocations.includes(entry.location)) {
+  if (csvContext?.isClusterMatch || (product && entry.location && product.recommendedLocations.includes(entry.location))) {
     tags.push('Cluster Match')
     explanations['Cluster Match'] = 'This SKU placement matches the recommended location strategy for this store cluster.'
   }
@@ -647,11 +679,8 @@ export function getIncrementalRawLgorPct(entries: OffShelfEntry[]) {
 }
 
 export function getTotalScore(state: AppState) {
-  const executionScore = getChecklistBasePlanScore(state.checklist)
-  const basePlanLgorPoints = getBasePlanLgorPoints(state.checklist)
-  const incrementalScore = getOffShelfIncrementalScore(state.offShelf)
-
-  return Math.max(0, +(executionScore + basePlanLgorPoints + incrementalScore).toFixed(1))
+  const recalculated = recalculateScorecard(state)
+  return recalculated.combinedScore
 }
 
 export function getLgorPct(state: AppState) {

@@ -426,9 +426,31 @@ export interface LeaderboardEntry {
   delta: number
 }
 
+export interface CsvSkuContext {
+  sku: string
+  skuName: string
+  cluster: string
+  planType: PlanType
+  lgor: number
+  pyPos?: number
+  peakWeekUnits: number
+  recommendedDisplay: string
+  multiplier: number
+  weight?: number
+  priority: PriorityTag
+  isClusterMatch: boolean
+  isBasePlan: boolean
+  isIncremental: boolean
+}
+
 export interface CsvUploadSummary {
   fileName: string
+  uploadedAt: string
   rowsLoaded: number
+  currentStoreCode: string
+  currentStoreName: string
+  quarter: string
+  fiscalYear: number
   currentStoreMatch: {
     found: boolean
     matchedStoreCode: string
@@ -448,6 +470,8 @@ export interface CsvUploadSummary {
     totalSkus: number
     totalRows: number
   }
+  matchedRows: any[]
+  matchedSkus: Record<string, CsvSkuContext>
 }
 
 export interface AppState {

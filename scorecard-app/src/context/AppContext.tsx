@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo, type ReactNode } from 'react'
-import type { AppState, ChecklistAnswer, ChecklistState, OffShelfEntry, PerfectStoreScorecard, ScorecardVersionItem, ScorecardVersionRecord, VisitType, UploadedFile, ChatterPostStatus, CsvUploadSummary } from '../types'
+import type { AppState, ChecklistAnswer, ChecklistState, OffShelfEntry, OffShelfProduct, PerfectStoreScorecard, ScorecardVersionItem, ScorecardVersionRecord, VisitType, UploadedFile, ChatterPostStatus, CsvUploadSummary, CsvSkuContext } from '../types'
 import { AppContext } from './app-context'
-import { checklistQuestions, perfectStoreScorecards, previousOffShelfSeed, previousSnapshot, store } from '../data/mock'
+import { checklistQuestions, offShelfProducts, perfectStoreScorecards, previousOffShelfSeed, previousSnapshot, store } from '../data/mock'
+
 import {
   buildRevisitComparison,
   createRevisitFromScorecard,
@@ -25,18 +26,48 @@ import {
   recalculateScorecard,
 } from '../lib/scorecard'
 
-function generateCsvSummary(file: File, _activeScorecard?: PerfectStoreScorecard): CsvUploadSummary {
+function generateCsvSummary(file: File, activeScorecard?: PerfectStoreScorecard): CsvUploadSummary {
   const isMatch = file.name.toLowerCase().includes('q1') || file.name.toLowerCase().includes('2026')
   
+  // In a real app, we would parse the CSV file here.
+  // For the MVP, we simulate matching based on the store context.
+  const matchedSkus: Record<string, CsvSkuContext> = {}
+  
+  // Simulate some matched SKUs if the file name matches the context
+  if (isMatch) {
+    offShelfProducts.slice(0, 10).forEach((product: OffShelfProduct, index: number) => {
+      matchedSkus[product.id] = {
+        sku: product.id,
+        skuName: product.name,
+        cluster: 'Midwest Core',
+        planType: index % 4 === 0 ? 'Base Plan' : 'Incremental',
+        lgor: product.baseLgor,
+        pyPos: product.baseLgor * 1000,
+        peakWeekUnits: product.peakWeekUnits,
+        recommendedDisplay: product.recommendedLocations[0] || 'Endcap',
+        multiplier: index % 5 === 0 ? 3 : 1,
+        priority: product.baseLgor > 5 ? 'High' : 'Medium',
+        isClusterMatch: true,
+        isBasePlan: index % 4 === 0,
+        isIncremental: index % 4 !== 0,
+      }
+    })
+  }
+
   return {
     fileName: file.name,
-    rowsLoaded: 248,
+    uploadedAt: new Date().toISOString(),
+    rowsLoaded: isMatch ? 248 : 0,
+    currentStoreCode: store.sapNumber,
+    currentStoreName: store.name,
+    quarter: activeScorecard?.quarter ?? 'Q1',
+    fiscalYear: activeScorecard?.fiscalYear ?? 2026,
     currentStoreMatch: {
       found: isMatch,
-      matchedStoreCode: isMatch ? (store.sapNumber || 'HD1907') : 'NO_MATCH',
+      matchedStoreCode: isMatch ? store.sapNumber : 'NO_MATCH',
       matchedStoreName: isMatch ? store.name : 'Unknown',
       matchedCluster: isMatch ? 'Midwest Core' : 'None',
-      matchingSkusCount: isMatch ? 18 : 0,
+      matchingSkusCount: Object.keys(matchedSkus).length,
     },
     dataAvailability: {
       basePlanSkus: isMatch,
@@ -46,10 +77,12 @@ function generateCsvSummary(file: File, _activeScorecard?: PerfectStoreScorecard
       multiplierData: isMatch,
     },
     debugDetails: {
-      totalStores: 42,
-      totalSkus: 156,
-      totalRows: 248,
+      totalStores: isMatch ? 42 : 0,
+      totalSkus: isMatch ? 156 : 0,
+      totalRows: isMatch ? 248 : 0,
     },
+    matchedRows: isMatch ? [{ store: store.sapNumber, cluster: 'Midwest Core' }] : [],
+    matchedSkus,
   }
 }
 

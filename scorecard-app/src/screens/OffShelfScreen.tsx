@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'r
 import { useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
 import {
+  AlertTriangle,
   Camera,
   ChevronDown,
   ChevronUp,
@@ -29,7 +30,6 @@ import { analyzeSecondaryDisplay } from '../lib/agentforce/secondaryDisplayClien
 import {
   calculateOffShelfUnits,
   estimateOffShelfImpact,
-  generateSkuTags,
   getBasePlanLgorPoints,
   getChecklistBasePlanScore,
   getCurrentSectionNumber,
@@ -40,6 +40,8 @@ import {
   getPotentialAdditionalGain,
   getRemainingOffShelfRecommendations,
   getVisitTypeLabel,
+  getSkuContextFromCsv,
+  calculateSkuScoreImpact,
 } from '../lib/scorecard'
 import { answerTrellisChat, getOffShelfInsight, getRevisitIntelligence } from '../lib/trellis'
 import type { AgentforceSecondaryDisplayAnalysis, OffShelfClassification, OffShelfEntry, ScorecardVersionItem } from '../types'
@@ -149,15 +151,13 @@ export function OffShelfScreen() {
   const editingEntry = editingId ? offShelf.find(entry => entry.id === editingId) : null
   const editingImpact = editingEntry?.impactPoints ?? 0
   const draftImpact = selectedProduct && draft.location && draft.quantity !== ''
-    ? estimateOffShelfImpact({
-        product: selectedProduct,
-        location: draft.location,
-        quantity: draft.quantity,
-        quantityUnit: draft.quantityUnit,
-        classification: draft.classification,
-      })
+    ? calculateSkuScoreImpact(
+        { ...draft, quantity: draft.quantity },
+        selectedProduct,
+        getSkuContextFromCsv(selectedProduct.id, app.csvSummary)
+      )
     : null
-  const liveIncremental = +(currentIncremental - editingImpact + (draftImpact?.impactPoints ?? editingImpact)).toFixed(1)
+  const liveIncremental = +(currentIncremental - editingImpact + (draftImpact?.finalImpact ?? editingImpact)).toFixed(1)
   const projectedScore = +(basePlanScore + basePlanLgorPoints + liveIncremental).toFixed(1)
   const potentialAdditionalGain = getPotentialAdditionalGain(offShelf)
   const remainingRecommendations = getRemainingOffShelfRecommendations(offShelf).slice(0, 4)
@@ -1282,13 +1282,19 @@ function SkuCalculationCard({
   onDuplicate: () => void
   onRemove: () => void
 }) {
+  const app = useApp()
   const product = getOffShelfProductById(entry.skuId)
-  const { tags, explanations } = generateSkuTags(entry, product)
+  const csvContext = getSkuContextFromCsv(entry.skuId, app.csvSummary)
+  
+  const tags = entry.tags || []
+  const explanations = entry.tagExplanations || {}
+  const isUnmatched = tags.includes('Unmatched SKU')
+  
   const calculatedUnits = getOffShelfEntryUnits(entry)
-  const peakWeekUnits = product?.peakWeekUnits ?? 0
+  const peakWeekUnits = csvContext?.peakWeekUnits ?? product?.peakWeekUnits ?? 0
   const peakWeekRatio = peakWeekUnits > 0 ? +(calculatedUnits / peakWeekUnits).toFixed(2) : 0
   const peakWeekMultiplier = Math.round(entry.multiplier)
-  const planType = getPlanTypeLabel(entry)
+  const planType = entry.planType || getPlanTypeLabel(entry)
   const recommendation = getRecommendationStatus(entry, product, calculatedUnits)
   const previousQuantity = previousItem?.quantityPrevious ?? (entry.origin === 'previous-visit' ? entry.quantity : null)
   const previousImpact = previousItem?.scorePrevious ?? (entry.origin === 'previous-visit' ? entry.impactPoints : 0)
@@ -1299,7 +1305,10 @@ function SkuCalculationCard({
   const scoreDelta = +(currentImpact - previousImpact).toFixed(1)
 
   return (
-    <div className="rounded-lg border border-outline bg-surface-lowest px-3 py-3">
+    <div className={clsx(
+      'rounded-lg border px-3 py-3 transition-colors',
+      isUnmatched ? 'border-[#ead7b1] bg-[#fffcf0]' : 'border-outline bg-surface-lowest'
+    )}>
       {tags.length > 0 && (
         <div className="mb-2.5 flex flex-wrap gap-1.5">
           {tags.map((tag: string) => (
@@ -1311,6 +1320,16 @@ function SkuCalculationCard({
           ))}
         </div>
       )}
+      
+      {isUnmatched && (
+        <div className="mb-3 flex items-center gap-2 rounded bg-white/50 p-2 border border-[#ead7b1]">
+          <AlertTriangle size={14} className="text-[#755400] shrink-0" />
+          <p className="text-[11px] text-[#755400] leading-snug">
+            This SKU was not found in the uploaded store data. Score impact may be limited.
+          </p>
+        </div>
+      )}
+
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Display {index + 1}</p>
@@ -1341,17 +1360,16 @@ function SkuCalculationCard({
         <MiniMetric label="Quarterly Value" value={formatCurrencyShort(product?.quarterlySalesValue)} positive={Boolean(product?.quarterlySalesValue)} />
         <MiniMetric label="LGOR %" value={`${entry.estimatedLgor.toFixed(1)}%`} positive={entry.estimatedLgor > 0} />
         <MiniMetric label="Peak Week Units" value={peakWeekUnits ? String(peakWeekUnits) : 'N/A'} />
+        <MiniMetric label="Recommended" value={csvContext?.recommendedDisplay || 'Endcap'} />
         <MiniMetric label="Entered Quantity" value={`${entry.quantity} ${quantityUnit}`} />
-        <MiniMetric label="Quantity UOM" value={quantityUnit} />
         <MiniMetric label="Calculated Units" value={String(calculatedUnits)} />
         <MiniMetric label="Peak Week Ratio" value={`${peakWeekRatio.toFixed(2)}x`} />
         <MiniMetric label="Incremental Points" value={entry.classification === 'incremental' ? `${entry.impactPoints.toFixed(1)} pts` : 'N/A'} positive={entry.impactPoints > 0} />
-        <MiniMetric label="Photo" value={entry.photoCaptured ? 'Captured' : 'Optional'} positive={entry.photoCaptured} />
       </div>
 
       <div className="mt-3 rounded-lg border border-[#c9d8ea] bg-[#edf4ff] px-3 py-2.5">
         <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">Calculation</p>
-        <p className="mt-1 text-[12px] font-semibold text-[#014486]">{getCalculationLine(entry, peakWeekMultiplier)}</p>
+        <p className="mt-1 text-[12px] font-semibold text-[#014486]">{getCalculationLine(entry)}</p>
         <p className="mt-1 text-[11px] text-[#014486]">{recommendation.message}</p>
       </div>
 
@@ -1437,9 +1455,13 @@ function getRecommendationStatus(
   }
 }
 
-function getCalculationLine(entry: OffShelfEntry, peakWeekMultiplier: number) {
+function getCalculationLine(entry: OffShelfEntry) {
+  const peakWeekMultiplier = Math.round(entry.multiplier)
+  const displayFactor = entry.displayFactor ?? 1.0
+  const quantityFactor = entry.quantityFactor ?? 1.0
+
   if (entry.classification === 'incremental') {
-    return `${entry.estimatedLgor.toFixed(1)} LGOR x ${peakWeekMultiplier}x Peak Week = ${entry.impactPoints.toFixed(1)} points`
+    return `${entry.estimatedLgor.toFixed(1)} LGOR x ${displayFactor.toFixed(2)} Display x ${quantityFactor.toFixed(2)} Qty x ${peakWeekMultiplier}x Multiplier = ${entry.impactPoints.toFixed(1)} pts`
   }
 
   if (entry.classification === 'base-plan') {
