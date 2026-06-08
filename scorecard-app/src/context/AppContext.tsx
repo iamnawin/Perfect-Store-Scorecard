@@ -28,7 +28,7 @@ import {
   generateSkuTags,
   generateRecommendations,
 } from '../lib/scorecard'
-import type { UploadedFile, UploadSource, PriorityTag, MultiplierTag, PlanType, RiskLevel, ChatterPostStatus } from '../types'
+import type { UploadedFile, ChatterPostStatus } from '../types'
 
 function createOffShelfEntryWithTags(entry: OffShelfEntry): OffShelfEntry {
   const product = getOffShelfProductById(entry.skuId)
@@ -111,6 +111,7 @@ function createSourceScorecardRecord(activeScorecard?: PerfectStoreScorecard): S
     storeId: 'store-1907',
     storeName: store.name,
     quarter: activeScorecard?.quarter ?? 'Q1',
+    fiscalYear: activeScorecard?.fiscalYear ?? 2026,
     season: activeScorecard?.season ?? 'Spring 2026',
     scorecardStatus: 'Submitted',
     versionNumber: 1,
@@ -130,6 +131,7 @@ function createSourceScorecardRecord(activeScorecard?: PerfectStoreScorecard): S
     revisitReason: '',
     changedFieldsSummary: [],
     items: previousEntries.map(entry => createVersionItemFromOffShelfEntry(entry, 'pss-v1-submitted')),
+    chatterPostStatus: 'Not Posted',
   }
 }
 
@@ -574,6 +576,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           versionHistory,
           revisitComparison,
           activeScorecardResult,
+          storePlanMap,
         }),
       }
       const submittedVersion = submitRevisit(draftWithCurrentState, {
@@ -607,6 +610,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             versionHistory,
             revisitComparison,
             activeScorecardResult,
+            storePlanMap,
           }),
         },
       })

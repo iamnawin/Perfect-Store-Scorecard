@@ -230,7 +230,7 @@ export function estimateOffShelfImpact({
 export function getOffShelfIncrementalScore(entries: OffShelfEntry[]) {
   const rawIncremental = +entries
     .filter(isActiveOffShelfEntry)
-    .reduce((total, totalPoints, entry) => totalPoints + (entry.impactPoints || 0), 0)
+    .reduce((total, entry) => total + (entry.impactPoints || 0), 0)
     .toFixed(1)
 
   return Math.max(0, rawIncremental)

@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import type { AppState, ChecklistAnswer, OffShelfEntry, ScorecardStatus, VisitType } from '../types'
+import type { AppState, ChecklistAnswer, OffShelfEntry, ScorecardStatus, VisitType, UploadedFile, ChatterPostStatus } from '../types'
 
 export interface AppContextValue extends AppState {
   setVisitType: (visitType: VisitType) => void

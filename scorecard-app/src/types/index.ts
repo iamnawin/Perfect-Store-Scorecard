@@ -171,6 +171,7 @@ export interface ScorecardVersionRecord {
   storeId: string
   storeName: string
   quarter: string
+  fiscalYear: number
   season: string
   scorecardStatus: ScorecardVersionStatus
   versionNumber: number

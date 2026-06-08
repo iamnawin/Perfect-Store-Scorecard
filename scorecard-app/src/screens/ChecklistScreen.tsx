@@ -82,7 +82,6 @@ export function ChecklistScreen() {
     offShelf,
     setChecklistAnswer,
     setQuestionNote,
-    setEvidencePhoto,
     saveDraft,
     lastSavedAt,
     agentforceEnabled,

@@ -1,9 +1,9 @@
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+import clsx from 'clsx'
 import {
   ClipboardCheck,
   Flag,
-  Mail,
   Send,
   Share2,
 } from 'lucide-react'
@@ -17,7 +17,6 @@ import { useApp } from '../context/useApp'
 import { checklistQuestions, previousSnapshot, regionBenchmark, store } from '../data/mock'
 import {
   getBasePlanLgorPoints,
-  getChecklistBasePlanScore,
   getCurrentSectionNumber,
   getCurrentRiskValue,
   getOffShelfIncrementalScore,
@@ -64,14 +63,12 @@ export function SummaryScreen() {
     saveDraft,
     submitScorecard,
     submitted,
-    showToast,
     scorecardVersion,
     sourceScorecard,
     versionHistory,
     revisitComparison,
   } = app
 
-  const executionPoints = getChecklistBasePlanScore(checklist)
   const basePlanLgorPoints = getBasePlanLgorPoints(checklist)
   const incrementalScore = getOffShelfIncrementalScore(offShelf)
   const incrementalRawLgorPct = getIncrementalRawLgorPct(offShelf)
@@ -126,106 +123,6 @@ export function SummaryScreen() {
     }
 
     submitScorecard()
-  }
-
-  function openEmailSnapshot() {
-    const subject = encodeURIComponent(`Store Scorecard Snapshot - ${store.name}`)
-    const body = encodeURIComponent(buildShareText({
-      agentforceEnabled,
-      totalScore,
-      executionScore,
-      basePlanScore: executionPoints,
-      basePlanLgorPoints,
-      incrementalScore,
-      lgorPct,
-      riskValue,
-      mapMisses,
-      missingTopItems,
-      notEnough,
-      emptyCalories,
-      scoreDelta,
-      lgorDelta,
-      riskDelta,
-      comparisonRepeatedGap,
-      notes,
-      revisitRequired,
-      shelfResetNeeded,
-      summaryInsight,
-      nextBestAction: buildNextBestAction(remainingRecommendations[0], summaryInsight.nextVisitFocus),
-    }))
-
-    window.open(`mailto:?subject=${subject}&body=${body}`, '_self')
-  }
-
-  async function copyTextOrShare({
-    title,
-    text,
-    successMessage,
-  }: {
-    title: string
-    text: string
-    successMessage: string
-  }) {
-    if (navigator.share) {
-      await navigator.share({ title, text })
-      showToast('Done', successMessage)
-      return
-    }
-
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text)
-      showToast('Done', successMessage)
-      return
-    }
-
-    window.alert(text)
-  }
-
-  async function shareToChatter() {
-    const chatterText = buildShareText({
-      agentforceEnabled,
-      totalScore,
-      executionScore,
-      basePlanScore: executionPoints,
-      basePlanLgorPoints,
-      incrementalScore,
-      lgorPct,
-      riskValue,
-      mapMisses,
-      missingTopItems,
-      notEnough,
-      emptyCalories,
-      scoreDelta,
-      lgorDelta,
-      riskDelta,
-      comparisonRepeatedGap,
-      notes,
-      revisitRequired,
-      shelfResetNeeded,
-      summaryInsight,
-      nextBestAction: buildNextBestAction(remainingRecommendations[0], summaryInsight.nextVisitFocus),
-    })
-
-    await copyTextOrShare({
-      title: `Chatter Post - ${store.name}`,
-      text: chatterText,
-      successMessage: 'Chatter post has been sent.',
-    })
-  }
-
-  async function shareLeaderboardSnapshot() {
-    const leaderboardText = [
-      `Leaderboard snapshot - ${store.scorecard}`,
-      ...leaderboardPreview.map(entry => (
-        `${entry.rank}. ${entry.store} (${entry.rep}) - ${entry.score}${entry.delta >= 0 ? ` (+${entry.delta})` : ` (${entry.delta})`}`
-      )),
-    ].join('\n')
-
-    await copyTextOrShare({
-      title: `Leaderboard Snapshot - ${store.name}`,
-      text: leaderboardText,
-      successMessage: 'Score posted on the leaderboard.',
-    })
   }
 
   return (
@@ -300,11 +197,6 @@ export function SummaryScreen() {
                 summary={managerSummaryDraft.narrative}
                 highlights={managerSummaryDraft.highlights}
                 footer={managerSummaryDraft.summary}
-                actions={[{
-                  label: 'Email Snapshot',
-                  onClick: openEmailSnapshot,
-                  intent: 'secondary',
-                }]}
               />
               <TrellisSummaryCard
                 title="Top Recommendation"
@@ -801,33 +693,6 @@ function ListRow({ icon, text }: { icon: ReactNode; text: string }) {
   )
 }
 
-function ActionButton({
-  label,
-  icon,
-  tone = 'primary',
-  onClick,
-}: {
-  label: string
-  icon?: ReactNode
-  tone?: 'primary' | 'secondary'
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`min-h-11 rounded-md px-3 text-[12px] font-semibold flex items-center justify-center gap-2 ${
-        tone === 'primary'
-          ? 'bg-primary text-white'
-          : 'border border-[#c9d8ea] bg-[#edf4ff] text-primary'
-      }`}
-    >
-      {icon}
-      {label}
-    </button>
-  )
-}
-
 function SignalRow({
   title,
   detail,
@@ -845,7 +710,7 @@ function SignalRow({
         <p className="text-[12px] font-semibold text-on-surface">{title}</p>
         <p className="mt-1 text-[12px] text-on-surface-variant">{detail}</p>
       </div>
-      <span className={`shrink-0 rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+      <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
         tone === 'success'
           ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
           : 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'
@@ -905,90 +770,6 @@ function buildNextBestAction(
   }
 
   return `Expand ${topOpportunity.location} placement for ${topOpportunity.product.name}.`
-}
-
-function buildShareText({
-  agentforceEnabled,
-  totalScore,
-  executionScore,
-  basePlanScore,
-  basePlanLgorPoints,
-  incrementalScore,
-  lgorPct,
-  riskValue,
-  mapMisses,
-  missingTopItems,
-  notEnough,
-  emptyCalories,
-  scoreDelta,
-  lgorDelta,
-  riskDelta,
-  comparisonRepeatedGap,
-  notes,
-  revisitRequired,
-  shelfResetNeeded,
-  summaryInsight,
-  nextBestAction,
-}: {
-  agentforceEnabled: boolean
-  totalScore: number
-  executionScore: number
-  basePlanScore: number
-  basePlanLgorPoints: number
-  incrementalScore: number
-  lgorPct: number
-  riskValue: number
-  mapMisses: number
-  missingTopItems: number
-  notEnough: number
-  emptyCalories: number
-  scoreDelta: number
-  lgorDelta: number
-  riskDelta: number
-  comparisonRepeatedGap: string
-  notes: string
-  revisitRequired: boolean
-  shelfResetNeeded: boolean
-  summaryInsight: ReturnType<typeof getSummaryInsight>
-  nextBestAction: string
-}) {
-  const lines = [
-    `Store Scorecard Snapshot - ${store.name}`,
-    '',
-    `Total Score: ${totalScore.toFixed(1)}`,
-    `Execution: ${executionScore}%`,
-    `Execution Points: ${basePlanScore.toFixed(1)}`,
-    `Base Plan LGOR Points: ${basePlanLgorPoints.toFixed(1)}`,
-    `Incremental Off-Shelf Points: +${incrementalScore.toFixed(1)}`,
-    `LGOR Rep %: ${lgorPct.toFixed(1)}%`,
-    `Risk $: ${formatCurrency(riskValue)}`,
-    '',
-    `Missing MAP: ${mapMisses}`,
-    `Missing Top Items: ${missingTopItems}`,
-    `Not Enough: ${notEnough}`,
-    `Empty Calories: ${emptyCalories}`,
-    '',
-    `Score Trend: ${scoreDelta >= 0 ? '+' : ''}${scoreDelta.toFixed(1)} pts`,
-    `LGOR Trend: ${lgorDelta >= 0 ? '+' : ''}${lgorDelta.toFixed(1)}%`,
-    `Risk Trend: ${formatCurrencyDelta(riskDelta)}`,
-    `Repeated Gap: ${comparisonRepeatedGap}`,
-  ]
-
-  if (agentforceEnabled) {
-    lines.push('', `Agentforce Summary: ${summaryInsight.narrative}`, `Next Best Action: ${nextBestAction}`)
-  }
-
-  if (notes.trim()) {
-    lines.push('', `Field Note: ${notes.trim()}`)
-  }
-
-  lines.push(
-    '',
-    `Revisit Required: ${revisitRequired ? 'On' : 'Off'}`,
-    `Shelf Reset Needed: ${shelfResetNeeded ? 'On' : 'Off'}`
-  )
-
-  return lines.join('\n')
 }
 
 function formatCurrency(value: number) {

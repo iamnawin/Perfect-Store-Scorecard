@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, CheckCircle2, ChevronRight, CircleDot, ClipboardCheck, LockKeyhole, Map as MapIcon, TrendingUp } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ChevronRight, CircleDot, ClipboardCheck, LockKeyhole, TrendingUp } from 'lucide-react'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
 import { TrellisInsightCard } from '../components/TrellisBot'
@@ -24,8 +24,6 @@ export function EntryScreen() {
     agentforceEnabled,
     activeScorecardResult,
     storePlanMap,
-    uploadStorePlanMap,
-    removeStorePlanMap,
   } = app
 
   const currentSection = getCurrentSection(app)
