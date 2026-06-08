@@ -31,7 +31,6 @@ import {
   getLgorPct,
   getMissingRequiredEvidence,
   getOffShelfIncrementalScore,
-  getPendingFollowUpEntries,
   getRemainingOffShelfRecommendations,
   getRequiredPhotoCount,
   getTotalScore,
@@ -164,22 +163,6 @@ export function getTopRecommendation(state: AppState): TrellisTopRecommendation 
       actionLabel: 'Open Photo Evidence',
       route: '/photo',
       tone: 'warning',
-    }
-  }
-
-  if (state.visitType === 'follow-up') {
-    const pendingEntries = getPendingFollowUpEntries(state.offShelf)
-    if (pendingEntries.length > 0) {
-      const targetEntry = pendingEntries[0]
-      return {
-        title: 'Finish the next revisit decision',
-        summary: `Review ${targetEntry.location} | ${targetEntry.product} and mark it as kept, updated, or removed.`,
-        impactLabel: `${pendingEntries.length} revisit decision${pendingEntries.length > 1 ? 's' : ''} open`,
-        reason: 'Agentforce clears pending previous-visit displays first so the change log is trustworthy.',
-        actionLabel: 'Open Revisit Review',
-        route: '/off-shelf',
-        tone: 'info',
-      }
     }
   }
 
@@ -410,38 +393,24 @@ export function getSummaryInsight(state: AppState): TrellisSummaryInsight {
 }
 
 export function getRevisitIntelligence(state: AppState): TrellisRevisitIntelligence {
-  const retainedCount = state.offShelf.filter(entry => entry.status === 'retained').length
+  const noChangeCount = state.offShelf.filter(entry => entry.origin === 'previous-visit' && entry.status === 'saved').length
   const updatedCount = state.offShelf.filter(entry => entry.status === 'updated').length
   const removedCount = state.offShelf.filter(entry => entry.status === 'removed').length
   const addedCount = state.offShelf.filter(entry => entry.status === 'added').length
-  const pendingCount = getPendingFollowUpEntries(state.offShelf).length
-  const totalReviewed = retainedCount + updatedCount + removedCount + addedCount
   const scoreDelta = getTotalScore(state) - previousSnapshot.score
   const items = [
-    { label: 'Retained / Updated', value: `${retainedCount} / ${updatedCount}`, tone: updatedCount > 0 ? 'success' as const : 'info' as const },
+    { label: 'No Change / Updated', value: `${noChangeCount} / ${updatedCount}`, tone: updatedCount > 0 ? 'success' as const : 'info' as const },
     { label: 'Removed / Added', value: `${removedCount} / ${addedCount}`, tone: addedCount > 0 ? 'success' as const : removedCount > 0 ? 'warning' as const : 'info' as const },
-    { label: 'Pending review', value: `${pendingCount}`, tone: pendingCount > 0 ? 'warning' as const : 'success' as const },
     { label: 'Score impact vs last', value: `${scoreDelta >= 0 ? '+' : ''}${scoreDelta.toFixed(1)} pts`, tone: scoreDelta >= 0 ? 'success' as const : 'warning' as const },
   ]
 
-  if (pendingCount > 0) {
-    return {
-      title: 'Revisit intelligence still needs more decisions',
-      summary: `${totalReviewed} prior display change${totalReviewed === 1 ? '' : 's'} reviewed so far. Agentforce still needs the remaining display decisions to finalize the delta story.`,
-      statusLabel: `${pendingCount} pending`,
-      tone: 'warning',
-      items,
-      footer: 'Finish the pending revisit decisions before relying on the change-tracking summary.',
-    }
-  }
-
   return {
-    title: 'Revisit intelligence has a clean delta story',
-    summary: `This revisit now shows what held, what changed, what dropped, and what was added since the previous completed scorecard.`,
+    title: 'Revisit intelligence is tracking automatic deltas',
+    summary: 'Previous values are prefilled. Edits, removals, and new displays will be compared automatically at submit.',
     statusLabel: 'Delta ready',
     tone: scoreDelta >= 0 ? 'success' : 'info',
     items,
-    footer: 'Agentforce can now explain the revisit as a change-tracking run instead of a resumed draft.',
+    footer: 'No separate previous-display review is required for this revisit.',
   }
 }
 
@@ -484,12 +453,11 @@ export function getManagerSummaryDraft(state: AppState): TrellisManagerSummaryDr
   const score = getTotalScore(state)
   const scoreDelta = score - previousSnapshot.score
   const incrementalScore = getOffShelfIncrementalScore(state.offShelf)
-  const pendingRevisit = state.visitType === 'follow-up' ? getPendingFollowUpEntries(state.offShelf).length : 0
   const missingEvidence = getMissingRequiredEvidence(state.evidence, state.offShelf).length
   const topRecommendation = getTopRecommendation(state)
   const riskValue = getCurrentRiskValue(state)
   const lgorPct = getLgorPct(state)
-  const retainedCount = state.offShelf.filter(entry => entry.status === 'retained').length
+  const noChangeCount = state.offShelf.filter(entry => entry.origin === 'previous-visit' && entry.status === 'saved').length
   const updatedCount = state.offShelf.filter(entry => entry.status === 'updated').length
   const removedCount = state.offShelf.filter(entry => entry.status === 'removed').length
   const addedCount = state.offShelf.filter(entry => entry.status === 'added').length
@@ -497,13 +465,11 @@ export function getManagerSummaryDraft(state: AppState): TrellisManagerSummaryDr
     ? `Revisit run is at ${score.toFixed(1)} total score (${scoreDelta >= 0 ? '+' : ''}${scoreDelta.toFixed(1)} vs last completed visit).`
     : `Current run is at ${score.toFixed(1)} total score with ${incrementalScore.toFixed(1)} points of incremental value captured.`
   const changePhrase = state.visitType === 'follow-up'
-    ? `Display changes: ${retainedCount} retained, ${updatedCount} updated, ${removedCount} removed, ${addedCount} added.`
+    ? `Display changes: ${noChangeCount} unchanged, ${updatedCount} updated, ${removedCount} removed, ${addedCount} added.`
     : `Execution score is ${getChecklistBasePlanScore(state.checklist).toFixed(1)} and LGOR Rep is ${lgorPct.toFixed(1)}%.`
   const blockerPhrase = missingEvidence > 0
     ? `${missingEvidence} required photo${missingEvidence > 1 ? 's are' : ' is'} still missing, so submission should stay open until proof is captured.`
-    : pendingRevisit > 0
-      ? `${pendingRevisit} revisit decision${pendingRevisit > 1 ? 's are' : ' is'} still pending before closeout.`
-      : `No critical blockers remain; current risk sits at ${formatCurrency(riskValue)}.`
+    : `No critical blockers remain; current risk sits at ${formatCurrency(riskValue)}.`
   const narrative = `${executionPhrase} ${changePhrase} ${blockerPhrase} Recommended next action: ${topRecommendation.summary}`
 
   return {
@@ -609,15 +575,11 @@ function analyzeComment(note: string) {
 function buildSuggestedComment(state: AppState, analysis: ReturnType<typeof analyzeComment>) {
   const breakdown = getScoreBreakdown(state)
   const missingEvidenceTitles = breakdown.missingEvidenceTitles
-  const pendingRevisit = state.visitType === 'follow-up' ? getPendingFollowUpEntries(state.offShelf).length : 0
-
   if (!state.notes.trim()) {
     const base = `Execution is ${breakdown.basePlanScore.toFixed(1)} with +${breakdown.basePlanLgorPoints.toFixed(1)} base LGOR and +${breakdown.incrementalScore.toFixed(1)} incremental captured.`
     const blocker = missingEvidenceTitles.length > 0
       ? `Submission blocked by missing evidence (${missingEvidenceTitles[0]}).`
-      : pendingRevisit > 0
-        ? `${pendingRevisit} revisit display decision${pendingRevisit > 1 ? 's are' : ' is'} still pending.`
-        : 'No submission blockers remain.'
+      : 'No submission blockers remain.'
     const next = state.revisitRequired ? 'Revisit flagged for follow-up execution.' : state.shelfResetNeeded ? 'Shelf reset flagged before next visit.' : 'Next step: close the top remaining miss and capture proof.'
     return `${base} ${blocker} ${next}`
   }
@@ -674,10 +636,6 @@ function formatWhyThis({ state, screen }: { state: AppState; screen: TrellisChat
 
   const signals: string[] = []
   if (breakdown.missingEvidenceTitles.length > 0) signals.push(`Evidence blocker: ${breakdown.missingEvidenceTitles[0]}`)
-  if (state.visitType === 'follow-up') {
-    const pending = getPendingFollowUpEntries(state.offShelf).length
-    if (pending > 0) signals.push(`Revisit decisions pending: ${pending}`)
-  }
 
   const failedQuestions = getFailedQuestions(state).sort((left, right) => right.weight - left.weight)
   if (failedQuestions[0]) signals.push(`Highest-weight miss: ${failedQuestions[0].title} (${failedQuestions[0].weight} pts)`)

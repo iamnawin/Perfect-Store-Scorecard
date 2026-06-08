@@ -1,85 +1,43 @@
 import clsx from 'clsx'
 import { useNavigate } from 'react-router-dom'
-import { CheckCircle2, ChevronRight, CircleDot, ClipboardCheck, LockKeyhole, TrendingUp } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ChevronRight, CircleDot, ClipboardCheck, LockKeyhole, TrendingUp } from 'lucide-react'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
 import { TrellisInsightCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
 import { previousSnapshot, store } from '../data/mock'
-import { getActiveScorecardSections, getCurrentSection, getCurrentSectionNumber, getPendingFollowUpEntries, getStepState } from '../lib/scorecard'
-import { getEntryVisitBriefing, getRevisitIntelligence, getTopRecommendation } from '../lib/trellis'
+import { getActiveScorecardSections, getCurrentSection, getCurrentSectionNumber, getStepState } from '../lib/scorecard'
+import { getEntryVisitBriefing, getTopRecommendation } from '../lib/trellis'
 
 export function EntryScreen() {
   const navigate = useNavigate()
   const app = useApp()
   const {
     visitType,
-    setVisitType,
     answeredChecks,
     totalChecks,
     totalSections,
-    requiredPhotos,
-    capturedRequiredPhotos,
     scorecardStatus,
     totalScore,
     submitted,
     agentforceEnabled,
-    offShelf,
+    activeScorecardResult,
   } = app
 
   const currentSection = getCurrentSection(app)
   const activeSections = getActiveScorecardSections(visitType)
   const currentSectionNumber = getCurrentSectionNumber(app)
-  const entrySubtitle = visitType === 'follow-up'
-    ? `Revisit Scorecard | ${store.city}`
-    : `New Scorecard | ${store.city}`
-  const previousEntryCount = offShelf.filter(entry => entry.origin === 'previous-visit').length
-  const pendingFollowUpEntries = getPendingFollowUpEntries(offShelf)
-  const reviewedFollowUpEntries = previousEntryCount - pendingFollowUpEntries.length
+  const entrySubtitle = `Start Visit | ${store.city}`
   const trendDelta = totalScore - previousSnapshot.score
-  const ctaRoute = scorecardStatus === 'ready-for-review' || scorecardStatus === 'completed'
+  const ctaRoute = submitted || scorecardStatus === 'ready-for-review' || scorecardStatus === 'completed'
     ? '/summary'
     : currentSection.route
   const topRecommendation = getTopRecommendation(app)
-  const revisitIntelligence = visitType === 'follow-up' ? getRevisitIntelligence(app) : null
   const briefing = agentforceEnabled ? getEntryVisitBriefing(app) : null
+  const activePerfectScorecard = activeScorecardResult.scorecard
+  const storePlanMapReady = activePerfectScorecard?.storePlanMapStatus === 'Published' && Boolean(activePerfectScorecard.storePlanMapId)
 
-  const followUpPrimaryCopy = {
-    'not-started': {
-      label: 'Start Revisit',
-      badge: 'Loaded',
-      detail: 'Previous completed scorecard loaded',
-      helper: 'Starting point: Review Prior Displays',
-      cta: 'Start Revisit',
-    },
-    'in-progress': {
-      label: 'Revisit in Review',
-      badge: 'Reviewing',
-      detail: 'This is a new scorecard run based on the last completed execution.',
-      helper: currentSection.id === 'photo-evidence'
-        ? 'Next action: Update Evidence'
-        : currentSection.id === 'review-submit'
-          ? 'Next action: Review Changes & Submit'
-          : 'Starting point: Review Prior Displays',
-      cta: 'Open Revisit',
-    },
-    'ready-for-review': {
-      label: 'Revisit ready for review',
-      badge: 'Ready',
-      detail: 'Previous changes have been reviewed and evidence is complete.',
-      helper: 'Next action: Review Changes & Submit',
-      cta: 'Review Revisit',
-    },
-    'completed': {
-      label: 'Revisit completed',
-      badge: 'Completed',
-      detail: 'This revisit scorecard has already been submitted.',
-      helper: 'Open the summary to review the completed change-tracking result.',
-      cta: 'Open Summary',
-    },
-  }[scorecardStatus]
-
-  const initialPrimaryCopy = {
+  const primaryCopyByStatus = {
     'not-started': {
       label: 'Start Scorecard',
       badge: 'Not Started',
@@ -88,29 +46,32 @@ export function EntryScreen() {
       cta: 'Start Scorecard',
     },
     'in-progress': {
-      label: 'New scorecard underway',
-      badge: 'In Progress',
+      label: 'Continue Scorecard',
+      badge: 'Draft',
       detail: 'An unfinished scorecard is available for this active visit.',
       helper: `Progress: ${answeredChecks} / ${totalChecks} checks | Section ${currentSectionNumber} of ${totalSections}.`,
-      cta: 'Resume Draft',
+      cta: 'Continue Scorecard',
     },
     'ready-for-review': {
-      label: 'New scorecard ready for review',
+      label: 'Continue Scorecard',
       badge: 'Ready',
-      detail: 'Checklist and evidence are complete for this visit.',
-      helper: `${capturedRequiredPhotos}/${requiredPhotos} required photos captured | Open the summary to submit.`,
+      detail: 'This draft is ready for review.',
+      helper: 'Open the summary to review and submit.',
       cta: 'Review & Submit',
     },
     'completed': {
-      label: 'New scorecard completed',
+      label: 'View Submitted Scorecard',
       badge: 'Completed',
       detail: 'This scorecard has already been submitted for the current visit.',
       helper: 'Open the summary to review the final outcome and next actions.',
-      cta: 'Open Summary',
+      cta: 'View Submitted Scorecard',
     },
-  }[scorecardStatus]
+  }
 
-  const primaryCopy = visitType === 'follow-up' ? followUpPrimaryCopy : initialPrimaryCopy
+  const primaryCopy = submitted
+    ? primaryCopyByStatus.completed
+    : primaryCopyByStatus[scorecardStatus]
+  const primaryDisabled = activeScorecardResult.state !== 'active' || !storePlanMapReady
 
   return (
     <PhoneShell>
@@ -121,45 +82,49 @@ export function EntryScreen() {
         />
 
         <div className="px-1">
-          <p className="text-[11px] font-medium text-on-surface-variant">{store.scorecard}</p>
+          <p className="text-[11px] font-medium text-on-surface-variant">
+            {activePerfectScorecard?.name ?? store.scorecard}
+          </p>
         </div>
 
-        <div className="rounded-lg border border-outline bg-surface-lowest px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Scorecard Type</p>
-            <div className="inline-grid grid-cols-2 gap-1 rounded-md border border-[#d8dde6] bg-[#f7f9fb] p-1">
-              <VisitTypeButton active={visitType === 'initial'} label="New" onClick={() => setVisitType('initial')} />
-              <VisitTypeButton active={visitType === 'follow-up'} label="Revisit" onClick={() => setVisitType('follow-up')} />
+        {activeScorecardResult.state !== 'active' ? (
+          <div className="rounded-lg border border-[#f0caca] bg-[#fff5f5] px-4 py-4">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#f0caca] bg-white text-[#ba0517]">
+                <AlertTriangle size={17} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-[#8e030f]">
+                  {activeScorecardResult.state === 'data-integrity-error'
+                    ? 'Active scorecard data issue'
+                    : 'No Active Perfect Store Scorecard Available'}
+                </p>
+                <p className="mt-1 text-[12px] text-[#8e030f]">{activeScorecardResult.message}</p>
+                <p className="mt-2 text-[12px] text-on-surface-variant">
+                  Sales Managers can complete submissions only under an Ops/Admin published active cycle.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-
-        {visitType === 'follow-up' ? (
-          <>
-            <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
-              <div className="px-4 py-3 border-b border-outline">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Reference</p>
-                <p className="mt-1 text-[15px] font-semibold text-on-surface">Previous completed scorecard loaded</p>
-              </div>
-              <div className="px-4 py-3 grid grid-cols-2 gap-x-6 gap-y-3">
-                <SnapshotField label="Last Score" value={String(previousSnapshot.score)} />
-                <SnapshotField label="Last Completed" value={previousSnapshot.date} />
-                <SnapshotField label="Prior Displays" value={String(previousEntryCount)} />
-                <SnapshotField label="Current Delta" value={`${trendDelta >= 0 ? '+' : ''}${trendDelta.toFixed(0)} pts`} />
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
-              <div className="px-4 py-3 border-b border-outline">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Purpose</p>
-              </div>
-              <div className="px-4 py-3 space-y-2">
-                <p className="text-[13px] text-on-surface">This follow-up checks what changed since the last completed scorecard.</p>
-                <p className="text-[13px] text-on-surface-variant">You can keep, edit, remove, or add displays.</p>
-              </div>
-            </div>
-          </>
         ) : (
+          <ActiveScorecardContextCard activeScorecard={activeScorecardResult.scorecard} />
+        )}
+
+        {activeScorecardResult.state !== 'active' && (
+          <div className="rounded-lg border border-outline bg-surface-lowest px-4 py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Auto-Populated Context</p>
+            <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3">
+              <SnapshotField label="Sales Manager" value={store.rep} />
+              <SnapshotField label="Assigned Store" value={store.name} />
+              <SnapshotField label="SAP Number" value={store.sapNumber} />
+              <SnapshotField label="Region" value={store.region} />
+              <SnapshotField label="District" value={store.district} />
+              <SnapshotField label="Banner" value={store.banner} />
+            </div>
+          </div>
+        )}
+
+        {activeScorecardResult.state !== 'active' ? null : (
           <>
             {agentforceEnabled && (
               <TrellisInsightCard
@@ -178,40 +143,7 @@ export function EntryScreen() {
                 footer="Agentforce briefing is mock logic in this prototype; it is designed to demonstrate differentiated guidance across screens."
               />
             )}
-          </>
-        )}
-
-        {visitType === 'follow-up' && agentforceEnabled && (
-          <TrellisInsightCard
-            badge="Top Recommendation"
-            title={topRecommendation.title}
-            summary={topRecommendation.summary}
-            tone={topRecommendation.tone}
-            metrics={[
-              { label: 'Impact', value: topRecommendation.impactLabel },
-            ]}
-            items={[
-              { label: 'Why this matters', value: topRecommendation.reason, tone: topRecommendation.tone },
-            ]}
-            actionLabel={topRecommendation.actionLabel}
-            onAction={() => navigate(topRecommendation.route)}
-          />
-        )}
-        {visitType === 'follow-up' && agentforceEnabled && revisitIntelligence && (
-          <TrellisInsightCard
-            badge="Revisit Intelligence"
-            title={revisitIntelligence.title}
-            summary={revisitIntelligence.summary}
-            tone={revisitIntelligence.tone}
-            metrics={[
-              { label: 'Status', value: revisitIntelligence.statusLabel },
-              { label: 'Reviewed', value: `${reviewedFollowUpEntries}/${previousEntryCount}` },
-            ]}
-            items={revisitIntelligence.items}
-            footer={revisitIntelligence.footer}
-          />
-        )}
-        {visitType === 'initial' && agentforceEnabled && (
+        {agentforceEnabled && (
           <TrellisInsightCard
             badge="Top Recommendation"
             title={topRecommendation.title}
@@ -259,58 +191,22 @@ export function EntryScreen() {
               <button
                 type="button"
                 onClick={() => navigate(ctaRoute)}
-                className="mt-1 w-full min-h-11 rounded-md bg-primary px-6 text-[13px] font-semibold text-white flex items-center justify-center gap-2"
+                disabled={primaryDisabled}
+                className={clsx(
+                  'mt-1 flex min-h-11 w-full items-center justify-center gap-2 rounded-md px-6 text-[13px] font-semibold',
+                  primaryDisabled
+                    ? 'bg-[#dde3ea] text-[#52606d]'
+                    : 'bg-primary text-white'
+                )}
               >
-                {primaryCopy.cta}
+                {primaryDisabled ? 'Store Plan Missing' : primaryCopy.cta}
                 <ChevronRight size={15} />
               </button>
             )}
           </div>
         </div>
 
-        {visitType === 'follow-up' ? (
-          <>
-            {scorecardStatus !== 'not-started' && (
-              <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
-                <div className="px-4 py-3 border-b border-outline">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Revisit Change Review</p>
-                </div>
-                <div className="px-4 py-3 grid grid-cols-2 gap-x-6 gap-y-3">
-                  <SnapshotField label="Reviewed" value={String(reviewedFollowUpEntries)} />
-                  <SnapshotField label="Remaining" value={String(pendingFollowUpEntries.length)} />
-                  <SnapshotField label="Evidence" value={`${capturedRequiredPhotos} / ${requiredPhotos} photos`} />
-                  <SnapshotField label="Score So Far" value={totalScore.toFixed(0)} />
-                </div>
-              </div>
-            )}
-
-            <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
-              <div className="px-4 py-3 border-b border-outline">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Revisit Flow</p>
-              </div>
-              <div className="divide-y divide-outline">
-                {activeSections.map((section, index) => (
-                  <div key={section.id} className="flex items-start gap-3 px-4 py-3">
-                    <div className={`mt-0.5 h-7 w-7 rounded-md border flex items-center justify-center ${followUpIconTone(getStepState(section.id, app))}`}>
-                      {stepIcon(getStepState(section.id, app))}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-[13px] font-semibold text-on-surface">
-                          {index + 1}. {followUpStepTitle(section.id)}
-                        </p>
-                        <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${followUpStepTone(getStepState(section.id, app))}`}>
-                          {followUpStepLabel(getStepState(section.id, app))}
-                        </span>
-                      </div>
-                      <p className="text-[12px] text-on-surface-variant mt-1">{followUpStepDescription(section.id)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>
-        ) : shouldShowInitialProgress(scorecardStatus, submitted) ? (
+        {shouldShowInitialProgress(scorecardStatus, submitted) ? (
           <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
             <div className="px-4 py-3 border-b border-outline">
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Current Progress</p>
@@ -320,7 +216,7 @@ export function EntryScreen() {
                 <SnapshotField label="Progress" value={`${answeredChecks} / ${totalChecks} checks`} />
                 <SnapshotField label="Section" value={`${currentSectionNumber} of ${totalSections}`} />
                 <SnapshotField label="Score So Far" value={totalScore.toFixed(0)} />
-                <SnapshotField label="Evidence" value={`${capturedRequiredPhotos} / ${requiredPhotos} photos`} />
+                <SnapshotField label="Status" value={submitted ? 'Submitted' : 'Draft'} />
               </div>
               <div className="rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
                 <p className="text-[12px] text-on-surface-variant">Resume Draft</p>
@@ -402,38 +298,62 @@ export function EntryScreen() {
         {submitted && (
           <div className="border border-[#cde8d3] bg-[#edf7ee] rounded-lg px-4 py-3">
             <p className="text-[12px] font-semibold text-[#1f5f33]">
-              {visitType === 'follow-up' ? 'Revisit scorecard submitted successfully.' : 'New scorecard submitted successfully.'}
+              Scorecard submitted successfully.
             </p>
             <p className="text-[12px] text-[#25523b] mt-1">Open the summary to review the execution outcome, next actions, and tracked flags.</p>
           </div>
+        )}
+          </>
         )}
       </div>
     </PhoneShell>
   )
 }
 
-function VisitTypeButton({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean
-  label: string
-  onClick: () => void
-}) {
+function ActiveScorecardContextCard({ activeScorecard }: { activeScorecard: NonNullable<ReturnType<typeof useApp>['activeScorecardResult']['scorecard']> }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={clsx(
-        'min-h-9 rounded-md border px-3 text-[11px] font-semibold transition-colors',
-        active
-          ? 'border-[#014486] bg-[#0176d3] text-white'
-          : 'border-transparent bg-white text-[#2e3a47]'
-      )}
-    >
-      {label}
-    </button>
+    <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
+      <div className="border-b border-outline px-4 py-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Active Ops Scorecard</p>
+            <p className="mt-1 text-[14px] font-semibold text-on-surface">{activeScorecard.name}</p>
+            <p className="mt-1 text-[12px] text-on-surface-variant">
+              {activeScorecard.quarter} FY{activeScorecard.fiscalYear} | {activeScorecard.planVersion}
+            </p>
+          </div>
+          <span className="rounded-md border border-[#cde8d3] bg-[#edf7ee] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#1f5f33]">
+            {activeScorecard.storePlanMapStatus === 'Published' ? 'Plan Published' : 'Plan Missing'}
+          </span>
+        </div>
+      </div>
+      <div className="px-4 py-3">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+          <SnapshotField label="Sales Manager" value={store.rep} />
+          <SnapshotField label="Assigned Store" value={store.name} />
+          <SnapshotField label="SAP Number" value={store.sapNumber} />
+          <SnapshotField label="Region" value={store.region} />
+          <SnapshotField label="District" value={store.district} />
+          <SnapshotField label="Banner" value={store.banner} />
+          <SnapshotField label="Store Plan Map" value={activeScorecard.storePlanMapId} />
+          <SnapshotField label="POG Cluster" value={activeScorecard.storePlanMapStatus ?? 'Missing'} />
+          <SnapshotField label="Published By" value={activeScorecard.publishedBy} />
+        </div>
+        <div className="mt-3 rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Ops/Admin Setup Prerequisite</p>
+          <p className="mt-1 text-[12px] text-on-surface-variant">
+            Upload Store Plan Map / POG Cluster, validate required columns, preview rows, and publish active plan before field scoring starts.
+          </p>
+          <button
+            type="button"
+            disabled
+            className="mt-3 min-h-10 rounded-md border border-outline bg-white px-3 text-[12px] font-semibold text-on-surface-variant"
+          >
+            Upload Store Plan Map / POG Cluster
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -448,40 +368,6 @@ function SnapshotField({ label, value }: { label: string; value: string }) {
 
 function shouldShowInitialProgress(scorecardStatus: string, submitted: boolean) {
   return scorecardStatus === 'in-progress' || scorecardStatus === 'ready-for-review' || submitted
-}
-
-function followUpStepTitle(sectionId: string) {
-  return {
-    'off-shelf-capture': 'Review Prior Displays',
-    'photo-evidence': 'Update Evidence',
-    'review-submit': 'Review Changes & Submit',
-  }[sectionId] ?? sectionId
-}
-
-function followUpStepDescription(sectionId: string) {
-  return {
-    'off-shelf-capture': 'Validate prior displays and mark each one as same, edited, gone, or additional.',
-    'photo-evidence': 'Capture only the proof that is still needed for the updated scorecard.',
-    'review-submit': 'Review retained, removed, updated, and added displays before submission.',
-  }[sectionId] ?? ''
-}
-
-function followUpStepLabel(state: ReturnType<typeof getStepState>) {
-  return {
-    completed: 'Reviewed',
-    'in-progress': 'Current Focus',
-    pending: 'Next',
-    locked: 'Later',
-  }[state]
-}
-
-function followUpStepTone(state: ReturnType<typeof getStepState>) {
-  return {
-    completed: 'text-[#1f5f33] bg-[#edf7ee] border-[#cde8d3]',
-    'in-progress': 'text-primary bg-[#edf4ff] border-[#c9d8ea]',
-    pending: 'text-[#755400] bg-[#f9f2e7] border-[#ead7b1]',
-    locked: 'text-[#52606d] bg-[#f4f6f9] border-[#dde3ea]',
-  }[state]
 }
 
 function stepLabel(state: ReturnType<typeof getStepState>) {
@@ -509,10 +395,6 @@ function iconTone(state: ReturnType<typeof getStepState>) {
     pending: 'border-[#ead7b1] bg-[#f9f2e7] text-[#8b5d00]',
     locked: 'border-[#dde3ea] bg-[#f4f6f9] text-[#7f8b99]',
   }[state]
-}
-
-function followUpIconTone(state: ReturnType<typeof getStepState>) {
-  return iconTone(state)
 }
 
 function stepIcon(state: ReturnType<typeof getStepState>) {

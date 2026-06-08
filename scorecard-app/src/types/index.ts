@@ -1,10 +1,14 @@
 export type ChecklistAnswer = 'yes' | 'no' | 'partial' | 'na' | null
 export type ScorecardStatus = 'not-started' | 'in-progress' | 'ready-for-review' | 'completed'
+export type ScorecardVersionStatus = 'Draft' | 'Submitted' | 'Revisit Draft' | 'Revisit Submitted'
+export type PerfectStoreScorecardStatus = 'Draft' | 'Active' | 'Closed' | 'Expired'
+export type UserRole = 'ops' | 'admin' | 'sales-manager' | 'rep' | 'field-user'
 export type StepState = 'completed' | 'in-progress' | 'pending' | 'locked'
 export type OffShelfClassification = 'base-plan' | 'incremental' | 'not-sure'
 export type VisitType = 'initial' | 'follow-up'
 export type OffShelfStatus = 'saved' | 'pending-review' | 'retained' | 'updated' | 'removed' | 'added'
 export type OffShelfOrigin = 'current-visit' | 'previous-visit'
+export type RevisitChangeType = 'Improved' | 'Declined' | 'No Change' | 'New' | 'Removed'
 
 export type AgentforceConfidence = 'high' | 'medium' | 'low'
 export type AgentforceQuantityEstimate = 'small' | 'medium' | 'large' | 'unknown'
@@ -59,7 +63,9 @@ export interface OffShelfEntry {
   skuId: string
   product: string
   quantity: number | string
-  quantityUnit?: 'eaches' | 'cases' | 'pallets'
+  quantityUnit?: 'eaches' | 'cases' | 'pallets' | 'lot-bulk'
+  calculatedOffShelfUnits?: number
+  quantityEstimate?: boolean
   classification: OffShelfClassification
   photoCaptured: boolean
   photoName: string
@@ -74,6 +80,117 @@ export interface OffShelfEntry {
   status: OffShelfStatus
 }
 
+export interface UserContext {
+  id: string
+  name: string
+  role: UserRole
+}
+
+export interface PerfectStoreScorecard {
+  id: string
+  name: string
+  quarter: string
+  fiscalYear: number
+  season: string
+  status: PerfectStoreScorecardStatus
+  activeFlag: boolean
+  publishedBy: string
+  publishedDate: string | null
+  effectiveStartDate: string
+  effectiveEndDate: string
+  storePlanMapId: string
+  storePlanMapStatus?: 'Missing' | 'Uploaded' | 'Validated' | 'Published'
+  planVersion: string
+  createdByOps: boolean
+  lockedForFieldUsers: boolean
+}
+
+export type ActivePerfectStoreScorecardResult =
+  | {
+      state: 'active'
+      scorecard: PerfectStoreScorecard
+      message: string
+    }
+  | {
+      state: 'no-active-scorecard' | 'data-integrity-error'
+      scorecard: null
+      message: string
+    }
+
+export interface ScorecardVersionItem {
+  id: string
+  scorecardId: string
+  skuId: string
+  skuName: string
+  category: string
+  previousValue: string | number | boolean | null
+  currentValue: string | number | boolean | null
+  changed: boolean
+  changeType: RevisitChangeType
+  quantityPrevious: number | string | null
+  quantityCurrent: number | string | null
+  offShelfPrevious: boolean
+  offShelfCurrent: boolean
+  executionPrevious: string | null
+  executionCurrent: string | null
+  recommendationPrevious: string
+  recommendationCurrent: string
+  scorePrevious: number
+  scoreCurrent: number
+}
+
+export interface ScorecardVersionRecord {
+  id: string
+  storeId: string
+  storeName: string
+  quarter: string
+  season: string
+  scorecardStatus: ScorecardVersionStatus
+  versionNumber: number
+  parentScorecardId?: string
+  sourceScorecardId?: string
+  isRevisit: boolean
+  createdAt: string
+  submittedAt: string | null
+  submittedBy: string
+  previousScore: number | null
+  currentScore: number
+  scoreDelta: number
+  executionScore: number
+  basePlanScore: number
+  incrementalScore: number
+  combinedScore: number
+  revisitNotes: string
+  revisitReason: string
+  changedFieldsSummary: string[]
+  items: ScorecardVersionItem[]
+}
+
+export interface RevisitComparisonCard {
+  id: string
+  label: string
+  previous: string
+  current: string
+  change: RevisitChangeType
+}
+
+export interface RevisitComparisonSummary {
+  previousCombinedScore: number
+  currentCombinedScore: number
+  scoreDelta: number
+  executionScoreDelta: number
+  basePlanScoreDelta: number
+  incrementalScoreDelta: number
+  improvedItems: ScorecardVersionItem[]
+  declinedItems: ScorecardVersionItem[]
+  noChangeItems: ScorecardVersionItem[]
+  newItems: ScorecardVersionItem[]
+  removedItems: ScorecardVersionItem[]
+  notes: string
+  submittedAt: string | null
+  cards: RevisitComparisonCard[]
+}
+
 export type RecommendationType = 'missing' | 'not-enough' | 'empty-calories' | 'missing-map' | 'demand-gap'
 
 export interface Recommendation {
@@ -86,15 +203,18 @@ export interface Recommendation {
 
 export interface OffShelfProduct {
   id: string
+  skuNumber?: string
   categoryId: string
   name: string
   subtitle: string
+  quarterlySalesValue?: number
   recommendedLocations: string[]
   basePoints: number
   baseLgor: number
   peakWeekUnits: number
   unitsPerCase?: number
   unitsPerPallet?: number
+  casesPerPallet?: number
 }
 
 export interface OffShelfRecommendation {
@@ -246,6 +366,7 @@ export interface AppState {
   secondaryDisplayImage: File | null
   audioNoteFile: File | null
   notes: string
+  revisitReason: string
   revisitRequired: boolean
   shelfResetNeeded: boolean
   lastSavedAt: string | null
@@ -253,4 +374,9 @@ export interface AppState {
   agentforceEnabled: boolean
   toast: AppToast | null
   celebration: SubmissionCelebration | null
+  scorecardVersion: ScorecardVersionRecord
+  sourceScorecard: ScorecardVersionRecord
+  versionHistory: ScorecardVersionRecord[]
+  revisitComparison: RevisitComparisonSummary | null
+  activeScorecardResult: ActivePerfectStoreScorecardResult
 }

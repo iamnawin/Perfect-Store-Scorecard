@@ -4,6 +4,7 @@ import clsx from 'clsx'
 import { Camera, ClipboardCheck, FilePenLine, Layers3, ShieldAlert } from 'lucide-react'
 import { BottomActionBar } from '../components/BottomActionBar'
 import { PhoneShell } from '../components/PhoneShell'
+import { RevisitBanner } from '../components/RevisitBanner'
 import { StandardGuidanceCard } from '../components/StandardGuidanceCard'
 import { TopBar } from '../components/TopBar'
 import {
@@ -85,6 +86,8 @@ export function ChecklistScreen() {
     saveDraft,
     lastSavedAt,
     agentforceEnabled,
+    scorecardVersion,
+    sourceScorecard,
   } = app
 
   const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({})
@@ -207,6 +210,8 @@ export function ChecklistScreen() {
         </div>
 
         <div className="px-4 py-3 space-y-3">
+          <RevisitBanner sourceScorecard={sourceScorecard} activeScorecard={scorecardVersion} />
+
           {agentforceEnabled && (
             <>
               <TrellisInsightCard
@@ -251,7 +256,11 @@ export function ChecklistScreen() {
                       key={question.id}
                       question={question}
                       answer={checklist[question.id] ?? null}
+                      currentNote={questionNotes[question.id] ?? ''}
+                      noteDraft={noteDrafts[question.id] ?? questionNotes[question.id] ?? ''}
                       onAnswer={(value) => setChecklistAnswer(question.id, value)}
+                      onNoteDraftChange={(value) => handleNoteDraftChange(question.id, value)}
+                      onSaveNote={() => handleSaveQuestionNote(question.id)}
                     />
                   ))}
                 </div>
@@ -371,7 +380,7 @@ function QuestionCard({
 }) {
   useEffect(() => {
     if (answer === 'partial' && !noteOpen) onToggleNote()
-  }, [answer])
+  }, [answer, noteOpen, onToggleNote])
 
   const status = getQuestionStatus(answer)
   const evidenceLabel = getQuestionEvidenceLabel(question, evidence, [])
@@ -381,11 +390,8 @@ function QuestionCard({
   const impactValue = getChecklistImpactValue(question.weight, answer)
   const isComplianceGate = question.weight === 0
   const priority = question.weight >= 15 ? 'High' : 'Med'
-  const evidenceMissing = evidenceLabel === 'Photo required before submit'
-  const statusLabel = evidenceMissing && answer !== null ? 'Photo Missing' : status.label
-  const statusClassName = evidenceMissing && answer !== null
-    ? 'text-[#8b5d00] bg-[#f9f2e7] border-[#ead7b1]'
-    : status.statusClass
+  const statusLabel = status.label
+  const statusClassName = status.statusClass
   const isDisplayQuestion = question.group === 'display'
   const questionOptions = isDisplayQuestion ? OPTIONS_WITH_PARTIAL : OPTIONS
   const scoreFeedback = answer === 'yes'
@@ -489,15 +495,15 @@ function QuestionCard({
           </div>
         )}
 
-        {evidenceLabel !== 'No photo required' && (
+        {evidenceLabel !== 'No photo attached' && (
           <div className={`mt-3 rounded-lg border px-3 py-3 ${evidenceRequirementTone(evidenceLabel)}`}>
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">
-              {evidenceLabel === 'Required photo captured' ? 'Photo Complete' : 'Required Before Submit'}
+              {evidenceLabel === 'Optional photo attached' ? 'Photo Attached' : 'Optional Photo'}
             </p>
             <p className="text-[12px] mt-1">
-              {evidenceLabel === 'Required photo captured'
-                ? 'Photo captured. Evidence will support this answer in review.'
-                : 'Missing photo will block submission.'}
+              {evidenceLabel === 'Optional photo attached'
+                ? 'Photo captured. It will support this answer in review.'
+                : 'Photo documentation is optional and does not block submit.'}
             </p>
           </div>
         )}
@@ -528,24 +534,28 @@ function QuestionCard({
           )}
         </div>
 
-        {noteOpen && (
+        {(noteOpen || answer === 'partial') && (
           <div className="mt-3 rounded-lg border border-outline bg-[#f7f9fb] p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant mb-2">Question Note</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant mb-2">
+              {answer === 'partial' ? 'Optional Partial Note' : 'Question Note'}
+            </p>
             <textarea
               value={noteDraft}
               onChange={(event) => onNoteDraftChange(event.target.value)}
-              placeholder="Add store-level context for this check."
+              placeholder={answer === 'partial' ? 'Optional: add context for the partial execution.' : 'Add store-level context for this check.'}
               rows={3}
               className="w-full rounded-lg border border-outline bg-surface-lowest px-3 py-2.5 text-[13px] text-on-surface outline-none resize-none"
             />
             <div className="mt-3 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={onCancelNote}
-                className="min-h-9 rounded-md border border-outline bg-surface-low px-3 text-[12px] font-semibold text-on-surface-variant"
-              >
-                Cancel
-              </button>
+              {answer !== 'partial' && (
+                <button
+                  type="button"
+                  onClick={onCancelNote}
+                  className="min-h-9 rounded-md border border-outline bg-surface-low px-3 text-[12px] font-semibold text-on-surface-variant"
+                >
+                  Cancel
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onSaveNote}
@@ -613,11 +623,19 @@ function QuestionCard({
 function CompactQuestionRow({
   question,
   answer,
+  currentNote,
+  noteDraft,
   onAnswer,
+  onNoteDraftChange,
+  onSaveNote,
 }: {
   question: ChecklistQuestion
   answer: ChecklistAnswer
+  currentNote: string
+  noteDraft: string
   onAnswer: (value: ChecklistAnswer) => void
+  onNoteDraftChange: (value: string) => void
+  onSaveNote: () => void
 }) {
   const status = getQuestionStatus(answer)
 
@@ -655,6 +673,33 @@ function CompactQuestionRow({
           </button>
         ))}
       </div>
+      {answer === 'partial' && (
+        <div className="mt-3 rounded-lg border border-outline bg-white p-3">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Optional Partial Note</p>
+          <textarea
+            value={noteDraft}
+            onChange={(event) => onNoteDraftChange(event.target.value)}
+            placeholder="Optional: add context for the partial execution."
+            rows={3}
+            className="w-full resize-none rounded-lg border border-outline bg-surface-lowest px-3 py-2.5 text-[13px] text-on-surface outline-none"
+          />
+          <div className="mt-3 flex justify-end">
+            <button
+              type="button"
+              onClick={onSaveNote}
+              className="min-h-9 rounded-md bg-primary px-3 text-[12px] font-semibold text-white"
+            >
+              Save Note
+            </button>
+          </div>
+        </div>
+      )}
+      {answer !== 'partial' && currentNote && (
+        <div className="mt-3 rounded-lg border border-outline bg-white p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Saved Note</p>
+          <p className="mt-2 whitespace-pre-wrap text-[12px] leading-snug text-on-surface">{currentNote}</p>
+        </div>
+      )}
     </div>
   )
 }
@@ -696,18 +741,17 @@ function impactPanelTone(answer: ChecklistAnswer) {
 }
 
 function evidenceTone(label: string) {
-  if (label === 'Required photo captured') return 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
-  if (label === 'Photo required before submit') return 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'
+  if (label === 'Optional photo attached') return 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
   return 'border-[#dde3ea] bg-[#f4f6f9] text-[#52606d]'
 }
 
 function evidenceBadgeLabel(label: string) {
-  if (label === 'Required photo captured') return 'Photo Complete'
-  if (label === 'Photo required before submit') return 'Required Before Submit'
-  return 'No Photo Required'
+  if (label === 'Optional photo attached') return 'Photo Attached'
+  if (label === 'Optional photo') return 'Optional Photo'
+  return 'No Photo'
 }
 
 function evidenceRequirementTone(label: string) {
-  if (label === 'Required photo captured') return 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
-  return 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'
+  if (label === 'Optional photo attached') return 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
+  return 'border-[#dde3ea] bg-[#f4f6f9] text-[#52606d]'
 }

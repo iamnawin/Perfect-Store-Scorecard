@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { BottomActionBar } from '../components/BottomActionBar'
 import { PhoneShell } from '../components/PhoneShell'
+import { RevisitBanner } from '../components/RevisitBanner'
 import { StandardGuidanceCard } from '../components/StandardGuidanceCard'
 import { TopBar } from '../components/TopBar'
 import { TrellisAskButton, TrellisSummaryCard } from '../components/TrellisBot'
@@ -17,21 +18,16 @@ import { checklistQuestions, previousSnapshot, regionBenchmark, store } from '..
 import {
   getBasePlanLgorPoints,
   getChecklistBasePlanScore,
-  getCurrentSection,
   getCurrentSectionNumber,
   getCurrentRiskValue,
-  getMissingRequiredEvidence,
   getOffShelfIncrementalScore,
+  getOffShelfEntryUnits,
   getIncrementalRawLgorPct,
-  getPendingFollowUpEntries,
   getRemainingOffShelfRecommendations,
   getVisitTypeLabel,
-  parseOffShelfQuantity,
 } from '../lib/scorecard'
 import {
   answerTrellisChat,
-  getAccountabilityRows,
-  getFeedbackLoopRows,
   getIncrementalOutputRows,
   getLeaderboardPreview,
   getManagerSummaryDraft,
@@ -42,6 +38,7 @@ import {
   getSummaryInsight,
   getTopRecommendation,
 } from '../lib/trellis'
+import type { RevisitChangeType, ScorecardVersionRecord } from '../types'
 
 export function SummaryScreen() {
   const navigate = useNavigate()
@@ -51,9 +48,10 @@ export function SummaryScreen() {
     visitType,
     checklist,
     offShelf,
-    offShelfConfirmed,
-    evidence,
     notes,
+    setNotes,
+    revisitReason,
+    setRevisitReason,
     revisitRequired,
     shelfResetNeeded,
     agentforceEnabled,
@@ -67,19 +65,19 @@ export function SummaryScreen() {
     submitScorecard,
     submitted,
     showToast,
+    scorecardVersion,
+    sourceScorecard,
+    versionHistory,
+    revisitComparison,
   } = app
 
   const executionPoints = getChecklistBasePlanScore(checklist)
   const basePlanLgorPoints = getBasePlanLgorPoints(checklist)
   const incrementalScore = getOffShelfIncrementalScore(offShelf)
   const incrementalRawLgorPct = getIncrementalRawLgorPct(offShelf)
-  const missingEvidence = getMissingRequiredEvidence(evidence, offShelf)
-  const pendingFollowUpEntries = getPendingFollowUpEntries(offShelf)
-  const unansweredCount = checklistQuestions.filter(question => !checklist[question.id]).length
   const sectionNumber = getCurrentSectionNumber(app)
-  const currentSection = getCurrentSection(app)
   const visitTypeLabel = getVisitTypeLabel(visitType)
-  const retainedCount = offShelf.filter(entry => entry.status === 'retained').length
+  const noChangeCount = offShelf.filter(entry => entry.origin === 'previous-visit' && entry.status === 'saved').length
   const updatedCount = offShelf.filter(entry => entry.status === 'updated').length
   const removedCount = offShelf.filter(entry => entry.status === 'removed').length
   const addedCount = offShelf.filter(entry => entry.status === 'added').length
@@ -87,7 +85,7 @@ export function SummaryScreen() {
   const mapMisses = checklistQuestions.filter(question => question.group === 'map' && checklist[question.id] !== 'yes').length
   const missingTopItems = checklistQuestions.filter(question => question.group === 'pog' && checklist[question.id] !== 'yes').length
   const displayMisses = checklistQuestions.filter(question => question.group === 'display' && checklist[question.id] === 'no').length
-  const lightDisplays = offShelf.filter(entry => parseOffShelfQuantity(entry.quantity) < 80).length
+  const lightDisplays = offShelf.filter(entry => getOffShelfEntryUnits(entry) < 80).length
   const notEnough = displayMisses + lightDisplays
   const emptyCalories = offShelf.filter(entry => entry.classification !== 'incremental').length
   const riskValue = getCurrentRiskValue(app)
@@ -105,55 +103,30 @@ export function SummaryScreen() {
   const opportunityRows = getOpportunityTable(app)
   const riskRows = getRiskTable(app)
   const leaderboardPreview = getLeaderboardPreview(totalScore)
-  const accountabilityRows = getAccountabilityRows(app)
-  const feedbackLoopRows = getFeedbackLoopRows(app)
   const topRecommendation = getTopRecommendation(app)
   const revisitIntelligence = visitType === 'follow-up' ? getRevisitIntelligence(app) : null
   const managerSummaryDraft = getManagerSummaryDraft(app)
   const showBusinessOutputBlocks = visitType === 'follow-up'
-  const blockerCards = [
-    ...(missingEvidence.length > 0
-      ? [{
-          key: 'missing-evidence',
-          title: `${missingEvidence.length} required photo${missingEvidence.length > 1 ? 's' : ''} missing`,
-          detail: 'Capture required proof before the visit summary can be submitted.',
-          route: '/photo',
-          actionLabel: 'Open Photo Evidence',
-        }]
-      : []),
-    ...(visitType === 'initial' && unansweredCount > 0
-      ? [{
-          key: 'unanswered-checks',
-          title: `${unansweredCount} checklist question${unansweredCount > 1 ? 's' : ''} still unanswered`,
-          detail: 'Finish the checklist so the score summary reflects the full visit.',
-          route: currentSection.route,
-          actionLabel: 'Return to Checklist',
-        }]
-      : []),
-    ...(visitType === 'follow-up' && pendingFollowUpEntries.length > 0
-      ? [{
-          key: 'follow-up-review',
-          title: `${pendingFollowUpEntries.length} prior display${pendingFollowUpEntries.length > 1 ? 's' : ''} still need a follow-up decision`,
-          detail: 'Mark each previous display as Same, Edit, or Gone before you submit the follow-up.',
-          route: '/off-shelf',
-          actionLabel: 'Finish Revisit Review',
-        }]
-      : []),
-    ...(!offShelfConfirmed && offShelf.length === 0
-      ? [{
-          key: 'off-shelf-review',
-          title: 'Off-shelf capture is not reviewed yet',
-          detail: 'Save at least one display or confirm that no incremental opportunity was found.',
-          route: '/off-shelf',
-          actionLabel: 'Open Off-Shelf',
-        }]
-      : []),
-  ]
-  const helperText = blockerCards.length > 0
-    ? `Next required action: ${blockerCards[0]?.actionLabel}`
-    : lastSavedAt
+  const helperText = lastSavedAt
       ? `Draft saved at ${lastSavedAt}`
       : 'Review the visit summary and submit when ready.'
+  const primarySubmitLabel = visitType === 'follow-up' ? 'Submit Revisit' : 'Submit Visit'
+
+  function handlePrimaryAction() {
+    if (submitted) {
+      navigate('/')
+      return
+    }
+
+    if (visitType === 'follow-up') {
+      const confirmed = window.confirm(
+        'Submit this revisit as a new linked scorecard version? The original submitted scorecard will not be changed.'
+      )
+      if (!confirmed) return
+    }
+
+    submitScorecard()
+  }
 
   function openEmailSnapshot() {
     const subject = encodeURIComponent(`Store Scorecard Snapshot - ${store.name}`)
@@ -273,11 +246,9 @@ export function SummaryScreen() {
             <span className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${
               submitted
                 ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
-                : blockerCards.length === 0
-                  ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
-                  : 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'
+                : 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
             }`}>
-              {submitted ? 'Submitted' : blockerCards.length === 0 ? 'Ready to Submit' : `${blockerCards.length} Blockers`}
+              {submitted ? 'Submitted' : 'Ready to Submit'}
             </span>
           </div>
           <div className="h-2 rounded-full bg-[#dde3ea] overflow-hidden mt-3">
@@ -286,6 +257,8 @@ export function SummaryScreen() {
         </div>
 
         <div className="px-4 py-3 space-y-3">
+          <RevisitBanner sourceScorecard={sourceScorecard} activeScorecard={scorecardVersion} />
+
           <div className="rounded-xl border border-[#c9d8ea] bg-[#f7fbff] px-4 py-4 shadow-[0_8px_22px_rgba(15,23,42,0.06)]">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -299,7 +272,7 @@ export function SummaryScreen() {
                 scoreDelta >= 0 ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'
               }`}>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.12em]">Status</p>
-                <p className="text-[14px] font-semibold mt-1">{submitted ? 'Closed' : blockerCards.length === 0 ? 'Ready' : 'Action Needed'}</p>
+                <p className="text-[14px] font-semibold mt-1">{submitted ? 'Closed' : 'Ready'}</p>
               </div>
             </div>
             <div className="mt-3 rounded-lg border border-outline bg-surface-lowest px-3 py-3">
@@ -353,26 +326,101 @@ export function SummaryScreen() {
             <StandardGuidanceCard
               title="Visit Outcome & Next Actions"
               summary={visitType === 'follow-up'
-                ? 'This summary stays focused on retained, removed, and added displays without the AI interpretation layer.'
+                ? 'This summary stays focused on edits, removals, additions, and unchanged prefilled values without the AI interpretation layer.'
                 : 'Review completed actions, missed items, and required follow-ups.'}
-              detail={`Suggested action: ${blockerCards.length > 0 ? blockerCards[0].actionLabel : buildNextBestAction(remainingRecommendations[0], summaryInsight.nextVisitFocus)}`}
+              detail={`Suggested action: ${buildNextBestAction(remainingRecommendations[0], summaryInsight.nextVisitFocus)}`}
             />
           )}
 
           {visitType === 'follow-up' && (
             <InfoBlock title="Execution Summary" subtitle="Track exactly what changed since the previous completed scorecard.">
               <div className="grid grid-cols-2 gap-2">
-                <MetricTile label="Retained" value={`${retainedCount}`} tone="success" />
+                <MetricTile label="No Change" value={`${noChangeCount}`} />
                 <MetricTile label="Updated" value={`${updatedCount}`} tone="success" />
                 <MetricTile label="Removed" value={`${removedCount}`} tone={removedCount > 0 ? 'warning' : 'neutral'} />
                 <MetricTile label="Added" value={`${addedCount}`} tone="success" />
                 <MetricTile label="Net Score Impact" value={`${scoreDelta >= 0 ? '+' : ''}${scoreDelta.toFixed(1)} pts`} tone={scoreDelta >= 0 ? 'success' : 'warning'} />
-                <MetricTile label="Pending Review" value={`${pendingFollowUpEntries.length}`} tone={pendingFollowUpEntries.length > 0 ? 'warning' : 'neutral'} />
               </div>
               <div className="mt-3 rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Previous summary</p>
                 <p className="mt-1 text-[13px] font-semibold text-on-surface">{previousSnapshot.opportunity}</p>
                 <p className="mt-2 text-[12px] text-on-surface-variant">Last submitted {previousSnapshot.date} by {previousSnapshot.submittedBy}</p>
+              </div>
+            </InfoBlock>
+          )}
+          {visitType === 'follow-up' && !submitted && (
+            <InfoBlock title="Revisit Notes" subtitle="Capture why this linked version is being submitted.">
+              <div className="space-y-3">
+                <div>
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Reason</p>
+                  <input
+                    value={revisitReason}
+                    onChange={event => setRevisitReason(event.target.value)}
+                    className="min-h-10 w-full rounded-lg border border-outline bg-surface-lowest px-3 text-[13px] text-on-surface outline-none"
+                    placeholder="Same quarter / same season check-in"
+                  />
+                </div>
+                <div>
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Notes before submit</p>
+                  <textarea
+                    value={notes}
+                    onChange={event => setNotes(event.target.value)}
+                    rows={3}
+                    className="w-full rounded-lg border border-outline bg-surface-lowest px-3 py-2.5 text-[13px] text-on-surface outline-none resize-none"
+                    placeholder="Summarize what changed during this revisit."
+                  />
+                </div>
+              </div>
+            </InfoBlock>
+          )}
+          {visitType === 'follow-up' && submitted && revisitComparison && (
+            <InfoBlock title="Revisit Comparison" subtitle="Mobile-first previous/current/change cards for the submitted linked version.">
+              <div className="grid grid-cols-2 gap-2">
+                <MetricTile label="Previous Score" value={revisitComparison.previousCombinedScore.toFixed(1)} />
+                <MetricTile label="Current Score" value={revisitComparison.currentCombinedScore.toFixed(1)} />
+                <MetricTile label="Score Delta" value={`${revisitComparison.scoreDelta >= 0 ? '+' : ''}${revisitComparison.scoreDelta.toFixed(1)}`} tone={revisitComparison.scoreDelta >= 0 ? 'success' : 'warning'} />
+                <MetricTile label="Execution Delta" value={`${revisitComparison.executionScoreDelta >= 0 ? '+' : ''}${revisitComparison.executionScoreDelta.toFixed(1)}`} tone={revisitComparison.executionScoreDelta >= 0 ? 'success' : 'warning'} />
+                <MetricTile label="Base Plan Delta" value={`${revisitComparison.basePlanScoreDelta >= 0 ? '+' : ''}${revisitComparison.basePlanScoreDelta.toFixed(1)}`} tone={revisitComparison.basePlanScoreDelta >= 0 ? 'success' : 'warning'} />
+                <MetricTile label="Incremental Delta" value={`${revisitComparison.incrementalScoreDelta >= 0 ? '+' : ''}${revisitComparison.incrementalScoreDelta.toFixed(1)}`} tone={revisitComparison.incrementalScoreDelta >= 0 ? 'success' : 'warning'} />
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <MetricTile label="Improved" value={String(revisitComparison.improvedItems.length)} tone="success" />
+                <MetricTile label="Declined" value={String(revisitComparison.declinedItems.length)} tone={revisitComparison.declinedItems.length > 0 ? 'warning' : 'neutral'} />
+                <MetricTile label="No Change" value={String(revisitComparison.noChangeItems.length)} />
+                <MetricTile label="New / Removed" value={`${revisitComparison.newItems.length} / ${revisitComparison.removedItems.length}`} tone={revisitComparison.newItems.length > 0 ? 'success' : revisitComparison.removedItems.length > 0 ? 'warning' : 'neutral'} />
+              </div>
+              <div className="mt-3 space-y-2">
+                {revisitComparison.cards.map(card => (
+                  <ComparisonCard
+                    key={card.id}
+                    label={card.label}
+                    previous={card.previous}
+                    current={card.current}
+                    change={card.change}
+                  />
+                ))}
+              </div>
+              {(revisitComparison.notes || revisitComparison.submittedAt) && (
+                <div className="mt-3 rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
+                  {revisitComparison.notes && (
+                    <>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Revisit Notes</p>
+                      <p className="mt-1 text-[12px] text-on-surface">{revisitComparison.notes}</p>
+                    </>
+                  )}
+                  {revisitComparison.submittedAt && (
+                    <p className="mt-2 text-[11px] text-on-surface-variant">Submitted {formatDateTime(revisitComparison.submittedAt)}</p>
+                  )}
+                </div>
+              )}
+            </InfoBlock>
+          )}
+          {visitType === 'follow-up' && (
+            <InfoBlock title="Version History" subtitle="Linked scorecard snapshots remain separate for trend tracking.">
+              <div className="space-y-2">
+                {versionHistory.map(version => (
+                  <VersionHistoryRow key={version.id} version={version} />
+                ))}
               </div>
             </InfoBlock>
           )}
@@ -481,47 +529,18 @@ export function SummaryScreen() {
             </div>
           </InfoBlock>
 
-          <InfoBlock title="Leaderboard & Accountability" subtitle="Show who is leading, where this store ranks, and who owns the next move.">
-            <div className="space-y-4">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Leaderboard Preview</p>
-                <div className="mt-2 space-y-2">
-                  {leaderboardPreview.map(entry => (
-                    <LeaderboardRow
-                      key={entry.store}
-                      rank={entry.rank}
-                      storeName={entry.store}
-                      owner={entry.rep}
-                      score={entry.score}
-                      delta={entry.delta}
-                      highlighted={entry.store === store.name}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Accountability</p>
-                <div className="mt-2 space-y-2">
-                  {accountabilityRows.map(row => (
-                    <AccountabilityRow
-                      key={row.area}
-                      area={row.area}
-                      owner={row.owner}
-                      status={row.status}
-                      lens={row.lens}
-                      detail={row.detail}
-                      tone={row.tone}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </InfoBlock>
-
-          <InfoBlock title="Feedback Loop" subtitle="Tie score, LGOR, risk, and incremental execution back to a clearer business story.">
+          <InfoBlock title="Leaderboard Preview" subtitle="Show who is leading and where this store ranks.">
             <div className="space-y-2">
-              {feedbackLoopRows.map(row => (
-                <SignalRow key={row.label} title={row.label} detail={row.detail} value={row.value} tone={row.tone} />
+              {leaderboardPreview.map(entry => (
+                <LeaderboardRow
+                  key={entry.store}
+                  rank={entry.rank}
+                  storeName={entry.store}
+                  owner={entry.rep}
+                  score={entry.score}
+                  delta={entry.delta}
+                  highlighted={entry.store === store.name}
+                />
               ))}
             </div>
           </InfoBlock>
@@ -563,28 +582,12 @@ export function SummaryScreen() {
           )}
 
           {!submitted && (
-          <InfoBlock title="Required Before Submit" subtitle="Resolve these blockers before the scorecard can be closed.">
-            <div className="space-y-2">
-              {blockerCards.length > 0 ? blockerCards.map(blocker => (
-                <div key={blocker.key} className="rounded-lg border border-[#f9d6d0] bg-[#fef1ee] px-3 py-3">
-                  <p className="text-[12px] font-semibold text-[#8e030f]">{blocker.title}</p>
-                  <p className="text-[12px] text-[#8e030f] mt-1">{blocker.detail}</p>
-                  <button
-                    type="button"
-                    onClick={() => navigate(blocker.route)}
-                    className="mt-3 min-h-10 rounded-md bg-primary px-3 text-[12px] font-semibold text-white"
-                  >
-                    {blocker.actionLabel}
-                  </button>
-                </div>
-              )) : (
-                <div className="rounded-lg border border-[#cde8d3] bg-[#edf7ee] px-3 py-3">
-                  <p className="text-[12px] font-semibold text-[#1f5f33]">No submission blockers remain.</p>
-                  <p className="text-[12px] text-[#1f5f33] mt-1">This visit is ready for review and final submission.</p>
-                </div>
-              )}
-            </div>
-          </InfoBlock>
+            <InfoBlock title="Submit Readiness" subtitle="Photos are optional documentation for MVP and do not block submit.">
+              <div className="rounded-lg border border-[#cde8d3] bg-[#edf7ee] px-3 py-3">
+                <p className="text-[12px] font-semibold text-[#1f5f33]">Ready for final submission.</p>
+                <p className="mt-1 text-[12px] text-[#1f5f33]">Review scores, notes, and recommendations, then submit.</p>
+              </div>
+            </InfoBlock>
           )}
           {agentforceEnabled && (
             <TrellisAskButton
@@ -614,9 +617,9 @@ export function SummaryScreen() {
       <BottomActionBar
         secondaryLabel={submitted ? undefined : 'Save Draft'}
         onSecondary={submitted ? undefined : saveDraft}
-        primaryLabel={submitted ? 'Done' : blockerCards.length === 0 ? 'Submit Visit' : blockerCards[0]?.actionLabel ?? 'Resolve Blocker'}
-        onPrimary={submitted ? () => navigate('/') : blockerCards.length === 0 ? submitScorecard : () => navigate(blockerCards[0].route)}
-        primaryIcon={submitted ? undefined : blockerCards.length === 0 ? <Send size={15} /> : undefined}
+        primaryLabel={submitted ? 'Done' : primarySubmitLabel}
+        onPrimary={handlePrimaryAction}
+        primaryIcon={submitted ? undefined : <Send size={15} />}
         helperText={helperText}
       />
     </PhoneShell>
@@ -666,6 +669,74 @@ function MetricTile({
       </p>
     </div>
   )
+}
+
+function ComparisonCard({
+  label,
+  previous,
+  current,
+  change,
+}: {
+  label: string
+  previous: string
+  current: string
+  change: RevisitChangeType
+}) {
+  return (
+    <div className="rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-[12px] font-semibold text-on-surface">{label}</p>
+        <span className={`shrink-0 rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${changeTone(change)}`}>
+          {change}
+        </span>
+      </div>
+      <div className="mt-3 space-y-1.5">
+        <ComparisonLine label="Previous" value={previous} />
+        <ComparisonLine label="Current" value={current} />
+        <ComparisonLine label="Change" value={change} />
+      </div>
+    </div>
+  )
+}
+
+function ComparisonLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-[12px]">
+      <span className="text-on-surface-variant">{label}</span>
+      <span className="font-semibold text-on-surface">{value}</span>
+    </div>
+  )
+}
+
+function VersionHistoryRow({ version }: { version: ScorecardVersionRecord }) {
+  return (
+    <div className="flex items-start justify-between gap-3 rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
+      <div>
+        <p className="text-[12px] font-semibold text-on-surface">
+          V{version.versionNumber} - {version.isRevisit ? 'Revisit' : 'Initial Visit'}
+        </p>
+        <p className="mt-1 text-[11px] text-on-surface-variant">
+          {version.submittedAt ? `Submitted ${formatDateTime(version.submittedAt)}` : `Draft created ${formatDateTime(version.createdAt)}`}
+        </p>
+        {version.sourceScorecardId && (
+          <p className="mt-1 text-[11px] text-on-surface-variant">Linked to {version.sourceScorecardId}</p>
+        )}
+      </div>
+      <span className={`shrink-0 rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+        version.scorecardStatus.includes('Submitted')
+          ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
+          : 'border-[#c9d8ea] bg-[#edf4ff] text-primary'
+      }`}>
+        {version.scorecardStatus}
+      </span>
+    </div>
+  )
+}
+
+function changeTone(change: RevisitChangeType) {
+  if (change === 'Improved' || change === 'New') return 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
+  if (change === 'Declined' || change === 'Removed') return 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'
+  return 'border-[#dde3ea] bg-white text-[#52606d]'
 }
 
 function GapRow({
@@ -800,42 +871,6 @@ function LeaderboardRow({
   )
 }
 
-function AccountabilityRow({
-  area,
-  owner,
-  status,
-  lens,
-  detail,
-  tone,
-}: {
-  area: string
-  owner: string
-  status: string
-  lens: string
-  detail: string
-  tone: 'success' | 'warning'
-}) {
-  return (
-    <div className="rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[12px] font-semibold text-on-surface">{area}</p>
-          <p className="mt-1 text-[11px] text-on-surface-variant">{owner}</p>
-        </div>
-        <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
-          tone === 'success'
-            ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
-            : 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'
-        }`}>
-          {status}
-        </span>
-      </div>
-      <p className="mt-2 text-[12px] text-on-surface">{lens}</p>
-      <p className="mt-1 text-[12px] text-on-surface-variant">{detail}</p>
-    </div>
-  )
-}
-
 function buildNextBestAction(
   topOpportunity: ReturnType<typeof getRemainingOffShelfRecommendations>[number] | undefined,
   fallback: string,
@@ -944,4 +979,14 @@ function formatCurrencyDelta(value: number) {
   if (value > 0) return `+${formatted}`
   if (value < 0) return `-${formatted}`
   return formatted
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(value))
 }

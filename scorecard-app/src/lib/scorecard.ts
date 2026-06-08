@@ -33,11 +33,7 @@ export function getVisitTypeLabel(visitType: VisitType) {
 
 export function getActiveScorecardSections(visitType: VisitType) {
   if (visitType === 'follow-up') {
-    return scorecardSections.filter(section => (
-      section.id === 'off-shelf-capture' ||
-      section.id === 'photo-evidence' ||
-      section.id === 'review-submit'
-    ))
+    return scorecardSections
   }
 
   return scorecardSections
@@ -56,7 +52,7 @@ export function getYesCount(checklist: ChecklistState) {
 }
 
 export function getRequiredPhotoCount() {
-  return evidenceRequirements.filter(item => item.required).length
+  return 0
 }
 
 function isActiveOffShelfEntry(entry: OffShelfEntry) {
@@ -92,11 +88,13 @@ function isEvidenceCaptured(itemId: string, evidence: EvidenceState, offShelf: O
 }
 
 export function getCapturedRequiredPhotos(evidence: EvidenceState, offShelf: OffShelfEntry[] = []) {
-  return evidenceRequirements.filter(item => item.required && isEvidenceCaptured(item.id, evidence, offShelf)).length
+  return evidenceRequirements.filter(item => isEvidenceCaptured(item.id, evidence, offShelf)).length
 }
 
-export function getMissingRequiredEvidence(evidence: EvidenceState, offShelf: OffShelfEntry[] = []) {
-  return evidenceRequirements.filter(item => item.required && !isEvidenceCaptured(item.id, evidence, offShelf))
+export function getMissingRequiredEvidence(_evidence: EvidenceState, _offShelf: OffShelfEntry[] = []): typeof evidenceRequirements {
+  void _evidence
+  void _offShelf
+  return []
 }
 
 export function getChecklistQuestionsForSection(sectionId: string) {
@@ -138,13 +136,32 @@ export function parseOffShelfQuantity(quantity: number | string) {
 
 export function getOffShelfQuantityLabel(quantity: number | string) {
   const normalizedQuantity = parseOffShelfQuantity(quantity)
+  return `${normalizedQuantity} calculated eaches`
+}
 
-  if (normalizedQuantity >= 400) return 'Bulk'
-  if (normalizedQuantity >= 320) return 'Bulk'
-  if (normalizedQuantity >= 200) return 'Pallet'
-  if (normalizedQuantity >= 120) return 'Large Display'
-  if (normalizedQuantity >= 80) return 'Medium Display'
-  return 'Small Display'
+export function calculateOffShelfUnits({
+  quantity,
+  unit,
+  product,
+}: {
+  quantity: number | string
+  unit: NonNullable<OffShelfEntry['quantityUnit']>
+  product: OffShelfProduct
+}) {
+  const enteredQuantity = parseOffShelfQuantity(quantity)
+
+  if (unit === 'eaches') return enteredQuantity
+  if (unit === 'cases') return enteredQuantity * (product.unitsPerCase ?? 1)
+  if (unit === 'pallets') {
+    if (product.unitsPerPallet) return enteredQuantity * product.unitsPerPallet
+    return enteredQuantity * (product.casesPerPallet ?? 1) * (product.unitsPerCase ?? 1)
+  }
+
+  return enteredQuantity
+}
+
+export function getOffShelfEntryUnits(entry: OffShelfEntry) {
+  return entry.calculatedOffShelfUnits ?? parseOffShelfQuantity(entry.quantity)
 }
 
 export function getOffShelfProductById(productId: string) {
@@ -176,14 +193,16 @@ export function estimateOffShelfImpact({
   product,
   location,
   quantity,
+  quantityUnit = 'eaches',
   classification,
 }: {
   product: OffShelfProduct
   location: string
   quantity: number | string
+  quantityUnit?: NonNullable<OffShelfEntry['quantityUnit']>
   classification: OffShelfClassification
 }) {
-  const normalizedQuantity = parseOffShelfQuantity(quantity)
+  const normalizedQuantity = calculateOffShelfUnits({ quantity, unit: quantityUnit, product })
   const peakWeekRatio = getPeakWeekRatio(normalizedQuantity, product.peakWeekUnits)
   const peakWeekMultiplier = getPeakWeekMultiplier(normalizedQuantity, product.peakWeekUnits)
   const classificationMultiplier = getClassificationMultiplier(classification)
@@ -303,8 +322,7 @@ export function getScorecardStatus(state: AppState): ScorecardStatus {
   const ready = state.visitType === 'follow-up'
     ? isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed, state.visitType) &&
       isPhotoSectionComplete(state.evidence, state.offShelf)
-    : getAnsweredChecks(state.checklist) === getTotalChecks() &&
-      isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed, state.visitType) &&
+    : isOffShelfSectionComplete(state.offShelf, state.offShelfConfirmed, state.visitType) &&
       isPhotoSectionComplete(state.evidence, state.offShelf)
 
   return ready ? 'ready-for-review' : 'in-progress'
@@ -368,7 +386,8 @@ export function getChecklistDecisionScore(checklist: ChecklistState, offShelf: O
   return +(getChecklistBasePlanScore(checklist) + getOffShelfIncrementalScore(offShelf)).toFixed(1)
 }
 
-export function getBasePlanLgorPoints(_checklist?: ChecklistState) {
+export function getBasePlanLgorPoints(checklist?: ChecklistState) {
+  void checklist
   return demoBasePlanLgorPct
 }
 
@@ -407,7 +426,7 @@ export function getCurrentRiskValue(state: AppState) {
   const mapMisses = checklistQuestions.filter(question => question.group === 'map' && state.checklist[question.id] !== 'yes').length
   const missingTopItems = checklistQuestions.filter(question => question.group === 'pog' && state.checklist[question.id] !== 'yes').length
   const displayMisses = checklistQuestions.filter(question => question.group === 'display' && state.checklist[question.id] === 'no').length
-  const lightDisplays = state.offShelf.filter(entry => parseOffShelfQuantity(entry.quantity) < 80).length
+  const lightDisplays = state.offShelf.filter(entry => getOffShelfEntryUnits(entry) < 80).length
   const emptyCalories = state.offShelf.filter(entry => entry.classification !== 'incremental').length
   const missingEvidenceCount = getMissingRequiredEvidence(state.evidence, state.offShelf).length
 
@@ -462,14 +481,11 @@ export function getQuestionStatus(answer: ChecklistAnswer) {
 
 export function getQuestionEvidenceLabel(question: ChecklistQuestion, evidence: EvidenceState, offShelf: OffShelfEntry[] = []) {
   const relatedEvidence = evidenceRequirements.filter(item => item.linkedQuestionIds.includes(question.id))
-  const requiredEvidence = relatedEvidence.filter(item => item.required)
 
-  if (requiredEvidence.length === 0) {
-    return 'No photo required'
-  }
-
-  const missing = requiredEvidence.some(item => !isEvidenceCaptured(item.id, evidence, offShelf))
-  return missing ? 'Photo required before submit' : 'Required photo captured'
+  if (relatedEvidence.length === 0) return 'No photo attached'
+  return relatedEvidence.some(item => isEvidenceCaptured(item.id, evidence, offShelf))
+    ? 'Optional photo attached'
+    : 'Optional photo'
 }
 
 export function getLinkedQuestionTitles(questionIds: string[]) {
@@ -480,12 +496,10 @@ export function getLinkedQuestionTitles(questionIds: string[]) {
 
 export function convertQuantityToUnits(
   quantity: number,
-  unit: 'eaches' | 'cases' | 'pallets' | undefined,
+  unit: OffShelfEntry['quantityUnit'],
   product: OffShelfProduct,
 ): number {
-  if (unit === 'pallets') return quantity * (product.unitsPerPallet ?? quantity)
-  if (unit === 'cases') return quantity * (product.unitsPerCase ?? quantity)
-  return quantity
+  return calculateOffShelfUnits({ quantity, unit: unit ?? 'eaches', product })
 }
 
 export function getMissingMapItems(checklist: ChecklistState) {
@@ -499,7 +513,7 @@ export function getNotEnoughEntries(entries: OffShelfEntry[]) {
     if (!isActiveOffShelfEntry(entry)) return false
     const product = getOffShelfProductById(entry.skuId)
     if (!product) return false
-    return parseOffShelfQuantity(entry.quantity) < product.peakWeekUnits
+    return getOffShelfEntryUnits(entry) < product.peakWeekUnits
   })
 }
 
@@ -512,7 +526,7 @@ export function getPeakWeekDemandGapEntries(entries: OffShelfEntry[]) {
     if (!isActiveOffShelfEntry(entry)) return false
     const product = getOffShelfProductById(entry.skuId)
     if (!product) return false
-    return product.peakWeekUnits > parseOffShelfQuantity(entry.quantity)
+    return product.peakWeekUnits > getOffShelfEntryUnits(entry)
   })
 }
 
@@ -550,7 +564,7 @@ export function generateRecommendations(state: AppState): Recommendation[] {
       recommendations.push({
         type: 'not-enough',
         severity: 'medium',
-        message: `${entry.product} at ${entry.location}: ${parseOffShelfQuantity(entry.quantity)} units captured vs ${product.peakWeekUnits} peak week demand. (Demo value — pending business confirmation)`,
+        message: `${entry.product} at ${entry.location}: ${getOffShelfEntryUnits(entry)} calculated eaches captured vs ${product.peakWeekUnits} peak week demand. (Demo value - pending business confirmation)`,
         skuId: entry.skuId,
         displayLocation: entry.location,
       })

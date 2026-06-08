@@ -4,19 +4,52 @@ import type {
   LeaderboardEntry,
   OffShelfProduct,
   OffShelfRecommendation,
+  PerfectStoreScorecard,
   ScorecardSection,
   TrellisPromptSet,
+  UserContext,
 } from '../types'
 
 export const store = {
   name: 'Home Depot #1907',
   banner: 'Home Depot',
   city: 'Columbus, OH',
+  sapNumber: '1001907',
+  accountId: 'acct-home-depot-1907',
+  region: 'Midwest',
+  district: 'Columbus North',
   visitStatus: 'Active' as const,
   scorecard: 'Q1 2026 Store Scorecard',
   rep: 'Sarah M.',
   motto: 'Proactive recommendations and iterative scoring informed by prior-year sales, reorders, and load-ins.',
 }
+
+export const loggedInUser: UserContext = {
+  id: 'user-sarah-m',
+  name: store.rep,
+  role: 'sales-manager',
+}
+
+export const perfectStoreScorecards: PerfectStoreScorecard[] = [
+  {
+    id: 'pss-parent-q1-2026',
+    name: 'Q1 2026 Store Scorecard',
+    quarter: 'Q1',
+    fiscalYear: 2026,
+    season: 'Spring 2026',
+    status: 'Active',
+    activeFlag: true,
+    publishedBy: 'Ops Admin',
+    publishedDate: '2026-01-01T09:00:00.000Z',
+    effectiveStartDate: '2026-01-01',
+    effectiveEndDate: '2026-03-31',
+    storePlanMapId: 'store-plan-q1-2026',
+    storePlanMapStatus: 'Published',
+    planVersion: '2026-Q1-v1',
+    createdByOps: true,
+    lockedForFieldUsers: true,
+  },
+]
 
 export const previousSnapshot = {
   score: 142,
@@ -282,9 +315,11 @@ export const offShelfProducts: OffShelfProduct[] = [
   // Turf Builder — fertilizer and lawn care flagship line
   {
     id: 'tb-lawn-food-5m',
+    skuNumber: 'TB-LF-5M',
     categoryId: 'turf-builder',
     name: 'Turf Builder Lawn Food 5,000 sq ft',
     subtitle: 'Core fertilizer | top spring turn at this banner',
+    quarterlySalesValue: 6400,
     recommendedLocations: ['Endcap', 'Fence Line'],
     basePoints: 10.4,
     baseLgor: 2.1,
@@ -294,9 +329,11 @@ export const offShelfProducts: OffShelfProduct[] = [
   },
   {
     id: 'tb-weed-feed-15m',
+    skuNumber: 'TB-WF-15M',
     categoryId: 'turf-builder',
     name: 'Turf Builder Weed & Feed5 15,000 sq ft',
     subtitle: 'Strong spring feature candidate in this banner',
+    quarterlySalesValue: 7300,
     recommendedLocations: ['Fence Line', 'Endcap'],
     basePoints: 9.8,
     baseLgor: 2.0,
@@ -440,9 +477,11 @@ export const offShelfProducts: OffShelfProduct[] = [
   },
   {
     id: 'thickr-sun-shade-40lb',
+    skuNumber: 'TKR-SS-40LB',
     categoryId: 'thickr-lawn',
     name: "Turf Builder Thick'R Lawn Sun & Shade 40 lb",
     subtitle: 'High-unit pallet SKU | fence line load-in candidate',
+    quarterlySalesValue: 7300,
     recommendedLocations: ['Fence Line', 'Garden Door'],
     basePoints: 11.4,
     baseLgor: 2.3,

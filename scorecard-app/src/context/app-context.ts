@@ -9,15 +9,16 @@ export interface AppContextValue extends AppState {
   updateOffShelfEntry: (entry: OffShelfEntry) => void
   duplicateOffShelfEntry: (id: string) => void
   removeOffShelfEntry: (id: string) => void
-  confirmOffShelfReview: () => void
   setEvidenceCaptured: (itemId: string, captured: boolean) => void
   setEvidencePhoto: (itemId: string, file: File | null) => void
   setEvidenceNote: (itemId: string, note: string) => void
   setSecondaryDisplayImage: (file: File | null) => void
   setAudioNoteFile: (file: File | null) => void
   setNotes: (v: string) => void
+  setRevisitReason: (v: string) => void
   setRevisitRequired: (v: boolean) => void
   setShelfResetNeeded: (v: boolean) => void
+  createRevisitFromSubmitted: () => void
   saveDraft: () => void
   submitScorecard: () => void
   setAgentforceEnabled: (value: boolean) => void

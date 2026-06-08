@@ -1,7 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import type { AppState, ChecklistAnswer, OffShelfEntry, VisitType } from '../types'
+import type { AppState, ChecklistAnswer, ChecklistState, OffShelfEntry, PerfectStoreScorecard, ScorecardVersionItem, ScorecardVersionRecord, VisitType } from '../types'
 import { AppContext } from './app-context'
-import { previousOffShelfSeed } from '../data/mock'
+import { checklistQuestions, perfectStoreScorecards, previousOffShelfSeed, previousSnapshot, store } from '../data/mock'
+import {
+  buildRevisitComparison,
+  createRevisitFromScorecard,
+  submitRevisit,
+} from '../lib/scorecardVersioning'
+import { findActivePerfectScorecard } from '../lib/perfectStoreScorecard'
 import {
   estimateOffShelfImpact,
   createInitialEvidenceState,
@@ -18,9 +24,15 @@ import {
   getTotalChecks,
   getTotalScore,
   getTotalSections,
-  getPendingFollowUpEntries,
   getOffShelfIncrementalScore,
 } from '../lib/scorecard'
+
+function createPreviousChecklistState(): ChecklistState {
+  return checklistQuestions.reduce<ChecklistState>((acc, question) => {
+    acc[question.id] = question.id === 'garden-doors' ? 'no' : 'yes'
+    return acc
+  }, {})
+}
 
 function createFollowUpSeedEntries(): OffShelfEntry[] {
   return previousOffShelfSeed.flatMap(seed => {
@@ -39,6 +51,7 @@ function createFollowUpSeedEntries(): OffShelfEntry[] {
       product,
       location: seed.location,
       quantity: seed.quantity,
+      quantityUnit: 'eaches',
       classification: seed.classification,
     })
 
@@ -49,6 +62,8 @@ function createFollowUpSeedEntries(): OffShelfEntry[] {
       skuId: product.id,
       product: product.name,
       quantity: seed.quantity,
+      quantityUnit: 'eaches',
+      calculatedOffShelfUnits: impact.normalizedQuantity,
       classification: seed.classification,
       photoCaptured: false,
       photoName: '',
@@ -60,12 +75,99 @@ function createFollowUpSeedEntries(): OffShelfEntry[] {
       multiplier: impact.multiplier,
       multiplierLabel: impact.multiplierLabel,
       origin: 'previous-visit',
-      status: 'pending-review',
+      status: 'saved',
     }]
   })
 }
 
+function createSourceScorecardRecord(activeScorecard?: PerfectStoreScorecard): ScorecardVersionRecord {
+  const previousEntries = createFollowUpSeedEntries()
+  const executionScore = 70
+  const basePlanScore = 26.3
+  const incrementalScore = +(previousSnapshot.score - executionScore - basePlanScore).toFixed(1)
+
+  return {
+    id: 'pss-v1-submitted',
+    storeId: 'store-1907',
+    storeName: store.name,
+    quarter: activeScorecard?.quarter ?? 'Q1',
+    season: activeScorecard?.season ?? 'Spring 2026',
+    scorecardStatus: 'Submitted',
+    versionNumber: 1,
+    parentScorecardId: activeScorecard?.id,
+    isRevisit: false,
+    createdAt: '2026-03-12T09:30:00.000Z',
+    submittedAt: '2026-03-12T15:30:00.000Z',
+    submittedBy: previousSnapshot.submittedBy,
+    previousScore: null,
+    currentScore: previousSnapshot.score,
+    scoreDelta: 0,
+    executionScore,
+    basePlanScore,
+    incrementalScore,
+    combinedScore: previousSnapshot.score,
+    revisitNotes: '',
+    revisitReason: '',
+    changedFieldsSummary: [],
+    items: previousEntries.map(entry => createVersionItemFromOffShelfEntry(entry, 'pss-v1-submitted')),
+  }
+}
+
+function createInitialDraftScorecard(sourceScorecard: ScorecardVersionRecord, activeScorecard?: PerfectStoreScorecard): ScorecardVersionRecord {
+  return {
+    ...sourceScorecard,
+    id: 'pss-current-draft',
+    scorecardStatus: 'Draft',
+    versionNumber: sourceScorecard.versionNumber + 1,
+    parentScorecardId: activeScorecard?.id,
+    sourceScorecardId: undefined,
+    isRevisit: false,
+    createdAt: new Date().toISOString(),
+    submittedAt: null,
+    previousScore: sourceScorecard.combinedScore,
+    currentScore: sourceScorecard.combinedScore,
+    scoreDelta: 0,
+    revisitNotes: '',
+    revisitReason: '',
+    changedFieldsSummary: [],
+    items: [],
+  }
+}
+
+function createVersionItemFromOffShelfEntry(entry: OffShelfEntry, scorecardId: string): ScorecardVersionItem {
+  const currentQuantity = entry.status === 'removed' ? null : entry.quantity
+
+  return {
+    id: `version-item-${entry.id}`,
+    scorecardId,
+    skuId: entry.skuId,
+    skuName: entry.product,
+    category: 'Off-Shelf Display',
+    previousValue: entry.origin === 'previous-visit' ? entry.quantity : null,
+    currentValue: currentQuantity,
+    changed: entry.status !== 'saved',
+    changeType: 'No Change',
+    quantityPrevious: entry.origin === 'previous-visit' ? entry.quantity : null,
+    quantityCurrent: currentQuantity,
+    offShelfPrevious: entry.origin === 'previous-visit',
+    offShelfCurrent: entry.status !== 'removed',
+    executionPrevious: entry.origin === 'previous-visit' ? 'Completed' : null,
+    executionCurrent: entry.status === 'removed' ? 'Removed' : 'Completed',
+    recommendationPrevious: entry.origin === 'previous-visit' ? entry.caption || entry.notes : '',
+    recommendationCurrent: entry.caption || entry.notes,
+    scorePrevious: entry.origin === 'previous-visit' ? entry.impactPoints : 0,
+    scoreCurrent: entry.status === 'removed' ? 0 : entry.impactPoints,
+  }
+}
+
+function createVersionItemsFromState(scorecardId: string, entries: OffShelfEntry[]) {
+  return entries.map(entry => createVersionItemFromOffShelfEntry(entry, scorecardId))
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
+  const [activeScorecardResult] = useState(() => findActivePerfectScorecard(perfectStoreScorecards))
+  const activePerfectScorecard = activeScorecardResult.scorecard ?? undefined
+  const [sourceScorecard] = useState<ScorecardVersionRecord>(() => createSourceScorecardRecord(activePerfectScorecard))
   const [visitType, setVisitTypeState] = useState<VisitType>('initial')
   const [checklist, setChecklist] = useState<AppState['checklist']>({})
   const [questionNotes, setQuestionNotes] = useState<AppState['questionNotes']>({})
@@ -75,6 +177,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [secondaryDisplayImage, setSecondaryDisplayImageState] = useState<File | null>(null)
   const [audioNoteFile, setAudioNoteFileState] = useState<File | null>(null)
   const [notes, setNotes] = useState('')
+  const [revisitReason, setRevisitReason] = useState('')
   const [revisitRequired, setRevisitRequiredState] = useState(false)
   const [shelfResetNeeded, setShelfResetNeededState] = useState(false)
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
@@ -82,6 +185,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [agentforceEnabled, setAgentforceEnabled] = useState(false)
   const [toast, setToast] = useState<AppState['toast']>(null)
   const [celebration, setCelebration] = useState<AppState['celebration']>(null)
+  const [scorecardVersion, setScorecardVersion] = useState<ScorecardVersionRecord>(() => createInitialDraftScorecard(sourceScorecard, activePerfectScorecard))
+  const [versionHistory, setVersionHistory] = useState<ScorecardVersionRecord[]>(() => [sourceScorecard])
+  const [revisitComparison, setRevisitComparison] = useState<AppState['revisitComparison']>(null)
 
   useEffect(() => {
     if (!toast) return
@@ -108,21 +214,71 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   function setVisitType(nextVisitType: VisitType) {
+    if (activeScorecardResult.state !== 'active') {
+      triggerToast('Scorecard unavailable.', activeScorecardResult.message)
+      return
+    }
+
+    if (nextVisitType === 'follow-up') {
+      createRevisitFromSubmitted()
+      return
+    }
+
+    const draft = createInitialDraftScorecard(sourceScorecard, activeScorecardResult.scorecard)
     setVisitTypeState(nextVisitType)
     setChecklist({})
     setQuestionNotes({})
-    setOffShelf(nextVisitType === 'follow-up' ? createFollowUpSeedEntries() : [])
+    setOffShelf([])
     setOffShelfConfirmed(false)
     setEvidence(createInitialEvidenceState())
     setSecondaryDisplayImageState(null)
     setAudioNoteFileState(null)
     setNotes('')
+    setRevisitReason('')
     setRevisitRequiredState(false)
     setShelfResetNeededState(false)
     setLastSavedAt(null)
     setSubmitted(false)
     setToast(null)
     setCelebration(null)
+    setScorecardVersion(draft)
+    setVersionHistory([sourceScorecard])
+    setRevisitComparison(null)
+  }
+
+  function createRevisitFromSubmitted() {
+    if (activeScorecardResult.state !== 'active') {
+      triggerToast('Revisit unavailable.', activeScorecardResult.message)
+      return
+    }
+
+    const draft = createRevisitFromScorecard(sourceScorecard, {
+      id: `pss-v${sourceScorecard.versionNumber + 1}-revisit-draft`,
+    })
+
+    setVisitTypeState('follow-up')
+    setChecklist(createPreviousChecklistState())
+    setQuestionNotes({})
+    setOffShelf(createFollowUpSeedEntries())
+    setOffShelfConfirmed(false)
+    setEvidence(createInitialEvidenceState())
+    setSecondaryDisplayImageState(null)
+    setAudioNoteFileState(null)
+    setNotes('')
+    setRevisitReason(draft.revisitReason)
+    setRevisitRequiredState(false)
+    setShelfResetNeededState(false)
+    setLastSavedAt(null)
+    setSubmitted(false)
+    setToast(null)
+    setCelebration(null)
+    setScorecardVersion(draft)
+    setVersionHistory([sourceScorecard, draft])
+    setRevisitComparison(null)
+    triggerToast(
+      'Revisit draft created.',
+      'Previous values are prefilled. Update only what changed.'
+    )
   }
 
   function setChecklistAnswer(itemId: string, answer: ChecklistAnswer) {
@@ -163,10 +319,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   function removeOffShelfEntry(id: string) {
     setOffShelf(prev => prev.filter(entry => entry.id !== id))
-  }
-
-  function confirmOffShelfReview() {
-    setOffShelfConfirmed(true)
   }
 
   function setEvidenceCaptured(itemId: string, captured: boolean) {
@@ -261,9 +413,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   function submitScorecard() {
-    const hasCriticalBlockers = getMissingRequiredEvidence(evidence, offShelf).length > 0 ||
-      (visitType === 'initial' && getAnsweredChecks(checklist) !== getTotalChecks()) ||
-      (visitType === 'follow-up' && getPendingFollowUpEntries(offShelf).length > 0)
+    const hasCriticalBlockers = getMissingRequiredEvidence(evidence, offShelf).length > 0
     const hasIncrementalAddedThisRun = offShelf.some(entry => (
       visitType === 'follow-up'
         ? entry.status === 'added'
@@ -272,6 +422,109 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const shouldCelebrate = !hasCriticalBlockers &&
       hasIncrementalAddedThisRun &&
       getOffShelfIncrementalScore(offShelf) > 0
+
+    if (visitType === 'follow-up') {
+      const draftWithCurrentState: ScorecardVersionRecord = {
+        ...scorecardVersion,
+        items: createVersionItemsFromState(scorecardVersion.id, offShelf),
+        executionScore: getChecklistBasePlanScore(checklist),
+        basePlanScore: 26.3,
+        incrementalScore: getOffShelfIncrementalScore(offShelf),
+        combinedScore: getTotalScore({
+          visitType,
+          checklist,
+          questionNotes,
+          offShelf,
+          offShelfConfirmed,
+          evidence,
+          secondaryDisplayImage,
+          audioNoteFile,
+          notes,
+          revisitReason,
+          revisitRequired,
+          shelfResetNeeded,
+          lastSavedAt,
+          submitted,
+          agentforceEnabled,
+          toast,
+          celebration,
+          scorecardVersion,
+          sourceScorecard,
+          versionHistory,
+          revisitComparison,
+          activeScorecardResult,
+        }),
+      }
+      const submittedVersion = submitRevisit(draftWithCurrentState, {
+        submittedBy: store.rep,
+        revisitNotes: notes,
+        revisitReason,
+        currentScores: {
+          executionScore: getChecklistBasePlanScore(checklist),
+          basePlanScore: 26.3,
+          incrementalScore: getOffShelfIncrementalScore(offShelf),
+          combinedScore: getTotalScore({
+            visitType,
+            checklist,
+            questionNotes,
+            offShelf,
+            offShelfConfirmed,
+            evidence,
+            secondaryDisplayImage,
+            audioNoteFile,
+            notes,
+            revisitReason,
+            revisitRequired,
+            shelfResetNeeded,
+            lastSavedAt,
+            submitted,
+            agentforceEnabled,
+            toast,
+            celebration,
+            scorecardVersion,
+            sourceScorecard,
+            versionHistory,
+            revisitComparison,
+            activeScorecardResult,
+          }),
+        },
+      })
+
+      setScorecardVersion(submittedVersion)
+      setVersionHistory([sourceScorecard, submittedVersion])
+      setRevisitComparison(buildRevisitComparison(sourceScorecard, submittedVersion))
+    } else {
+      setScorecardVersion(prev => ({
+        ...prev,
+        scorecardStatus: 'Submitted',
+        submittedAt: new Date().toISOString(),
+        submittedBy: store.rep,
+        currentScore: getTotalScore({
+          visitType,
+          checklist,
+          questionNotes,
+          offShelf,
+          offShelfConfirmed,
+          evidence,
+          secondaryDisplayImage,
+          audioNoteFile,
+          notes,
+          revisitReason,
+          revisitRequired,
+          shelfResetNeeded,
+          lastSavedAt,
+          submitted,
+          agentforceEnabled,
+          toast,
+          celebration,
+          scorecardVersion,
+          sourceScorecard,
+          versionHistory,
+          revisitComparison,
+          activeScorecardResult,
+        }),
+      }))
+    }
 
     setSubmitted(true)
     saveDraft()
@@ -294,6 +547,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     secondaryDisplayImage,
     audioNoteFile,
     notes,
+    revisitReason,
     revisitRequired,
     shelfResetNeeded,
     lastSavedAt,
@@ -301,6 +555,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     agentforceEnabled,
     toast,
     celebration,
+    scorecardVersion,
+    sourceScorecard,
+    versionHistory,
+    revisitComparison,
+    activeScorecardResult,
   }
 
   const answeredChecks = getAnsweredChecks(checklist)
@@ -326,6 +585,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       secondaryDisplayImage,
       audioNoteFile,
       notes,
+      revisitReason,
       revisitRequired,
       shelfResetNeeded,
       lastSavedAt,
@@ -333,6 +593,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       agentforceEnabled,
       toast,
       celebration,
+      scorecardVersion,
+      sourceScorecard,
+      versionHistory,
+      revisitComparison,
+      activeScorecardResult,
       setVisitType,
       setChecklistAnswer,
       setQuestionNote,
@@ -340,15 +605,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateOffShelfEntry,
       duplicateOffShelfEntry,
       removeOffShelfEntry,
-      confirmOffShelfReview,
       setEvidenceCaptured,
       setEvidencePhoto,
       setEvidenceNote,
       setSecondaryDisplayImage,
       setAudioNoteFile,
       setNotes,
+      setRevisitReason,
       setRevisitRequired,
       setShelfResetNeeded,
+      createRevisitFromSubmitted,
       saveDraft,
       submitScorecard,
       setAgentforceEnabled,

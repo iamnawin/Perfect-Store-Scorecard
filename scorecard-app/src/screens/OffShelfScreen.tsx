@@ -3,19 +3,19 @@ import { useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
 import {
   Camera,
-  Check,
   ChevronDown,
   ChevronUp,
   CircleEllipsis,
   Copy,
   Edit3,
   Image,
-  Plus,
   Search,
+  ScanLine,
   Sparkles,
   Trash2,
 } from 'lucide-react'
 import { PhoneShell } from '../components/PhoneShell'
+import { RevisitBanner } from '../components/RevisitBanner'
 import { TopBar } from '../components/TopBar'
 import { TrellisAskButton, TrellisInsightCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
@@ -23,31 +23,32 @@ import {
   offShelfCategories,
   offShelfLocations,
   offShelfProducts,
-  offShelfQuantityOptions,
   store,
 } from '../data/mock'
 import { analyzeSecondaryDisplay } from '../lib/agentforce/secondaryDisplayClient'
 import {
+  calculateOffShelfUnits,
   estimateOffShelfImpact,
   getBasePlanLgorPoints,
   getChecklistBasePlanScore,
   getCurrentSectionNumber,
   getOffShelfIncrementalScore,
   getOffShelfProductById,
-  getOffShelfQuantityLabel,
-  getPendingFollowUpEntries,
+  getOffShelfEntryUnits,
+  parseOffShelfQuantity,
   getPotentialAdditionalGain,
   getRemainingOffShelfRecommendations,
   getVisitTypeLabel,
 } from '../lib/scorecard'
 import { answerTrellisChat, getOffShelfInsight, getRevisitIntelligence } from '../lib/trellis'
-import type { AgentforceSecondaryDisplayAnalysis, OffShelfClassification, OffShelfEntry } from '../types'
+import type { AgentforceSecondaryDisplayAnalysis, OffShelfClassification, OffShelfEntry, ScorecardVersionItem } from '../types'
 
 interface DraftState {
   location: string
   category: string
   skuId: string
   quantity: number | string | ''
+  quantityUnit: NonNullable<OffShelfEntry['quantityUnit']>
   classification: OffShelfClassification
   photoCaptured: boolean
   photoName: string
@@ -69,6 +70,7 @@ function createEmptyDraft(): DraftState {
     category: '',
     skuId: '',
     quantity: '',
+    quantityUnit: 'eaches',
     classification: 'incremental',
     photoCaptured: false,
     photoName: '',
@@ -91,7 +93,6 @@ export function OffShelfScreen() {
     updateOffShelfEntry,
     duplicateOffShelfEntry,
     removeOffShelfEntry,
-    confirmOffShelfReview,
     completionPercent,
     answeredChecks,
     totalChecks,
@@ -103,6 +104,8 @@ export function OffShelfScreen() {
     setSecondaryDisplayImage,
     setAudioNoteFile,
     showToast,
+    scorecardVersion,
+    sourceScorecard,
   } = app
 
   const [draft, setDraft] = useState<DraftState>(createEmptyDraft())
@@ -112,17 +115,18 @@ export function OffShelfScreen() {
   const [trellisOpen, setTrellisOpen] = useState(false)
   const [agentforcePrefillStatus, setAgentforcePrefillStatus] = useState<'idle' | 'running' | 'success' | 'error'>('idle')
   const [agentforcePrefill, setAgentforcePrefill] = useState<AgentforceSecondaryDisplayAnalysis | null>(null)
+  const [scannerOpen, setScannerOpen] = useState(false)
+  const [scannedSkuIds, setScannedSkuIds] = useState<string[]>([])
   const editorRef = useRef<HTMLDivElement | null>(null)
 
   const sectionNumber = getCurrentSectionNumber(app)
   const visitTypeLabel = getVisitTypeLabel(visitType)
   const selectedCategory = offShelfCategories.find(item => item.id === draft.category)
   const selectedProduct = draft.skuId ? getOffShelfProductById(draft.skuId) : undefined
-  const followUpEntries = offShelf.filter(entry => entry.origin === 'previous-visit')
-  const pendingFollowUpEntries = getPendingFollowUpEntries(offShelf)
   const addedEntries = offShelf.filter(entry => entry.status === 'added')
   const removedEntries = offShelf.filter(entry => entry.status === 'removed')
-  const retainedEntries = offShelf.filter(entry => entry.status === 'retained' || entry.status === 'updated')
+  const updatedEntries = offShelf.filter(entry => entry.status === 'updated')
+  const previousEntries = offShelf.filter(entry => entry.origin === 'previous-visit')
 
   const filteredProducts = offShelfProducts
     .filter(product => !draft.category || product.categoryId === draft.category)
@@ -148,6 +152,7 @@ export function OffShelfScreen() {
         product: selectedProduct,
         location: draft.location,
         quantity: draft.quantity,
+        quantityUnit: draft.quantityUnit,
         classification: draft.classification,
       })
     : null
@@ -155,7 +160,12 @@ export function OffShelfScreen() {
   const projectedScore = +(basePlanScore + basePlanLgorPoints + liveIncremental).toFixed(1)
   const potentialAdditionalGain = getPotentialAdditionalGain(offShelf)
   const remainingRecommendations = getRemainingOffShelfRecommendations(offShelf).slice(0, 4)
-  const quantityLabel = draft.quantity === '' ? '' : getOffShelfQuantityLabel(draft.quantity)
+  const calculatedDraftUnits = selectedProduct && draft.quantity !== ''
+    ? calculateOffShelfUnits({ product: selectedProduct, quantity: draft.quantity, unit: draft.quantityUnit })
+    : 0
+  const quantityLabel = draft.quantity === ''
+    ? ''
+    : `${draft.quantity} ${formatQuantityUnit(draft.quantityUnit)} (${calculatedDraftUnits} eaches)`
   const classificationPrompt = draft.location === 'Endcap' || draft.location === 'Garden Door'
     ? 'Suggested: No, this looks incremental for this location.'
     : 'Use this to separate base plan coverage from incremental gain.'
@@ -227,6 +237,13 @@ export function OffShelfScreen() {
     }))
   }
 
+  function handleMockScan(productId: string) {
+    setScannedSkuIds(prev => prev.includes(productId) ? prev : [...prev, productId])
+    handleProductSelect(productId)
+    setScannerOpen(false)
+    showToast('Product scanned.', 'Mock scanner added the SKU to the selected list.')
+  }
+
   function handleSaveEntry(resetAfterSave = true) {
     if (!selectedProduct || !draftImpact || !canSaveEntry) return
 
@@ -241,6 +258,9 @@ export function OffShelfScreen() {
       skuId: selectedProduct.id,
       product: selectedProduct.name,
       quantity: draft.quantity,
+      quantityUnit: draft.quantityUnit,
+      calculatedOffShelfUnits: draftImpact.normalizedQuantity,
+      quantityEstimate: draft.quantityUnit === 'lot-bulk',
       classification: draft.classification,
       photoCaptured: draft.photoCaptured,
       photoName: draft.photoName,
@@ -280,6 +300,7 @@ export function OffShelfScreen() {
       category: resolveCategoryId(entry.category),
       skuId: entry.skuId,
       quantity: entry.quantity,
+      quantityUnit: entry.quantityUnit ?? 'eaches',
       classification: entry.classification,
       photoCaptured: entry.photoCaptured,
       photoName: entry.photoName,
@@ -297,33 +318,11 @@ export function OffShelfScreen() {
     })
   }
 
-  function handleAddAdditional(sourceEntry?: OffShelfEntry) {
-    if (sourceEntry?.origin === 'previous-visit' && sourceEntry.status === 'pending-review') {
-      handleMarkFollowUpEntry(sourceEntry, 'retained')
-    }
-
-    if (sourceEntry) {
-      setDraft({
-        location: sourceEntry.location,
-        category: resolveCategoryId(sourceEntry.category),
-        skuId: sourceEntry.skuId,
-        quantity: sourceEntry.quantity,
-        classification: sourceEntry.classification,
-        photoCaptured: false,
-        photoName: '',
-        photoPreviewUrl: '',
-        caption: '',
-        notes: '',
-        searchTerm: '',
-      })
-      setEditingId(null)
-      queueMicrotask(() => {
-        editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      })
-      return
-    }
-
+  function handleAddAdditional() {
     resetDraft()
+    queueMicrotask(() => {
+      editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
   }
 
   function applyRecommendation(recommendation: (typeof remainingRecommendations)[number]) {
@@ -336,6 +335,7 @@ export function OffShelfScreen() {
       category: product.categoryId,
       skuId: product.id,
       quantity: recommendation.quantity,
+      quantityUnit: 'eaches',
       classification: 'incremental',
       photoCaptured: false,
       photoName: '',
@@ -443,7 +443,7 @@ export function OffShelfScreen() {
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Progress</p>
                 <p className="text-[12px] text-on-surface-variant mt-1">
                   {visitType === 'follow-up'
-                    ? `${followUpEntries.length} prior display ${followUpEntries.length === 1 ? 'entry' : 'entries'} loaded | Step ${sectionNumber} of ${totalSections}`
+                    ? `${previousEntries.length} previously submitted ${previousEntries.length === 1 ? 'display' : 'displays'} prefilled | Step ${sectionNumber} of ${totalSections}`
                     : `${answeredChecks} / ${totalChecks} answered | Step ${sectionNumber} of ${totalSections}`}
                 </p>
               </div>
@@ -466,6 +466,8 @@ export function OffShelfScreen() {
         </div>
 
         <div className="px-4 py-3 space-y-3">
+          <RevisitBanner sourceScorecard={sourceScorecard} activeScorecard={scorecardVersion} />
+
           {agentforceEnabled && (
             <SectionCard
               title="Agentforce Prefill (MVP)"
@@ -602,71 +604,6 @@ export function OffShelfScreen() {
             </SectionCard>
           )}
 
-          {visitType === 'follow-up' && (
-            <SectionCard
-              title="Previous Visit Review"
-              subtitle="Confirm what stayed the same, what changed, what is gone, and any additional displays observed on the follow-up."
-              utility={(
-                <button
-                  type="button"
-                  onClick={confirmOffShelfReview}
-                  className="rounded-md border border-outline px-2.5 py-1.5 text-[11px] font-semibold text-on-surface-variant"
-                >
-                  Finish Review
-                </button>
-              )}
-            >
-              <div className="grid grid-cols-2 gap-2">
-                <ScoreCell label="Prior Displays" value={String(followUpEntries.length)} tone="neutral" />
-                <ScoreCell label="Pending" value={String(pendingFollowUpEntries.length)} tone={pendingFollowUpEntries.length > 0 ? 'positive' : 'neutral'} />
-                <ScoreCell label="Retained / Updated" value={String(retainedEntries.length)} tone="positive" />
-                <ScoreCell label="Removed / Added" value={`${removedEntries.length} / ${addedEntries.length}`} tone="neutral" />
-              </div>
-              <div className="space-y-2">
-                {followUpEntries.map((entry, index) => (
-                  <div key={entry.id} className="rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Previous display {index + 1}</p>
-                        <p className="mt-1 text-[13px] font-semibold text-on-surface">{entry.location} | {entry.product} | {getOffShelfQuantityLabel(entry.quantity)}</p>
-                        <p className="mt-1 text-[11px] text-on-surface-variant">{entry.caption || entry.notes || 'Review this display against the current follow-up visit.'}</p>
-                      </div>
-                      <span className={clsx('rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]', followUpStatusTone(entry.status))}>
-                        {formatFollowUpStatus(entry.status)}
-                      </span>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <FollowUpDecisionButton
-                        icon={<Check size={12} />}
-                        label="Keep"
-                        active={entry.status === 'retained'}
-                        onClick={() => handleMarkFollowUpEntry(entry, 'retained')}
-                      />
-                      <FollowUpDecisionButton
-                        icon={<Edit3 size={12} />}
-                        label="Update"
-                        active={entry.status === 'updated'}
-                        onClick={() => handleEdit(entry)}
-                      />
-                      <FollowUpDecisionButton
-                        icon={<Trash2 size={12} />}
-                        label="Removed"
-                        active={entry.status === 'removed'}
-                        destructive
-                        onClick={() => handleMarkFollowUpEntry(entry, 'removed')}
-                      />
-                      <FollowUpDecisionButton
-                        icon={<Plus size={12} />}
-                        label="Add New"
-                        onClick={() => handleAddAdditional(entry)}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </SectionCard>
-          )}
-
           <SectionCard title="Score Impact" subtitle="Current score state for this visit.">
             <div className="grid grid-cols-2 gap-2">
               <ScoreCell label="Current Score" value={projectedScore.toFixed(1)} tone="neutral" />
@@ -726,9 +663,9 @@ export function OffShelfScreen() {
             <SectionCard
               title={editingId
                 ? editingEntry?.origin === 'previous-visit' ? 'Update Previous Display' : 'Edit Added Display'
-                : visitType === 'follow-up' ? 'Add Additional Display' : 'Add Incremental Display'}
+                : visitType === 'follow-up' ? 'Add Display' : 'Add Incremental Display'}
               subtitle={visitType === 'follow-up'
-                ? 'Capture only the changed or newly added displays from the follow-up visit.'
+                ? 'Use the same display form. Previous values are prefilled; edit only what changed.'
                 : 'Capture Above & Beyond displays and score the incremental impact.'}
               utility={visitType === 'follow-up' ? (
                 <button
@@ -736,7 +673,7 @@ export function OffShelfScreen() {
                   onClick={() => handleAddAdditional()}
                   className="rounded-md border border-outline px-2.5 py-1.5 text-[11px] font-semibold text-on-surface-variant"
                 >
-                  Add Blank Entry
+                  Clear Form
                 </button>
               ) : undefined}
             >
@@ -759,7 +696,75 @@ export function OffShelfScreen() {
               columns="grid-cols-2"
             />
 
-            <FieldLabel label="SKU Selection" />
+            <FieldLabel label="Scanner / Manual SKU Selection" />
+            <div className="rounded-lg border border-outline bg-surface-lowest px-3 py-3">
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setScannerOpen(prev => !prev)}
+                  className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-md bg-primary px-3 text-[12px] font-semibold text-white"
+                >
+                  <ScanLine size={14} />
+                  Scan Products
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScannerOpen(false)}
+                  className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-md border border-outline bg-white px-3 text-[12px] font-semibold text-on-surface"
+                >
+                  <Search size={14} />
+                  Manual SKU Search
+                </button>
+              </div>
+              {scannerOpen && (
+                <div className="mt-3 rounded-lg border border-[#c9d8ea] bg-[#edf4ff] p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">Mock Scanner</p>
+                  <div className="mt-2 space-y-2">
+                    {filteredProducts.slice(0, 3).map(product => (
+                      <button
+                        key={product.id}
+                        type="button"
+                        onClick={() => handleMockScan(product.id)}
+                        className="w-full rounded-md border border-[#c9d8ea] bg-white px-3 py-2 text-left"
+                      >
+                        <p className="text-[12px] font-semibold text-on-surface">{product.name}</p>
+                        <p className="mt-0.5 text-[11px] text-on-surface-variant">{product.skuNumber ?? product.id}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {scannedSkuIds.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Selected / Scanned Products</p>
+                  {scannedSkuIds.map(productId => {
+                    const product = getOffShelfProductById(productId)
+                    if (!product) return null
+                    return (
+                      <div key={productId} className="flex items-center justify-between gap-2 rounded-md border border-outline bg-[#f7f9fb] px-3 py-2">
+                        <button
+                          type="button"
+                          onClick={() => handleProductSelect(product.id)}
+                          className="min-w-0 text-left"
+                        >
+                          <p className="truncate text-[12px] font-semibold text-on-surface">{product.name}</p>
+                          <p className="text-[11px] text-on-surface-variant">{product.skuNumber ?? product.id}</p>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setScannedSkuIds(prev => prev.filter(id => id !== productId))}
+                          className="rounded-md border border-outline bg-white px-2 py-1 text-[11px] font-semibold text-on-surface-variant"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            <FieldLabel label="Manual SKU Search" />
             <div className="rounded-lg border border-outline bg-[#f7f9fb] px-3 py-2.5">
               <div className="flex items-center gap-2 text-on-surface-variant">
                 <Search size={14} />
@@ -808,12 +813,47 @@ export function OffShelfScreen() {
             </div>
 
             <FieldLabel label="Quantity" />
-            <SegmentGrid
-              values={offShelfQuantityOptions.map(value => formatQuantityOption(value))}
-              selectedValue={draft.quantity === '' ? '' : formatQuantityOption(draft.quantity)}
-              onSelect={value => updateDraft('quantity', parseQuantityOption(value))}
-              columns="grid-cols-3"
-            />
+            <div className="grid grid-cols-[1fr_auto] gap-2">
+              <input
+                type="number"
+                min="0"
+                value={draft.quantity}
+                onChange={event => updateDraft('quantity', event.target.value === '' ? '' : Number(event.target.value))}
+                placeholder="Enter quantity"
+                className="min-h-10 rounded-lg border border-outline bg-surface-lowest px-3 text-[13px] text-on-surface outline-none placeholder:text-[#7f8b99]"
+              />
+              <select
+                value={draft.quantityUnit}
+                onChange={event => updateDraft('quantityUnit', event.target.value as DraftState['quantityUnit'])}
+                className="min-h-10 rounded-lg border border-outline bg-surface-lowest px-2 text-[12px] font-semibold text-on-surface outline-none"
+              >
+                <option value="eaches">Eaches</option>
+                <option value="cases">Cases</option>
+                <option value="pallets">Pallets</option>
+                <option value="lot-bulk">Lot / Bulk</option>
+              </select>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(['eaches', 'cases', 'pallets', 'lot-bulk'] as const).map(unit => (
+                <button
+                  key={unit}
+                  type="button"
+                  onClick={() => updateDraft('quantityUnit', unit)}
+                  className={clsx(
+                    'rounded-md border px-2.5 py-1.5 text-[11px] font-semibold',
+                    draft.quantityUnit === unit
+                      ? 'border-[#b7d5f6] bg-[#edf4ff] text-primary'
+                      : 'border-outline bg-white text-on-surface-variant'
+                  )}
+                >
+                  {formatQuantityUnit(unit)}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-on-surface-variant">
+              Calculated off-shelf units: {selectedProduct && draft.quantity !== '' ? calculatedDraftUnits : 0} eaches
+              {draft.quantityUnit === 'lot-bulk' ? ' (estimate)' : ''}
+            </p>
 
             <ImpactPreviewCard
               location={draft.location}
@@ -836,25 +876,25 @@ export function OffShelfScreen() {
             />
             <p className="text-[11px] text-on-surface-variant">{classificationPrompt}</p>
 
-            <FieldLabel label="Photo Evidence" />
+            <FieldLabel label="Optional Photo" />
             <div className={clsx(
               'rounded-lg border px-3 py-3',
-              draft.photoCaptured ? 'border-[#cde8d3] bg-[#edf7ee]' : 'border-[#f9d6d0] bg-[#fef1ee]'
+              draft.photoCaptured ? 'border-[#cde8d3] bg-[#edf7ee]' : 'border-outline bg-[#f7f9fb]'
             )}>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className={clsx('text-[11px] font-semibold uppercase tracking-[0.14em]', draft.photoCaptured ? 'text-[#1f5f33]' : 'text-[#8e030f]')}>
-                    Photo Required
+                  <p className={clsx('text-[11px] font-semibold uppercase tracking-[0.14em]', draft.photoCaptured ? 'text-[#1f5f33]' : 'text-on-surface-variant')}>
+                    Optional Documentation
                   </p>
-                  <p className={clsx('text-[12px] mt-1', draft.photoCaptured ? 'text-[#1f5f33]' : 'text-[#8e030f]')}>
-                    Attach image to verify display. Required before submission.
+                  <p className={clsx('text-[12px] mt-1', draft.photoCaptured ? 'text-[#1f5f33]' : 'text-on-surface-variant')}>
+                    Attach an image when useful for manager review. Photos do not block submit.
                   </p>
                 </div>
                 <span className={clsx(
                   'rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]',
-                  draft.photoCaptured ? 'border-[#cde8d3] bg-white text-[#1f5f33]' : 'border-[#f9d6d0] bg-white text-[#8e030f]'
+                  draft.photoCaptured ? 'border-[#cde8d3] bg-white text-[#1f5f33]' : 'border-outline bg-white text-on-surface-variant'
                 )}>
-                  {draft.photoCaptured ? 'Uploaded' : 'Missing'}
+                  {draft.photoCaptured ? 'Uploaded' : 'Optional'}
                 </span>
               </div>
               <div className="mt-3 flex items-center gap-2 flex-wrap">
@@ -978,14 +1018,14 @@ export function OffShelfScreen() {
           )}
 
           <SectionCard
-            title={visitType === 'follow-up' ? 'Revisit Change Log' : 'Added in This Visit'}
+            title={visitType === 'follow-up' ? 'Displays' : 'Added in This Visit'}
             subtitle={offShelf.length > 0
               ? visitType === 'follow-up'
-                ? `${retainedEntries.length} retained or updated | ${removedEntries.length} removed | ${addedEntries.length} added during this follow-up.`
+                ? `${previousEntries.length} previously submitted prefilled | ${updatedEntries.length} edited | ${removedEntries.length} removed | ${addedEntries.length} added.`
                 : `${offShelf.length} display records saved for this visit.`
               : offShelfConfirmed
                 ? visitType === 'follow-up'
-                  ? 'Previous displays were reviewed with no additional displays added.'
+                  ? 'No displays are currently saved in this revisit.'
                   : 'No incremental off-shelf displays were confirmed for this visit.'
                 : 'No display records saved yet.'}
             open={showCaptured}
@@ -993,42 +1033,18 @@ export function OffShelfScreen() {
           >
             <div className="space-y-2">
               {offShelf.map((entry, index) => (
-                <div key={entry.id} className="rounded-lg border border-outline bg-surface-lowest px-3 py-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Display {index + 1}</p>
-                      <p className="text-[13px] font-semibold text-on-surface">{entry.location} | {entry.product} | {getOffShelfQuantityLabel(entry.quantity)}</p>
-                      <p className="mt-1 text-[12px] text-on-surface">{entry.product}</p>
-                      <p className="mt-1 text-[11px] text-on-surface-variant">
-                        Qty {entry.quantity} | {entry.classification === 'incremental' ? 'Incremental' : entry.classification === 'base-plan' ? 'Base Plan' : 'Not Sure'}
-                      </p>
-                    </div>
-                    <span className="rounded-md border border-[#cde8d3] bg-[#edf7ee] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#1f5f33]">
-                      {formatFollowUpStatus(entry.status)}
-                    </span>
-                  </div>
-                  {entry.photoPreviewUrl && (
-                    <div className="mt-3 overflow-hidden rounded-lg border border-outline bg-[#f7f9fb]">
-                      <img src={entry.photoPreviewUrl} alt={`${entry.product} evidence`} className="h-28 w-full object-cover" />
-                    </div>
-                  )}
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    <MiniMetric label="Impact" value={`+${entry.impactPoints.toFixed(1)} pts`} positive />
-                    <MiniMetric label="Photo" value={entry.photoCaptured ? 'Captured' : 'Missing'} positive={entry.photoCaptured} />
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <InlineAction icon={<Edit3 size={12} />} label="Edit" onClick={() => handleEdit(entry)} />
-                    <InlineAction icon={<Copy size={12} />} label={visitType === 'follow-up' ? 'Additional' : 'Duplicate'} onClick={() => visitType === 'follow-up' ? handleAddAdditional(entry) : duplicateOffShelfEntry(entry.id)} />
-                    <InlineAction
-                      icon={<Trash2 size={12} />}
-                      label={visitType === 'follow-up' && entry.origin === 'previous-visit' ? 'Gone' : 'Delete'}
-                      onClick={() => visitType === 'follow-up' && entry.origin === 'previous-visit'
-                        ? handleMarkFollowUpEntry(entry, 'removed')
-                        : removeOffShelfEntry(entry.id)}
-                      destructive
-                    />
-                  </div>
-                </div>
+                <SkuCalculationCard
+                  key={entry.id}
+                  entry={entry}
+                  index={index}
+                  revisitMode={visitType === 'follow-up'}
+                  previousItem={findPreviousVersionItem(entry, sourceScorecard.items)}
+                  onEdit={() => handleEdit(entry)}
+                  onDuplicate={() => duplicateOffShelfEntry(entry.id)}
+                  onRemove={() => visitType === 'follow-up' && entry.origin === 'previous-visit'
+                    ? handleMarkFollowUpEntry(entry, 'removed')
+                    : removeOffShelfEntry(entry.id)}
+                />
               ))}
 
               {offShelf.length === 0 && (
@@ -1240,50 +1256,259 @@ function InsightCell({
   )
 }
 
-function formatQuantityOption(value: number | string) {
-  const numeric = typeof value === 'number' ? value : value === '400+' ? 400 : Number(value)
+function SkuCalculationCard({
+  entry,
+  index,
+  revisitMode,
+  previousItem,
+  onEdit,
+  onDuplicate,
+  onRemove,
+}: {
+  entry: OffShelfEntry
+  index: number
+  revisitMode: boolean
+  previousItem?: ScorecardVersionItem
+  onEdit: () => void
+  onDuplicate: () => void
+  onRemove: () => void
+}) {
+  const product = getOffShelfProductById(entry.skuId)
+  const calculatedUnits = getOffShelfEntryUnits(entry)
+  const peakWeekUnits = product?.peakWeekUnits ?? 0
+  const peakWeekRatio = peakWeekUnits > 0 ? +(calculatedUnits / peakWeekUnits).toFixed(2) : 0
+  const peakWeekMultiplier = Math.round(entry.multiplier)
+  const planType = getPlanTypeLabel(entry)
+  const recommendation = getRecommendationStatus(entry, product, calculatedUnits)
+  const previousQuantity = previousItem?.quantityPrevious ?? (entry.origin === 'previous-visit' ? entry.quantity : null)
+  const previousImpact = previousItem?.scorePrevious ?? (entry.origin === 'previous-visit' ? entry.impactPoints : 0)
+  const previousMultiplier = getPreviousMultiplier(previousItem, product, entry)
+  const currentImpact = entry.status === 'removed' ? 0 : entry.impactPoints
+  const currentQuantity = entry.status === 'removed' ? null : entry.quantity
+  const quantityUnit = formatQuantityUnit(entry.quantityUnit)
+  const scoreDelta = +(currentImpact - previousImpact).toFixed(1)
 
-  if (numeric >= 400) return 'Bulk (400+)'
-  if (numeric >= 200) return 'Pallet (200)'
-  if (numeric >= 120) return 'Large (120)'
-  if (numeric >= 80) return 'Medium (80)'
-  return 'Small (40)'
+  return (
+    <div className="rounded-lg border border-outline bg-surface-lowest px-3 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Display {index + 1}</p>
+          <p className="mt-1 text-[13px] font-semibold leading-snug text-on-surface">SKU: {entry.product}</p>
+          <p className="mt-1 text-[12px] text-on-surface-variant">
+            {product?.skuNumber ? `${product.skuNumber} | ` : ''}Location: {entry.location}
+          </p>
+        </div>
+        <StatusBadge label={formatDisplayStatus(entry)} tone={entry.status === 'removed' ? 'danger' : 'success'} />
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        <StatusBadge label={planType} tone={entry.classification === 'incremental' ? 'info' : 'neutral'} />
+        <StatusBadge label={`${peakWeekMultiplier}x Peak Week`} tone={peakWeekMultiplier > 0 ? 'success' : 'warning'} />
+        <StatusBadge label={recommendation.status} tone={recommendation.tone} />
+        {revisitMode && (
+          <StatusBadge label={getChangeBadge(scoreDelta, entry.status)} tone={scoreDelta > 0 ? 'success' : scoreDelta < 0 || entry.status === 'removed' ? 'danger' : 'neutral'} />
+        )}
+      </div>
+
+      {entry.photoPreviewUrl && (
+        <div className="mt-3 overflow-hidden rounded-lg border border-outline bg-[#f7f9fb]">
+          <img src={entry.photoPreviewUrl} alt={`${entry.product} evidence`} className="h-28 w-full object-cover" />
+        </div>
+      )}
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <MiniMetric label="Quarterly Value" value={formatCurrencyShort(product?.quarterlySalesValue)} positive={Boolean(product?.quarterlySalesValue)} />
+        <MiniMetric label="LGOR %" value={`${entry.estimatedLgor.toFixed(1)}%`} positive={entry.estimatedLgor > 0} />
+        <MiniMetric label="Peak Week Units" value={peakWeekUnits ? String(peakWeekUnits) : 'N/A'} />
+        <MiniMetric label="Entered Quantity" value={`${entry.quantity} ${quantityUnit}`} />
+        <MiniMetric label="Quantity UOM" value={quantityUnit} />
+        <MiniMetric label="Calculated Units" value={String(calculatedUnits)} />
+        <MiniMetric label="Peak Week Ratio" value={`${peakWeekRatio.toFixed(2)}x`} />
+        <MiniMetric label="Incremental Points" value={entry.classification === 'incremental' ? `${entry.impactPoints.toFixed(1)} pts` : 'N/A'} positive={entry.impactPoints > 0} />
+        <MiniMetric label="Photo" value={entry.photoCaptured ? 'Captured' : 'Optional'} positive={entry.photoCaptured} />
+      </div>
+
+      <div className="mt-3 rounded-lg border border-[#c9d8ea] bg-[#edf4ff] px-3 py-2.5">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">Calculation</p>
+        <p className="mt-1 text-[12px] font-semibold text-[#014486]">{getCalculationLine(entry, peakWeekMultiplier)}</p>
+        <p className="mt-1 text-[11px] text-[#014486]">{recommendation.message}</p>
+      </div>
+
+      {revisitMode && (
+        <div className="mt-3 rounded-lg border border-outline bg-[#f7f9fb] px-3 py-2.5">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Revisit Comparison</p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <MiniMetric label="Previous Quantity" value={previousQuantity === null ? 'None' : String(previousQuantity)} />
+            <MiniMetric label="Current Quantity" value={currentQuantity === null ? 'Removed' : String(currentQuantity)} />
+            <MiniMetric label="Change" value={formatQuantityChange(previousQuantity, currentQuantity)} positive={scoreDelta > 0} />
+            <MiniMetric label="Score Change" value={formatSignedPoints(scoreDelta)} positive={scoreDelta > 0} />
+            <MiniMetric label="Previous Multiplier" value={`${previousMultiplier}x`} />
+            <MiniMetric label="Current Multiplier" value={`${entry.status === 'removed' ? 0 : peakWeekMultiplier}x`} positive={peakWeekMultiplier > previousMultiplier && entry.status !== 'removed'} />
+          </div>
+        </div>
+      )}
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <InlineAction icon={<Edit3 size={12} />} label="Edit" onClick={onEdit} />
+        <InlineAction icon={<Copy size={12} />} label="Duplicate" onClick={onDuplicate} />
+        <InlineAction
+          icon={<Trash2 size={12} />}
+          label={revisitMode && entry.origin === 'previous-visit' ? 'Remove' : 'Delete'}
+          onClick={onRemove}
+          destructive
+        />
+      </div>
+    </div>
+  )
+}
+
+function findPreviousVersionItem(entry: OffShelfEntry, items: ScorecardVersionItem[]) {
+  return items.find(item => item.skuId === entry.skuId && item.executionPrevious === 'Completed')
+}
+
+function getPlanTypeLabel(entry: OffShelfEntry) {
+  if (entry.classification === 'base-plan') return 'Base Plan'
+  if (entry.classification === 'incremental') return 'Incremental'
+  return 'Other'
+}
+
+function getRecommendationStatus(
+  entry: OffShelfEntry,
+  product: ReturnType<typeof getOffShelfProductById>,
+  calculatedUnits: number,
+): { status: string; message: string; tone: 'success' | 'warning' | 'danger' | 'info' | 'neutral' } {
+  if (entry.status === 'removed') {
+    return {
+      status: 'Missing',
+      message: 'Recommended SKU not added off-shelf. Score Impact: 0 for MVP.',
+      tone: 'danger',
+    }
+  }
+
+  if (entry.classification !== 'incremental') {
+    return {
+      status: 'Empty Calories',
+      message: 'This SKU is not part of the recommended plan for this store/cluster. Score Impact: 0 for MVP.',
+      tone: 'warning',
+    }
+  }
+
+  if (product && calculatedUnits < product.peakWeekUnits) {
+    return {
+      status: 'Not Enough',
+      message: 'Quantity is below recommended / below Peak Week threshold. Score Impact: 0 or configurable.',
+      tone: 'warning',
+    }
+  }
+
+  if (entry.impactPoints > 0) {
+    return {
+      status: 'Completed',
+      message: `Points earned: ${entry.impactPoints.toFixed(1)}.`,
+      tone: 'success',
+    }
+  }
+
+  return {
+    status: 'Opportunity',
+    message: 'Recommended high-value SKU for this store plan.',
+    tone: 'info',
+  }
+}
+
+function getCalculationLine(entry: OffShelfEntry, peakWeekMultiplier: number) {
+  if (entry.classification === 'incremental') {
+    return `${entry.estimatedLgor.toFixed(1)} LGOR x ${peakWeekMultiplier}x Peak Week = ${entry.impactPoints.toFixed(1)} points`
+  }
+
+  if (entry.classification === 'base-plan') {
+    return `Base Plan LGOR contribution: ${entry.estimatedLgor.toFixed(1)}. Peak Week multiplier not applied.`
+  }
+
+  return 'Score Impact: 0 pending plan classification.'
+}
+
+function getPreviousMultiplier(
+  previousItem: ScorecardVersionItem | undefined,
+  product: ReturnType<typeof getOffShelfProductById>,
+  entry: OffShelfEntry,
+) {
+  if (!previousItem?.quantityPrevious || !product) return entry.origin === 'previous-visit' ? Math.round(entry.multiplier) : 0
+  const previousUnits = parseOffShelfQuantity(previousItem.quantityPrevious)
+  if (product.peakWeekUnits <= 0) return 0
+  if (previousUnits / product.peakWeekUnits >= 3) return 3
+  if (previousUnits / product.peakWeekUnits >= 2) return 2
+  if (previousUnits / product.peakWeekUnits >= 1) return 1
+  return 0
+}
+
+function formatQuantityUnit(unit: OffShelfEntry['quantityUnit']) {
+  if (unit === 'cases') return 'Cases'
+  if (unit === 'pallets') return 'Pallets'
+  if (unit === 'lot-bulk') return 'Lot / Bulk'
+  return 'Eaches'
+}
+
+function formatCurrencyShort(value?: number) {
+  if (!value) return 'N/A'
+  if (value >= 1000) return `$${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}K`
+  return `$${value.toLocaleString()}`
+}
+
+function formatQuantityChange(previous: number | string | null, current: number | string | null) {
+  if (previous === null && current === null) return 'No Change'
+  if (previous === null) return `+${parseOffShelfQuantity(current ?? 0)} units`
+  if (current === null) return `-${parseOffShelfQuantity(previous)} units`
+
+  const delta = parseOffShelfQuantity(current) - parseOffShelfQuantity(previous)
+  if (delta > 0) return `+${delta} units`
+  if (delta < 0) return `${delta} units`
+  return 'No Change'
+}
+
+function formatSignedPoints(value: number) {
+  if (value > 0) return `+${value.toFixed(1)} points`
+  if (value < 0) return `${value.toFixed(1)} points`
+  return 'No Change'
+}
+
+function getChangeBadge(scoreDelta: number, status: OffShelfEntry['status']) {
+  if (status === 'removed' || scoreDelta < 0) return 'Declined'
+  if (scoreDelta > 0) return 'Improved'
+  return 'No Change'
+}
+
+function StatusBadge({
+  label,
+  tone,
+}: {
+  label: string
+  tone: 'success' | 'warning' | 'danger' | 'info' | 'neutral'
+}) {
+  return (
+    <span className={clsx(
+      'inline-flex min-h-6 items-center rounded-md border px-2 py-1 text-[10px] font-semibold uppercase leading-none tracking-[0.08em]',
+      tone === 'success' && 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]',
+      tone === 'warning' && 'border-[#f5d78a] bg-[#fdf5e4] text-[#7a4800]',
+      tone === 'danger' && 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]',
+      tone === 'info' && 'border-[#c9d8ea] bg-[#edf4ff] text-primary',
+      tone === 'neutral' && 'border-outline bg-[#f7f9fb] text-on-surface-variant',
+    )}>
+      {label}
+    </span>
+  )
 }
 
 function resolveCategoryId(category: string) {
   return offShelfCategories.find(item => item.label === category || item.id === category)?.id ?? ''
 }
 
-function formatFollowUpStatus(status: OffShelfEntry['status']) {
-  return {
-    saved: 'Saved',
-    'pending-review': 'Pending',
-    retained: 'Retained',
-    updated: 'Updated',
-    removed: 'Removed',
-    added: 'Added',
-  }[status]
-}
-
-function followUpStatusTone(status: OffShelfEntry['status']) {
-  return {
-    saved: 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]',
-    'pending-review': 'border-[#ead7b1] bg-[#f9f2e7] text-[#8b5d00]',
-    retained: 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]',
-    updated: 'border-[#c9d8ea] bg-[#edf4ff] text-primary',
-    removed: 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]',
-    added: 'border-[#c9d8ea] bg-[#edf4ff] text-primary',
-  }[status]
-}
-
-function parseQuantityOption(value: string) {
-  return {
-    'Small (40)': 40,
-    'Medium (80)': 80,
-    'Large (120)': 120,
-    'Pallet (200)': 200,
-    'Bulk (400+)': '400+',
-  }[value] ?? 40
+function formatDisplayStatus(entry: OffShelfEntry) {
+  if (entry.status === 'removed') return 'Removed'
+  if (entry.status === 'updated') return 'Edited'
+  if (entry.status === 'added') return 'New'
+  if (entry.origin === 'previous-visit') return 'Previously Submitted'
+  return 'Saved'
 }
 
 function getProductPotential(product: NonNullable<ReturnType<typeof getOffShelfProductById>>, location: string, quantity: number | string | '') {
@@ -1413,36 +1638,3 @@ function InlineAction({
   )
 }
 
-function FollowUpDecisionButton({
-  icon,
-  label,
-  onClick,
-  active = false,
-  destructive = false,
-}: {
-  icon: ReactNode
-  label: string
-  onClick: () => void
-  active?: boolean
-  destructive?: boolean
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={clsx(
-        'inline-flex min-h-9 items-center gap-1.5 rounded-md border px-3 py-1.5 text-[11px] font-semibold transition-colors',
-        destructive
-          ? active
-            ? 'border-[#f2a8a0] bg-[#fef1ee] text-[#8e030f]'
-            : 'border-[#f9d6d0] bg-white text-[#8e030f]'
-          : active
-            ? 'border-[#c9d8ea] bg-[#edf4ff] text-primary'
-            : 'border-outline bg-white text-on-surface-variant'
-      )}
-    >
-      {icon}
-      {label}
-    </button>
-  )
-}

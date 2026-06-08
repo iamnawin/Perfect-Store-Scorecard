@@ -1,14 +1,15 @@
 import { useState, type ChangeEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, Camera, CheckCircle2, FileText, Flag, Image, RotateCcw } from 'lucide-react'
+import { Camera, CheckCircle2, FileText, Flag, Image, RotateCcw } from 'lucide-react'
 import { BottomActionBar } from '../components/BottomActionBar'
 import { PhoneShell } from '../components/PhoneShell'
+import { RevisitBanner } from '../components/RevisitBanner'
 import { StandardGuidanceCard } from '../components/StandardGuidanceCard'
 import { TopBar } from '../components/TopBar'
 import { TrellisAskButton, TrellisInsightCard } from '../components/TrellisBot'
 import { useApp } from '../context/useApp'
 import { evidenceRequirements, store } from '../data/mock'
-import { getCurrentSectionNumber, getLinkedQuestionTitles, getMissingRequiredEvidence, getVisitTypeLabel } from '../lib/scorecard'
+import { getCurrentSectionNumber, getLinkedQuestionTitles, getVisitTypeLabel } from '../lib/scorecard'
 import { answerTrellisChat, getPhotoInsight } from '../lib/trellis'
 
 export function PhotoScreen() {
@@ -32,16 +33,15 @@ export function PhotoScreen() {
     lastSavedAt,
     saveDraft,
     agentforceEnabled,
+    scorecardVersion,
+    sourceScorecard,
   } = app
 
-  const missingEvidence = getMissingRequiredEvidence(evidence, offShelf)
   const sectionNumber = getCurrentSectionNumber(app)
   const visitTypeLabel = getVisitTypeLabel(visitType)
-  const helperText = lastSavedAt ? `Draft saved at ${lastSavedAt}` : 'Missing required evidence will block submission.'
+  const helperText = lastSavedAt ? `Draft saved at ${lastSavedAt}` : 'Photos are optional documentation for this MVP.'
   const trellisInsight = getPhotoInsight(app)
   const agentforceDraft = buildAgentforceDraft({
-    missingEvidenceCount: missingEvidence.length,
-    missingTitle: missingEvidence[0]?.title,
     offShelfCount: offShelf.length,
     notes,
     revisitRequired,
@@ -59,8 +59,8 @@ export function PhotoScreen() {
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Progress</p>
               <p className="text-[12px] text-on-surface-variant mt-1">Step {sectionNumber} of {totalSections} • {completionPercent}% complete</p>
             </div>
-            <span className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${missingEvidence.length === 0 ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'}`}>
-              {missingEvidence.length === 0 ? 'Evidence Ready' : `${missingEvidence.length} Missing`}
+            <span className="rounded-md border border-[#dde3ea] bg-[#f4f6f9] px-2 py-1 text-[11px] font-semibold text-[#52606d]">
+              Optional
             </span>
           </div>
           <div className="h-2 rounded-full bg-[#dde3ea] overflow-hidden mt-3">
@@ -69,17 +69,7 @@ export function PhotoScreen() {
         </div>
 
         <div className="px-4 py-3 space-y-3">
-          {missingEvidence.length > 0 && (
-            <div className="border border-[#f9d6d0] bg-[#fef1ee] rounded-lg px-4 py-3 flex gap-2.5">
-              <AlertTriangle size={16} className="text-[#ba0517] shrink-0 mt-0.5" />
-              <div>
-                <p className="text-[12px] font-semibold text-[#8e030f]">Submission blocked until required evidence is captured.</p>
-                <p className="text-[12px] text-[#8e030f] mt-1">
-                  Missing: {missingEvidence.map(item => item.title).join(', ')}
-                </p>
-              </div>
-            </div>
-          )}
+          <RevisitBanner sourceScorecard={sourceScorecard} activeScorecard={scorecardVersion} />
 
           {agentforceEnabled && (
             <TrellisInsightCard
@@ -93,9 +83,9 @@ export function PhotoScreen() {
           )}
           {!agentforceEnabled && (
             <StandardGuidanceCard
-              title="Evidence is required before submission"
-              summary="Required photos must be captured before submission."
-              detail="Suggested action: capture required photo before submit."
+              title="Optional Photo Documentation"
+              summary="Photos are optional documentation for this MVP."
+              detail="Capture photos when useful for manager review; they do not block submit."
             />
           )}
 
@@ -112,12 +102,12 @@ export function PhotoScreen() {
               <div key={requirement.id} className="border border-outline bg-surface-lowest rounded-lg overflow-hidden">
                 <div className="px-4 py-3 border-b border-outline flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">{requirement.required ? 'Required Photo' : 'Optional Photo'}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Optional Photo</p>
                     <p className="text-[15px] font-semibold text-on-surface mt-1">{requirement.title}</p>
                     <p className="text-[12px] text-on-surface-variant mt-1">{requirement.relevance}</p>
                   </div>
-                  <span className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${captured ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : requirement.required ? 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]' : 'border-[#dde3ea] bg-[#f4f6f9] text-[#52606d]'}`}>
-                    {captured ? 'Captured' : requirement.required ? 'Missing' : 'Optional'}
+                  <span className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${captured ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]' : 'border-[#dde3ea] bg-[#f4f6f9] text-[#52606d]'}`}>
+                    {captured ? 'Captured' : 'Optional'}
                   </span>
                 </div>
                 <div className="px-4 py-4">
@@ -249,15 +239,11 @@ export function PhotoScreen() {
 }
 
 function buildAgentforceDraft({
-  missingEvidenceCount,
-  missingTitle,
   offShelfCount,
   notes,
   revisitRequired,
   shelfResetNeeded,
 }: {
-  missingEvidenceCount: number
-  missingTitle?: string
   offShelfCount: number
   notes: string
   revisitRequired: boolean
@@ -265,13 +251,9 @@ function buildAgentforceDraft({
 }) {
   const noteSeed = notes.trim()
 
-  if (missingEvidenceCount > 0) {
-    return `Capture ${missingTitle ?? 'required evidence'} before closing the visit. ${offShelfCount > 0 ? `${offShelfCount} incremental display record${offShelfCount > 1 ? 's are' : ' is'} already attached for review.` : 'No incremental display records have been attached yet.'}`
-  }
-
   const statusLine = offShelfCount > 0
-    ? `${offShelfCount} incremental display record${offShelfCount > 1 ? 's' : ''} captured with required proof complete.`
-    : 'Required base-plan evidence is complete for this visit.'
+    ? `${offShelfCount} incremental display record${offShelfCount > 1 ? 's' : ''} captured. Photos remain optional documentation.`
+    : 'No optional photos have been attached yet.'
   const followUpLine = revisitRequired
     ? 'Revisit remains flagged for follow-up execution.'
     : shelfResetNeeded
