@@ -1,5 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react'
-import type { AppState, ChecklistAnswer, ChecklistState, OffShelfEntry, PerfectStoreScorecard, ScorecardVersionItem, ScorecardVersionRecord, VisitType } from '../types'
+import { useEffect, useState, useMemo, type ReactNode } from 'react'
+import type { AppState, ChecklistAnswer, ChecklistState, OffShelfEntry, PerfectStoreScorecard, ScorecardVersionItem, ScorecardVersionRecord, VisitType, UploadedFile, ChatterPostStatus } from '../types'
 import { AppContext } from './app-context'
 import { checklistQuestions, perfectStoreScorecards, previousOffShelfSeed, previousSnapshot, store } from '../data/mock'
 import {
@@ -13,23 +13,17 @@ import {
   createInitialEvidenceState,
   getAnsweredChecks,
   getCapturedRequiredPhotos,
-  getChecklistBasePlanScore,
   getCompletionPercent,
-  getLgorPct,
   getMissingRequiredEvidence,
   getOffShelfProductById,
   getRequiredPhotoCount,
-  getRiskDelta,
   getScorecardStatus,
   getTotalChecks,
-  getTotalScore,
   getTotalSections,
-  getOffShelfIncrementalScore,
   generateSkuTags,
   generateRecommendations,
-  getScoreExplanations,
+  recalculateScorecard,
 } from '../lib/scorecard'
-import type { UploadedFile, ChatterPostStatus } from '../types'
 
 function createOffShelfEntryWithTags(entry: OffShelfEntry): OffShelfEntry {
   const product = getOffShelfProductById(entry.skuId)
@@ -77,7 +71,7 @@ function createFollowUpSeedEntries(): OffShelfEntry[] {
       classification: seed.classification,
     })
 
-    return [{
+    return [createOffShelfEntryWithTags({
       id: crypto.randomUUID(),
       location: seed.location,
       category: categoryLabel,
@@ -98,7 +92,7 @@ function createFollowUpSeedEntries(): OffShelfEntry[] {
       multiplierLabel: impact.multiplierLabel,
       origin: 'previous-visit',
       status: 'saved',
-    }]
+    })]
   })
 }
 
@@ -218,6 +212,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [scorecardVersion, setScorecardVersion] = useState<ScorecardVersionRecord>(() => createInitialDraftScorecard(sourceScorecard, activePerfectScorecard))
   const [versionHistory, setVersionHistory] = useState<ScorecardVersionRecord[]>(() => [sourceScorecard])
   const [revisitComparison, setRevisitComparison] = useState<AppState['revisitComparison']>(null)
+
+  const appState: AppState = useMemo(() => ({
+    visitType,
+    checklist,
+    questionNotes,
+    offShelf,
+    offShelfConfirmed,
+    evidence,
+    secondaryDisplayImage,
+    audioNoteFile,
+    notes,
+    revisitReason,
+    revisitRequired,
+    shelfResetNeeded,
+    lastSavedAt,
+    submitted,
+    agentforceEnabled,
+    toast,
+    celebration,
+    scorecardVersion,
+    sourceScorecard,
+    versionHistory,
+    revisitComparison,
+    activeScorecardResult,
+    storePlanMap,
+  }), [
+    visitType, checklist, questionNotes, offShelf, offShelfConfirmed, evidence,
+    secondaryDisplayImage, audioNoteFile, notes, revisitReason, revisitRequired,
+    shelfResetNeeded, lastSavedAt, submitted, agentforceEnabled, toast, celebration,
+    scorecardVersion, sourceScorecard, versionHistory, revisitComparison,
+    activeScorecardResult, storePlanMap
+  ])
+
+  const recalculated = useMemo(() => recalculateScorecard(appState), [appState])
 
   useEffect(() => {
     if (!toast) return
@@ -339,7 +367,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setTimeout(() => {
       console.log('Posting to Chatter:', {
         scorecardId: scorecardVersion.id,
-        score: totalScore,
+        score: recalculated.combinedScore,
         store: store.name,
         rep: store.rep,
         recommendations: generateRecommendations(appState),
@@ -366,6 +394,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       fileObject: file
     }
     setStorePlanMap(newFile)
+    triggerToast('Map uploaded.', `${file.name} attached to visit.`)
   }
 
   function removeStorePlanMap() {
@@ -388,6 +417,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     setUploadedFiles(prev => [...prev, newFile])
     setEvidencePhoto(itemId, file)
+    triggerToast('Evidence added.', `${file.name} attached.`)
   }
 
   function removeEvidencePhoto(itemId: string) {
@@ -414,6 +444,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ? { ...entry, photoCaptured: true, photoName: file.name, photoPreviewUrl: newFile.localPreviewUrl } 
         : entry
     ))
+    triggerToast('Display evidence added.', `${file.name} attached.`)
   }
 
   function removeOffShelfPhoto(entryId: string) {
@@ -432,12 +463,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       return [
         ...prev,
-        {
+        createOffShelfEntryWithTags({
           ...target,
           id: crypto.randomUUID(),
           origin: 'current-visit',
           status: visitType === 'follow-up' ? 'added' : 'saved',
-        },
+        }),
       ]
     })
   }
@@ -546,74 +577,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ))
     const shouldCelebrate = !hasCriticalBlockers &&
       hasIncrementalAddedThisRun &&
-      getOffShelfIncrementalScore(offShelf) > 0
+      recalculated.incrementalScore > 0
 
     if (visitType === 'follow-up') {
       const draftWithCurrentState: ScorecardVersionRecord = {
         ...scorecardVersion,
-        items: createVersionItemsFromState(scorecardVersion.id, offShelf),
-        executionScore: getChecklistBasePlanScore(checklist),
-        basePlanScore: 26.3,
-        incrementalScore: getOffShelfIncrementalScore(offShelf),
-        combinedScore: getTotalScore({
-          visitType,
-          checklist,
-          questionNotes,
-          offShelf,
-          offShelfConfirmed,
-          evidence,
-          secondaryDisplayImage,
-          audioNoteFile,
-          notes,
-          revisitReason,
-          revisitRequired,
-          shelfResetNeeded,
-          lastSavedAt,
-          submitted,
-          agentforceEnabled,
-          toast,
-          celebration,
-          scorecardVersion,
-          sourceScorecard,
-          versionHistory,
-          revisitComparison,
-          activeScorecardResult,
-          storePlanMap,
-        }),
+        items: createVersionItemsFromState(scorecardVersion.id, recalculated.offShelfItemsWithScoreImpact),
+        executionScore: recalculated.executionScore,
+        basePlanScore: recalculated.basePlanScore,
+        incrementalScore: recalculated.incrementalScore,
+        combinedScore: recalculated.combinedScore,
+        scoreExplanations: recalculated.calculationTrace,
       }
       const submittedVersion = submitRevisit(draftWithCurrentState, {
         submittedBy: store.rep,
         revisitNotes: notes,
         revisitReason,
         currentScores: {
-          executionScore: getChecklistBasePlanScore(checklist),
-          basePlanScore: 26.3,
-          incrementalScore: getOffShelfIncrementalScore(offShelf),
-          combinedScore: getTotalScore({
-            visitType,
-            checklist,
-            questionNotes,
-            offShelf,
-            offShelfConfirmed,
-            evidence,
-            secondaryDisplayImage,
-            audioNoteFile,
-            notes,
-            revisitReason,
-            revisitRequired,
-            shelfResetNeeded,
-            lastSavedAt,
-            submitted,
-            agentforceEnabled,
-            toast,
-            celebration,
-            scorecardVersion,
-            sourceScorecard,
-            versionHistory,
-            revisitComparison,
-            activeScorecardResult,
-            storePlanMap,
-          }),
+          executionScore: recalculated.executionScore,
+          basePlanScore: recalculated.basePlanScore,
+          incrementalScore: recalculated.incrementalScore,
+          combinedScore: recalculated.combinedScore,
         },
       })
 
@@ -629,10 +613,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         mapUpload: storePlanMap,
         photos: uploadedFiles,
         chatterPostStatus: 'Not Posted',
-        scoreExplanations: getScoreExplanations(appState),
-        currentScore: getTotalScore({
-          ...appState,
-        }),
+        scoreExplanations: recalculated.calculationTrace,
+        currentScore: recalculated.combinedScore,
+        executionScore: recalculated.executionScore,
+        basePlanScore: recalculated.basePlanScore,
+        incrementalScore: recalculated.incrementalScore,
+        combinedScore: recalculated.combinedScore,
+        items: createVersionItemsFromState('pss-current-draft', recalculated.offShelfItemsWithScoreImpact)
       }))
     }
 
@@ -647,69 +634,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const appState: AppState = {
-    visitType,
-    checklist,
-    questionNotes,
-    offShelf,
-    offShelfConfirmed,
-    evidence,
-    secondaryDisplayImage,
-    audioNoteFile,
-    notes,
-    revisitReason,
-    revisitRequired,
-    shelfResetNeeded,
-    lastSavedAt,
-    submitted,
-    agentforceEnabled,
-    toast,
-    celebration,
-    scorecardVersion,
-    sourceScorecard,
-    versionHistory,
-    revisitComparison,
-    activeScorecardResult,
-    storePlanMap,
-  }
-
   const answeredChecks = getAnsweredChecks(checklist)
   const totalChecks = getTotalChecks()
-  const totalSections = getTotalSections(visitType)
+  const totalSectionsCount = getTotalSections(visitType)
   const requiredPhotos = getRequiredPhotoCount()
-  const capturedRequiredPhotos = getCapturedRequiredPhotos(evidence, offShelf)
+  const capturedRequiredPhotosCount = getCapturedRequiredPhotos(evidence, offShelf)
   const completionPercent = getCompletionPercent(appState)
   const scorecardStatus = getScorecardStatus(appState)
-  const executionScore = getChecklistBasePlanScore(checklist)
-  const totalScore = getTotalScore(appState)
-  const lgorPct = getLgorPct(appState)
-  const riskDelta = getRiskDelta(appState)
+  const finalLgorPct = +(26.3 + recalculated.offShelfItemsWithScoreImpact.filter((e: OffShelfEntry) => e.classification === 'incremental').reduce((t: number, e: OffShelfEntry) => t + (e.estimatedLgor || 0), 0)).toFixed(1)
+  const riskDelta = recalculated.riskSummary === 'High' ? -42 : recalculated.riskSummary === 'Medium' ? -18 : -6
 
   return (
     <AppContext.Provider value={{
-      visitType,
-      checklist,
-      questionNotes,
-      offShelf,
-      offShelfConfirmed,
-      evidence,
-      secondaryDisplayImage,
-      audioNoteFile,
-      notes,
-      revisitReason,
-      revisitRequired,
-      shelfResetNeeded,
-      lastSavedAt,
-      submitted,
-      agentforceEnabled,
-      toast,
-      celebration,
-      scorecardVersion,
-      sourceScorecard,
-      versionHistory,
-      revisitComparison,
-      activeScorecardResult,
-      storePlanMap,
+      ...appState,
+      offShelf: recalculated.offShelfItemsWithScoreImpact,
       setVisitType,
       setChecklistAnswer,
       setQuestionNote,
@@ -740,14 +678,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       showToast,
       answeredChecks,
       totalChecks,
-      totalSections,
+      totalSections: totalSectionsCount,
       requiredPhotos,
-      capturedRequiredPhotos,
+      capturedRequiredPhotos: capturedRequiredPhotosCount,
       completionPercent,
       scorecardStatus,
-      executionScore,
-      totalScore,
-      lgorPct,
+      executionScore: recalculated.executionScore,
+      totalScore: recalculated.combinedScore,
+      lgorPct: finalLgorPct,
       riskDelta,
       chatterPostStatus,
       uploadedFiles,

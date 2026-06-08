@@ -1301,7 +1301,7 @@ function SkuCalculationCard({
   return (
     <div className="rounded-lg border border-outline bg-surface-lowest px-3 py-3">
       {tags.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-1">
+        <div className="mb-2.5 flex flex-wrap gap-1.5">
           {tags.map((tag: string) => (
             <WhyTooltip
               key={tag}

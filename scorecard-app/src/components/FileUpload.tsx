@@ -62,8 +62,19 @@ export function FileUpload({
             )}
             
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-[#014486]">{file.fileName}</p>
-              <p className="text-xs text-[#4b5563]">{(file.fileSize / 1024).toFixed(1)} KB</p>
+              <div className="flex items-center gap-2">
+                <p className="truncate text-sm font-bold text-[#014486]">{file.fileName}</p>
+                <span className="shrink-0 rounded bg-[#edf7ee] border border-[#cde8d3] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#1f5f33]">
+                  {file.source === 'Map' ? 'Map Uploaded' : 'Evidence Added'}
+                </span>
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-[#4b5563]">
+                <span>{(file.fileSize / 1024 / 1024).toFixed(2)} MB</span>
+                <span className="h-1 w-1 rounded-full bg-[#c9d8ea]" />
+                <span>{file.fileType.split('/')[1]?.toUpperCase() || 'FILE'}</span>
+                <span className="h-1 w-1 rounded-full bg-[#c9d8ea]" />
+                <span>Uploaded {new Date(file.uploadedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+              </div>
             </div>
 
             <button

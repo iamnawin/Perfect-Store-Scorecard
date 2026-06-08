@@ -118,6 +118,25 @@ export interface OffShelfEntry {
   opportunityExplanation?: string
   scoreImpactExplanation?: string
   calculationTraces?: CalculationTrace[]
+  displayFactor?: number
+  quantityFactor?: number
+  baseImpact?: number
+}
+
+export interface RecalculatedScorecard {
+  executionScore: number
+  basePlanScore: number
+  incrementalScore: number
+  combinedScore: number
+  opportunityScore: number
+  riskSummary: RiskLevel
+  offShelfItemsWithScoreImpact: OffShelfEntry[]
+  calculationTrace: {
+    execution: CalculationTrace[]
+    basePlan: CalculationTrace[]
+    incremental: CalculationTrace[]
+    total: CalculationTrace[]
+  }
 }
 
 export interface UserContext {

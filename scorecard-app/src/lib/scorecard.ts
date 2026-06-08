@@ -15,6 +15,8 @@ import type {
   StepState,
   VisitType,
   CalculationTrace,
+  RiskLevel,
+  RecalculatedScorecard,
 } from '../types'
 
 export function createInitialEvidenceState() {
@@ -61,6 +63,111 @@ function isActiveOffShelfEntry(entry: OffShelfEntry) {
 }
 
 const demoBasePlanLgorPct = 26.3
+
+const displayFactors: Record<string, number> = {
+  'Endcap': 0.9,
+  'Fence Line': 0.85,
+  'Garden Door': 0.8,
+  'Drive Aisle': 0.75,
+  'Other': 0.6,
+  'default': 0.5
+}
+
+export function getDisplayFactor(location: string, product?: OffShelfProduct): number {
+  if (product && product.recommendedLocations.includes(location)) return 1.0
+  return displayFactors[location] || displayFactors['default']
+}
+
+export function getQuantityFactor(quantity: number, peakWeekUnits: number): { factor: number; risk: RiskLevel } {
+  if (peakWeekUnits <= 0) return { factor: 0.5, risk: 'None' }
+  const coverage = quantity / peakWeekUnits
+  if (coverage >= 0.7) return { factor: 1.0, risk: 'Low' }
+  if (coverage >= 0.3) return { factor: 0.75, risk: 'Medium' }
+  return { factor: 0.5, risk: 'High' }
+}
+
+export function getMultiplier(entry: Partial<OffShelfEntry>, product?: OffShelfProduct): number {
+  const isHighPriority = (product?.basePoints ?? 0) >= 15
+  const isRecommendedLocation = product && entry.location && product.recommendedLocations.includes(entry.location)
+
+  if (isHighPriority && isRecommendedLocation) return 3
+  if (isHighPriority || isRecommendedLocation) return 2
+  return 1
+}
+
+export function calculateSkuScoreImpact(entry: Partial<OffShelfEntry>, product?: OffShelfProduct) {
+  const lgor = product?.baseLgor ?? 0
+  const displayFactor = getDisplayFactor(entry.location || '', product)
+  const quantity = getOffShelfEntryUnits(entry as OffShelfEntry)
+  const { factor: quantityFactor, risk } = getQuantityFactor(quantity, product?.peakWeekUnits ?? 0)
+  const multiplier = getMultiplier(entry, product)
+
+  const baseImpact = +(lgor * displayFactor * quantityFactor).toFixed(2)
+  const finalImpact = +(baseImpact * multiplier).toFixed(1)
+
+  const { tags, explanations } = generateSkuTags({ ...entry, multiplier, impactPoints: finalImpact }, product)
+
+  return {
+    baseImpact,
+    multiplier,
+    finalImpact,
+    displayFactor,
+    quantityFactor,
+    riskLevel: risk,
+    tags,
+    tagExplanations: explanations
+  }
+}
+
+export function recalculateScorecard(state: AppState): RecalculatedScorecard {
+  // 1. Execution Score
+  const executionScore = getChecklistBasePlanScore(state.checklist)
+
+  // 2. Base Plan Score (Simple MVP logic)
+  // For now we use the demo baseline, but we could make it dynamic based on base plan SKUs
+  const basePlanScore = demoBasePlanLgorPct
+
+  // 3. Incremental Score
+  const scoredOffShelf = state.offShelf.map(entry => {
+    const product = getOffShelfProductById(entry.skuId)
+    const impact = calculateSkuScoreImpact(entry, product)
+    
+    return {
+      ...entry,
+      ...impact,
+      impactPoints: entry.classification === 'incremental' ? impact.finalImpact : 0,
+      estimatedLgor: entry.classification === 'incremental' ? (product?.baseLgor ?? 0) : 0
+    }
+  })
+
+  const incrementalScore = scoredOffShelf
+    .filter(isActiveOffShelfEntry)
+    .reduce((total, entry) => total + (entry.impactPoints || 0), 0)
+
+  // 4. Combined Score
+  const combinedScore = +(executionScore + basePlanScore + incrementalScore).toFixed(1)
+
+  // 5. Opportunity Score
+  const opportunityScore = +(100 + incrementalScore).toFixed(1)
+
+  // 6. Risk Summary
+  const riskSummary = scoredOffShelf.some(e => e.riskLevel === 'High') ? 'High' : 
+                     scoredOffShelf.some(e => e.riskLevel === 'Medium') ? 'Medium' : 'Low'
+
+  // 7. Traceability
+  const trace = getScoreExplanations({ ...state, offShelf: scoredOffShelf })
+
+  return {
+    executionScore: +executionScore.toFixed(1),
+    basePlanScore: +basePlanScore.toFixed(1),
+    incrementalScore: +incrementalScore.toFixed(1),
+    combinedScore,
+    opportunityScore,
+    riskSummary,
+    offShelfItemsWithScoreImpact: scoredOffShelf,
+    calculationTrace: trace
+  }
+}
 
 function hasStartedFollowUpReview(offShelf: OffShelfEntry[]) {
   return offShelf.some(entry => (

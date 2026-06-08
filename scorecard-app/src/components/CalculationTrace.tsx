@@ -68,23 +68,33 @@ interface WhyTooltipProps {
 export function WhyTooltip({ label, explanation, className }: WhyTooltipProps) {
   const [isVisible, setIsVisible] = React.useState(false)
 
+  const tagColorClass = 
+    label === 'High' ? 'border-[#fed7d7] bg-[#fff5f5] text-[#c53030]' :
+    label === 'Risk' ? 'border-[#fed7d7] bg-[#fff5f5] text-[#c53030]' :
+    label === 'Opportunity' ? 'border-[#c6f6d5] bg-[#f0fff4] text-[#2f855a]' :
+    label.includes('x') ? 'border-[#bee3f8] bg-[#ebf8ff] text-[#2b6cb0]' :
+    'border-[#c9d8ea] bg-[#f8fbfe] text-[#0176d3]'
+
   return (
     <div className={cn('relative inline-block', className)}>
       <button
         onMouseEnter={() => setIsVisible(true)}
         onMouseLeave={() => setIsVisible(false)}
         onClick={() => setIsVisible(!isVisible)}
-        className="flex items-center gap-1 rounded-full bg-[#f8fbfe] border border-[#c9d8ea] px-2 py-0.5 text-[9px] font-bold text-[#0176d3] hover:bg-[#edf4ff]"
+        className={cn(
+          'flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors',
+          tagColorClass
+        )}
       >
         {label}
-        <HelpCircle size={10} />
+        <HelpCircle size={10} className="opacity-70" />
       </button>
 
       {isVisible && (
-        <div className="absolute bottom-full left-1/2 z-50 mb-2 w-48 -translate-x-1/2 rounded-lg border border-[#c9d8ea] bg-white p-3 shadow-xl">
+        <div className="absolute bottom-full left-1/2 z-50 mb-2.5 w-52 -translate-x-1/2 rounded-lg border border-[#c9d8ea] bg-white p-3 shadow-xl animate-in fade-in zoom-in duration-150">
           <p className="text-[11px] font-bold text-[#014486] mb-1">{label}</p>
           <p className="text-[10px] text-[#4b5563] leading-snug">{explanation}</p>
-          <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-right border-[#c9d8ea] bg-white" />
+          <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-right border-[#c9d8ea] bg-white shadow-sm" />
         </div>
       )}
     </div>
