@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import clsx from 'clsx'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, CheckCircle2, ChevronRight, CircleDot, ClipboardCheck, LockKeyhole, TrendingUp } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, CircleDot, ClipboardCheck, Database, FileCheck, LockKeyhole, TrendingUp } from 'lucide-react'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
 import { TrellisInsightCard } from '../components/TrellisBot'
@@ -354,8 +355,127 @@ function ActiveScorecardContextCard({ activeScorecard }: { activeScorecard: NonN
             onRemove={app.removeStorePlanMap}
             className="mt-3"
           />
+          {app.csvSummary && <CsvSummaryCard summary={app.csvSummary} />}
         </div>
       </div>
+    </div>
+  )
+}
+
+function CsvSummaryCard({ summary }: { summary: NonNullable<ReturnType<typeof useApp>['csvSummary']> }) {
+  const [showDebug, setShowDebug] = useState(false)
+  const isMatch = summary.currentStoreMatch.found
+
+  return (
+    <div className="mt-4 space-y-3">
+      <div className={clsx(
+        'rounded-lg border p-3',
+        isMatch ? 'border-[#cde8d3] bg-[#f0f9f4]' : 'border-[#ead7b1] bg-[#fffcf0]'
+      )}>
+        <div className="flex items-center gap-2">
+          {isMatch ? <FileCheck size={16} className="text-[#1f5f33]" /> : <AlertTriangle size={16} className="text-[#755400]" />}
+          <p className={clsx('text-[13px] font-bold', isMatch ? 'text-[#1f5f33]' : 'text-[#755400]')}>
+            {isMatch ? 'CSV Uploaded Successfully' : 'CSV Uploaded, No Match Found'}
+          </p>
+        </div>
+        
+        <div className="mt-2 space-y-1.5 text-[12px]">
+          <div className="flex justify-between">
+            <span className="text-on-surface-variant">File:</span>
+            <span className="font-medium text-on-surface">{summary.fileName}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-on-surface-variant">Rows Loaded:</span>
+            <span className="font-medium text-on-surface">{summary.rowsLoaded}</span>
+          </div>
+        </div>
+
+        <div className="mt-3 border-t border-black/5 pt-3">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Current Store Match</p>
+          <div className="mt-2 space-y-1.5 text-[12px]">
+            <div className="flex justify-between">
+              <span className="text-on-surface-variant">Store Code:</span>
+              <span className="font-bold text-on-surface">{summary.currentStoreMatch.matchedStoreCode}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-on-surface-variant">Store Data Found:</span>
+              <span className={clsx('font-bold', isMatch ? 'text-[#1f5f33]' : 'text-[#ba0517]')}>
+                {isMatch ? 'Yes' : 'No'}
+              </span>
+            </div>
+            {isMatch && (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-on-surface-variant">Cluster:</span>
+                  <span className="font-bold text-on-surface">{summary.currentStoreMatch.matchedCluster}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-on-surface-variant">Matching SKUs:</span>
+                  <span className="font-bold text-on-surface">{summary.currentStoreMatch.matchingSkusCount}</span>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {!isMatch && (
+          <div className="mt-3 rounded border border-[#ead7b1] bg-white/50 p-2">
+            <p className="text-[11px] text-[#755400] leading-snug">
+              No matching rows were found for {store.sapNumber} in {summary.fileName}. 
+              You can continue, but SKU tags, cluster, LGOR, multiplier, opportunity, and risk insights may be limited.
+            </p>
+          </div>
+        )}
+
+        {isMatch && (
+          <div className="mt-3 border-t border-black/5 pt-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Data Available</p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <DataIndicator label="Base Plan SKUs" active={summary.dataAvailability.basePlanSkus} />
+              <DataIndicator label="Incremental SKUs" active={summary.dataAvailability.incrementalSkus} />
+              <DataIndicator label="LGOR Data" active={summary.dataAvailability.lgorData} />
+              <DataIndicator label="Peak Week Data" active={summary.dataAvailability.peakWeekData} />
+              <DataIndicator label="Multiplier Data" active={summary.dataAvailability.multiplierData} />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div>
+        <button
+          onClick={() => setShowDebug(!showDebug)}
+          className="flex items-center gap-1.5 text-[11px] font-bold text-on-surface-variant hover:text-primary"
+        >
+          <Database size={12} />
+          {showDebug ? 'Hide' : 'Show'} Data File Details
+          <ChevronDown size={12} className={clsx('transition-transform', showDebug && 'rotate-180')} />
+        </button>
+        {showDebug && (
+          <div className="mt-2 rounded-lg border border-outline bg-[#f8f9fa] p-3 text-[12px] space-y-1.5 animate-in fade-in slide-in-from-top-1">
+            <div className="flex justify-between">
+              <span className="text-on-surface-variant">Total Stores in CSV:</span>
+              <span className="font-medium text-on-surface">{summary.debugDetails.totalStores}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-on-surface-variant">Total SKUs in CSV:</span>
+              <span className="font-medium text-on-surface">{summary.debugDetails.totalSkus}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-on-surface-variant">Total Rows Loaded:</span>
+              <span className="font-medium text-on-surface">{summary.debugDetails.totalRows}</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function DataIndicator({ label, active }: { label: string; active: boolean }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className={clsx('h-1.5 w-1.5 rounded-full', active ? 'bg-[#2e844a]' : 'bg-[#ba0517]')} />
+      <span className="text-[11px] text-on-surface">{label}: {active ? 'Yes' : 'No'}</span>
     </div>
   )
 }

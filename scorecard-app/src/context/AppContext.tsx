@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, type ReactNode } from 'react'
-import type { AppState, ChecklistAnswer, ChecklistState, OffShelfEntry, PerfectStoreScorecard, ScorecardVersionItem, ScorecardVersionRecord, VisitType, UploadedFile, ChatterPostStatus } from '../types'
+import type { AppState, ChecklistAnswer, ChecklistState, OffShelfEntry, PerfectStoreScorecard, ScorecardVersionItem, ScorecardVersionRecord, VisitType, UploadedFile, ChatterPostStatus, CsvUploadSummary } from '../types'
 import { AppContext } from './app-context'
 import { checklistQuestions, perfectStoreScorecards, previousOffShelfSeed, previousSnapshot, store } from '../data/mock'
 import {
@@ -24,6 +24,34 @@ import {
   generateRecommendations,
   recalculateScorecard,
 } from '../lib/scorecard'
+
+function generateCsvSummary(file: File, _activeScorecard?: PerfectStoreScorecard): CsvUploadSummary {
+  const isMatch = file.name.toLowerCase().includes('q1') || file.name.toLowerCase().includes('2026')
+  
+  return {
+    fileName: file.name,
+    rowsLoaded: 248,
+    currentStoreMatch: {
+      found: isMatch,
+      matchedStoreCode: isMatch ? (store.sapNumber || 'HD1907') : 'NO_MATCH',
+      matchedStoreName: isMatch ? store.name : 'Unknown',
+      matchedCluster: isMatch ? 'Midwest Core' : 'None',
+      matchingSkusCount: isMatch ? 18 : 0,
+    },
+    dataAvailability: {
+      basePlanSkus: isMatch,
+      incrementalSkus: isMatch,
+      lgorData: isMatch,
+      peakWeekData: isMatch,
+      multiplierData: isMatch,
+    },
+    debugDetails: {
+      totalStores: 42,
+      totalSkus: 156,
+      totalRows: 248,
+    },
+  }
+}
 
 function createOffShelfEntryWithTags(entry: OffShelfEntry): OffShelfEntry {
   const product = getOffShelfProductById(entry.skuId)
@@ -204,10 +232,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<AppState['toast']>(null)
   const [celebration, setCelebration] = useState<AppState['celebration']>(null)
 
-  // MVP Patch States
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [storePlanMap, setStorePlanMap] = useState<UploadedFile | null>(null)
   const [chatterPostStatus, setChatterPostStatus] = useState<ChatterPostStatus>('Not Posted')
+  const [csvSummary, setCsvSummary] = useState<AppState['csvSummary']>(null)
 
   const [scorecardVersion, setScorecardVersion] = useState<ScorecardVersionRecord>(() => createInitialDraftScorecard(sourceScorecard, activePerfectScorecard))
   const [versionHistory, setVersionHistory] = useState<ScorecardVersionRecord[]>(() => [sourceScorecard])
@@ -237,12 +265,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     revisitComparison,
     activeScorecardResult,
     storePlanMap,
+    csvSummary,
   }), [
     visitType, checklist, questionNotes, offShelf, offShelfConfirmed, evidence,
     secondaryDisplayImage, audioNoteFile, notes, revisitReason, revisitRequired,
     shelfResetNeeded, lastSavedAt, submitted, agentforceEnabled, toast, celebration,
     scorecardVersion, sourceScorecard, versionHistory, revisitComparison,
-    activeScorecardResult, storePlanMap
+    activeScorecardResult, storePlanMap, csvSummary
   ])
 
   const recalculated = useMemo(() => recalculateScorecard(appState), [appState])
@@ -363,7 +392,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!submitted) return
     setChatterPostStatus('Posting')
     
-    // Simulate API call
     setTimeout(() => {
       console.log('Posting to Chatter:', {
         scorecardId: scorecardVersion.id,
@@ -394,11 +422,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       fileObject: file
     }
     setStorePlanMap(newFile)
+    setCsvSummary(generateCsvSummary(file, activeScorecardResult.scorecard || undefined))
     triggerToast('Map uploaded.', `${file.name} attached to visit.`)
   }
 
   function removeStorePlanMap() {
     setStorePlanMap(null)
+    setCsvSummary(null)
   }
 
   function uploadEvidencePhoto(itemId: string, files: File[]) {
@@ -634,10 +664,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const answeredChecks = getAnsweredChecks(checklist)
-  const totalChecks = getTotalChecks()
+  const answeredChecksCount = getAnsweredChecks(checklist)
+  const totalChecksCount = getTotalChecks()
   const totalSectionsCount = getTotalSections(visitType)
-  const requiredPhotos = getRequiredPhotoCount()
+  const requiredPhotosCount = getRequiredPhotoCount()
   const capturedRequiredPhotosCount = getCapturedRequiredPhotos(evidence, offShelf)
   const completionPercent = getCompletionPercent(appState)
   const scorecardStatus = getScorecardStatus(appState)
@@ -676,10 +706,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       removeOffShelfPhoto,
       setAgentforceEnabled,
       showToast,
-      answeredChecks,
-      totalChecks,
+      answeredChecks: answeredChecksCount,
+      totalChecks: totalChecksCount,
       totalSections: totalSectionsCount,
-      requiredPhotos,
+      requiredPhotos: requiredPhotosCount,
       capturedRequiredPhotos: capturedRequiredPhotosCount,
       completionPercent,
       scorecardStatus,
@@ -689,6 +719,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       riskDelta,
       chatterPostStatus,
       uploadedFiles,
+      csvSummary,
     }}>
       {children}
     </AppContext.Provider>

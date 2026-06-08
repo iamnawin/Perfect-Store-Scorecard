@@ -426,6 +426,30 @@ export interface LeaderboardEntry {
   delta: number
 }
 
+export interface CsvUploadSummary {
+  fileName: string
+  rowsLoaded: number
+  currentStoreMatch: {
+    found: boolean
+    matchedStoreCode: string
+    matchedStoreName: string
+    matchedCluster: string
+    matchingSkusCount: number
+  }
+  dataAvailability: {
+    basePlanSkus: boolean
+    incrementalSkus: boolean
+    lgorData: boolean
+    peakWeekData: boolean
+    multiplierData: boolean
+  }
+  debugDetails: {
+    totalStores: number
+    totalSkus: number
+    totalRows: number
+  }
+}
+
 export interface AppState {
   visitType: VisitType
   checklist: ChecklistState
@@ -450,4 +474,5 @@ export interface AppState {
   revisitComparison: RevisitComparisonSummary | null
   activeScorecardResult: ActivePerfectStoreScorecardResult
   storePlanMap: UploadedFile | null
+  csvSummary: CsvUploadSummary | null
 }

@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import type { AppState, ChecklistAnswer, OffShelfEntry, ScorecardStatus, VisitType, UploadedFile, ChatterPostStatus } from '../types'
+import type { AppState, ChecklistAnswer, OffShelfEntry, ScorecardStatus, VisitType, UploadedFile, ChatterPostStatus, CsvUploadSummary } from '../types'
 
 export interface AppContextValue extends AppState {
   setVisitType: (visitType: VisitType) => void
@@ -43,6 +43,7 @@ export interface AppContextValue extends AppState {
   riskDelta: number
   chatterPostStatus: ChatterPostStatus
   uploadedFiles: UploadedFile[]
+  csvSummary: CsvUploadSummary | null
 }
 
 export const AppContext = createContext<AppContextValue | null>(null)
