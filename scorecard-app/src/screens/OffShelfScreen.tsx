@@ -348,6 +348,9 @@ export function OffShelfScreen() {
 
   function handleDraftPhoto(file: File | null) {
     if (!file) {
+      if (editingId) {
+        app.removeOffShelfPhoto(editingId)
+      }
       setDraft(prev => ({
         ...prev,
         photoCaptured: false,
@@ -360,6 +363,9 @@ export function OffShelfScreen() {
     const reader = new FileReader()
     reader.onload = () => {
       const result = typeof reader.result === 'string' ? reader.result : ''
+      if (editingId) {
+        app.uploadOffShelfPhoto(editingId, [file])
+      }
       setDraft(prev => ({
         ...prev,
         photoCaptured: true,
@@ -1256,6 +1262,8 @@ function InsightCell({
   )
 }
 
+import { generateSkuTags } from '../lib/scorecard'
+
 function SkuCalculationCard({
   entry,
   index,
@@ -1274,6 +1282,7 @@ function SkuCalculationCard({
   onRemove: () => void
 }) {
   const product = getOffShelfProductById(entry.skuId)
+  const tags = generateSkuTags(entry, product)
   const calculatedUnits = getOffShelfEntryUnits(entry)
   const peakWeekUnits = product?.peakWeekUnits ?? 0
   const peakWeekRatio = peakWeekUnits > 0 ? +(calculatedUnits / peakWeekUnits).toFixed(2) : 0
@@ -1290,6 +1299,25 @@ function SkuCalculationCard({
 
   return (
     <div className="rounded-lg border border-outline bg-surface-lowest px-3 py-3">
+      {tags.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-1">
+          {tags.map(tag => (
+            <span
+              key={tag}
+              className={clsx(
+                'rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider',
+                tag === 'High' ? 'border-[#fed7d7] bg-[#fff5f5] text-[#c53030]' :
+                tag === 'Risk' ? 'border-[#fed7d7] bg-[#fff5f5] text-[#c53030]' :
+                tag === 'Opportunity' ? 'border-[#c6f6d5] bg-[#f0fff4] text-[#2f855a]' :
+                tag.includes('x') ? 'border-[#bee3f8] bg-[#ebf8ff] text-[#2b6cb0]' :
+                'border-[#e2e8f0] bg-[#f7fafc] text-[#4a5568]'
+              )}
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Display {index + 1}</p>

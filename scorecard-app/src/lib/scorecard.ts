@@ -230,10 +230,44 @@ export function estimateOffShelfImpact({
 export function getOffShelfIncrementalScore(entries: OffShelfEntry[]) {
   const rawIncremental = +entries
     .filter(isActiveOffShelfEntry)
-    .reduce((total, entry) => total + entry.impactPoints, 0)
+    .reduce((total, totalPoints, entry) => totalPoints + (entry.impactPoints || 0), 0)
     .toFixed(1)
 
   return Math.max(0, rawIncremental)
+}
+
+export function generateSkuTags(entry: Partial<OffShelfEntry>, product?: OffShelfProduct): string[] {
+  const tags: string[] = []
+  const multiplier = entry.multiplier || 1
+  const impactPoints = entry.impactPoints || 0
+  
+  // Priority Tags
+  if (impactPoints >= 15 || (product?.basePoints || 0) >= 15) tags.push('High')
+  else if (impactPoints >= 5) tags.push('Medium')
+  else if (impactPoints > 0) tags.push('Low')
+
+  // Multiplier Tags
+  if (multiplier >= 3) tags.push('3x')
+  else if (multiplier >= 2) tags.push('2x')
+
+  // Plan Type
+  if (entry.classification === 'incremental') tags.push('Incremental')
+  else if (entry.classification === 'base-plan') tags.push('Base Plan')
+
+  // Opportunity/Risk Tags
+  if (impactPoints > 10) tags.push('Opportunity')
+  
+  if (entry.quantity && product && Number(entry.quantity) < product.peakWeekUnits) {
+    tags.push('Risk')
+    tags.push('Peak Week')
+  }
+
+  // Cluster match
+  if (product && entry.location && product.recommendedLocations.includes(entry.location)) {
+    tags.push('Cluster Match')
+  }
+
+  return tags
 }
 
 export function getOffShelfOpportunityScore(entries: OffShelfEntry[]) {

@@ -26,7 +26,8 @@ export function PhotoScreen() {
     setRevisitRequired,
     shelfResetNeeded,
     setShelfResetNeeded,
-    setEvidencePhoto,
+    uploadEvidencePhoto,
+    removeEvidencePhoto,
     setEvidenceNote,
     completionPercent,
     totalSections,
@@ -136,7 +137,9 @@ export function PhotoScreen() {
                             className="hidden"
                             onChange={(event: ChangeEvent<HTMLInputElement>) => {
                               const file = event.target.files?.[0] ?? null
-                              setEvidencePhoto(requirement.id, file)
+                              if (file) {
+                                uploadEvidencePhoto(requirement.id, [file])
+                              }
                               event.target.value = ''
                             }}
                           />
@@ -144,7 +147,7 @@ export function PhotoScreen() {
                         {captured && (
                           <button
                             type="button"
-                            onClick={() => setEvidencePhoto(requirement.id, null)}
+                            onClick={() => removeEvidencePhoto(requirement.id)}
                             className="rounded-md border border-[#f9d6d0] bg-[#fef1ee] px-3 py-2 text-[12px] font-semibold text-[#8e030f]"
                           >
                             Remove

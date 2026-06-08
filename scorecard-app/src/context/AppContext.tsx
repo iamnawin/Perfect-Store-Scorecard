@@ -25,7 +25,27 @@ import {
   getTotalScore,
   getTotalSections,
   getOffShelfIncrementalScore,
+  generateSkuTags,
+  generateRecommendations,
 } from '../lib/scorecard'
+import type { UploadedFile, UploadSource, PriorityTag, MultiplierTag, PlanType, RiskLevel, ChatterPostStatus } from '../types'
+
+function createOffShelfEntryWithTags(entry: OffShelfEntry): OffShelfEntry {
+  const product = getOffShelfProductById(entry.skuId)
+  const tags = generateSkuTags(entry, product)
+  
+  return {
+    ...entry,
+    tags,
+    priorityTag: tags.includes('High') ? 'High' : tags.includes('Medium') ? 'Medium' : tags.includes('Low') ? 'Low' : undefined,
+    multiplierTag: tags.includes('3x') ? '3x' : tags.includes('2x') ? '2x' : null,
+    planType: entry.classification === 'incremental' ? 'Incremental' : 'Base Plan',
+    riskLevel: tags.includes('Risk') ? 'High' : 'None',
+    opportunityTag: tags.includes('Opportunity'),
+    peakWeekTag: tags.includes('Peak Week'),
+    clusterMatch: tags.includes('Cluster Match'),
+  }
+}
 
 function createPreviousChecklistState(): ChecklistState {
   return checklistQuestions.reduce<ChecklistState>((acc, question) => {
@@ -185,6 +205,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [agentforceEnabled, setAgentforceEnabled] = useState(false)
   const [toast, setToast] = useState<AppState['toast']>(null)
   const [celebration, setCelebration] = useState<AppState['celebration']>(null)
+
+  // MVP Patch States
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
+  const [storePlanMap, setStorePlanMap] = useState<UploadedFile | null>(null)
+  const [chatterPostStatus, setChatterPostStatus] = useState<ChatterPostStatus>('Not Posted')
+
   const [scorecardVersion, setScorecardVersion] = useState<ScorecardVersionRecord>(() => createInitialDraftScorecard(sourceScorecard, activePerfectScorecard))
   const [versionHistory, setVersionHistory] = useState<ScorecardVersionRecord[]>(() => [sourceScorecard])
   const [revisitComparison, setRevisitComparison] = useState<AppState['revisitComparison']>(null)
@@ -291,12 +317,107 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   function addOffShelfEntry(entry: OffShelfEntry) {
     setOffShelfConfirmed(true)
-    setOffShelf(prev => [...prev, entry])
+    const withTags = createOffShelfEntryWithTags(entry)
+    setOffShelf(prev => [...prev, withTags])
   }
 
   function updateOffShelfEntry(entry: OffShelfEntry) {
     setOffShelfConfirmed(true)
-    setOffShelf(prev => prev.map(existing => existing.id === entry.id ? entry : existing))
+    const withTags = createOffShelfEntryWithTags(entry)
+    setOffShelf(prev => prev.map(existing => existing.id === entry.id ? withTags : existing))
+  }
+
+  function postScorecardToChatter() {
+    if (!submitted) return
+    setChatterPostStatus('Posting')
+    
+    // Simulate API call
+    setTimeout(() => {
+      console.log('Posting to Chatter:', {
+        scorecardId: scorecardVersion.id,
+        score: totalScore,
+        store: store.name,
+        rep: store.rep,
+        recommendations: generateRecommendations(appState),
+        files: uploadedFiles.map(f => f.fileName),
+        map: storePlanMap?.fileName
+      })
+      setChatterPostStatus('Posted')
+      triggerToast('Chatter post created successfully.', 'The scorecard snapshot has been shared.')
+    }, 1500)
+  }
+
+  function uploadStorePlanMap(files: File[]) {
+    const file = files[0]
+    if (!file) return
+
+    const newFile: UploadedFile = {
+      id: crypto.randomUUID(),
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      localPreviewUrl: URL.createObjectURL(file),
+      uploadedAt: new Date().toISOString(),
+      source: 'Map',
+      fileObject: file
+    }
+    setStorePlanMap(newFile)
+  }
+
+  function removeStorePlanMap() {
+    setStorePlanMap(null)
+  }
+
+  function uploadEvidencePhoto(itemId: string, files: File[]) {
+    const file = files[0]
+    if (!file) return
+
+    const newFile: UploadedFile = {
+      id: crypto.randomUUID(),
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      localPreviewUrl: URL.createObjectURL(file),
+      uploadedAt: new Date().toISOString(),
+      source: 'ChecklistPhoto',
+      fileObject: file
+    }
+    setUploadedFiles(prev => [...prev, newFile])
+    setEvidencePhoto(itemId, file)
+  }
+
+  function removeEvidencePhoto(itemId: string) {
+    setEvidencePhoto(itemId, null)
+  }
+
+  function uploadOffShelfPhoto(entryId: string, files: File[]) {
+    const file = files[0]
+    if (!file) return
+
+    const newFile: UploadedFile = {
+      id: crypto.randomUUID(),
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      localPreviewUrl: URL.createObjectURL(file),
+      uploadedAt: new Date().toISOString(),
+      source: 'OffShelfPhoto',
+      fileObject: file
+    }
+    setUploadedFiles(prev => [...prev, newFile])
+    setOffShelf(prev => prev.map(entry => 
+      entry.id === entryId 
+        ? { ...entry, photoCaptured: true, photoName: file.name, photoPreviewUrl: newFile.localPreviewUrl } 
+        : entry
+    ))
+  }
+
+  function removeOffShelfPhoto(entryId: string) {
+    setOffShelf(prev => prev.map(entry => 
+      entry.id === entryId 
+        ? { ...entry, photoCaptured: false, photoName: '', photoPreviewUrl: '' } 
+        : entry
+    ))
   }
 
   function duplicateOffShelfEntry(id: string) {
@@ -499,6 +620,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         scorecardStatus: 'Submitted',
         submittedAt: new Date().toISOString(),
         submittedBy: store.rep,
+        mapUpload: storePlanMap,
+        photos: uploadedFiles,
+        chatterPostStatus: 'Not Posted',
         currentScore: getTotalScore({
           visitType,
           checklist,
@@ -522,6 +646,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           versionHistory,
           revisitComparison,
           activeScorecardResult,
+          storePlanMap,
         }),
       }))
     }
@@ -560,6 +685,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     versionHistory,
     revisitComparison,
     activeScorecardResult,
+    storePlanMap,
   }
 
   const answeredChecks = getAnsweredChecks(checklist)
@@ -598,6 +724,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       versionHistory,
       revisitComparison,
       activeScorecardResult,
+      storePlanMap,
       setVisitType,
       setChecklistAnswer,
       setQuestionNote,
@@ -617,6 +744,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       createRevisitFromSubmitted,
       saveDraft,
       submitScorecard,
+      postScorecardToChatter,
+      uploadStorePlanMap,
+      removeStorePlanMap,
+      uploadEvidencePhoto,
+      removeEvidencePhoto,
+      uploadOffShelfPhoto,
+      removeOffShelfPhoto,
       setAgentforceEnabled,
       showToast,
       answeredChecks,
@@ -630,6 +764,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       totalScore,
       lgorPct,
       riskDelta,
+      chatterPostStatus,
+      uploadedFiles,
     }}>
       {children}
     </AppContext.Provider>

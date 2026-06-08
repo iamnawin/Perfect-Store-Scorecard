@@ -21,6 +21,13 @@ export interface AppContextValue extends AppState {
   createRevisitFromSubmitted: () => void
   saveDraft: () => void
   submitScorecard: () => void
+  postScorecardToChatter: () => void
+  uploadStorePlanMap: (files: File[]) => void
+  removeStorePlanMap: (id: string) => void
+  uploadEvidencePhoto: (itemId: string, files: File[]) => void
+  removeEvidencePhoto: (itemId: string) => void
+  uploadOffShelfPhoto: (entryId: string, files: File[]) => void
+  removeOffShelfPhoto: (entryId: string) => void
   setAgentforceEnabled: (value: boolean) => void
   showToast: (title: string, message: string) => void
   answeredChecks: number
@@ -34,6 +41,8 @@ export interface AppContextValue extends AppState {
   totalScore: number
   lgorPct: number
   riskDelta: number
+  chatterPostStatus: ChatterPostStatus
+  uploadedFiles: UploadedFile[]
 }
 
 export const AppContext = createContext<AppContextValue | null>(null)

@@ -1,9 +1,10 @@
 import clsx from 'clsx'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, CheckCircle2, ChevronRight, CircleDot, ClipboardCheck, LockKeyhole, TrendingUp } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ChevronRight, CircleDot, ClipboardCheck, LockKeyhole, Map as MapIcon, TrendingUp } from 'lucide-react'
 import { PhoneShell } from '../components/PhoneShell'
 import { TopBar } from '../components/TopBar'
 import { TrellisInsightCard } from '../components/TrellisBot'
+import { FileUpload } from '../components/FileUpload'
 import { useApp } from '../context/useApp'
 import { previousSnapshot, store } from '../data/mock'
 import { getActiveScorecardSections, getCurrentSection, getCurrentSectionNumber, getStepState } from '../lib/scorecard'
@@ -22,6 +23,9 @@ export function EntryScreen() {
     submitted,
     agentforceEnabled,
     activeScorecardResult,
+    storePlanMap,
+    uploadStorePlanMap,
+    removeStorePlanMap,
   } = app
 
   const currentSection = getCurrentSection(app)
@@ -35,7 +39,7 @@ export function EntryScreen() {
   const topRecommendation = getTopRecommendation(app)
   const briefing = agentforceEnabled ? getEntryVisitBriefing(app) : null
   const activePerfectScorecard = activeScorecardResult.scorecard
-  const storePlanMapReady = activePerfectScorecard?.storePlanMapStatus === 'Published' && Boolean(activePerfectScorecard.storePlanMapId)
+  const storePlanMapReady = (activePerfectScorecard?.storePlanMapStatus === 'Published' && Boolean(activePerfectScorecard.storePlanMapId)) || !!storePlanMap
 
   const primaryCopyByStatus = {
     'not-started': {
@@ -311,6 +315,7 @@ export function EntryScreen() {
 }
 
 function ActiveScorecardContextCard({ activeScorecard }: { activeScorecard: NonNullable<ReturnType<typeof useApp>['activeScorecardResult']['scorecard']> }) {
+  const app = useApp()
   return (
     <div className="rounded-lg border border-outline bg-surface-lowest overflow-hidden">
       <div className="border-b border-outline px-4 py-3">
@@ -323,7 +328,7 @@ function ActiveScorecardContextCard({ activeScorecard }: { activeScorecard: NonN
             </p>
           </div>
           <span className="rounded-md border border-[#cde8d3] bg-[#edf7ee] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#1f5f33]">
-            {activeScorecard.storePlanMapStatus === 'Published' ? 'Plan Published' : 'Plan Missing'}
+            {activeScorecard.storePlanMapStatus === 'Published' || !!app.storePlanMap ? 'Plan Published' : 'Plan Missing'}
           </span>
         </div>
       </div>
@@ -335,8 +340,8 @@ function ActiveScorecardContextCard({ activeScorecard }: { activeScorecard: NonN
           <SnapshotField label="Region" value={store.region} />
           <SnapshotField label="District" value={store.district} />
           <SnapshotField label="Banner" value={store.banner} />
-          <SnapshotField label="Store Plan Map" value={activeScorecard.storePlanMapId} />
-          <SnapshotField label="POG Cluster" value={activeScorecard.storePlanMapStatus ?? 'Missing'} />
+          <SnapshotField label="Store Plan Map" value={app.storePlanMap?.fileName ?? activeScorecard.storePlanMapId} />
+          <SnapshotField label="POG Cluster" value={app.storePlanMap ? 'Uploaded' : (activeScorecard.storePlanMapStatus ?? 'Missing')} />
           <SnapshotField label="Published By" value={activeScorecard.publishedBy} />
         </div>
         <div className="mt-3 rounded-lg border border-outline bg-[#f7f9fb] px-3 py-3">
@@ -344,13 +349,13 @@ function ActiveScorecardContextCard({ activeScorecard }: { activeScorecard: NonN
           <p className="mt-1 text-[12px] text-on-surface-variant">
             Upload Store Plan Map / POG Cluster, validate required columns, preview rows, and publish active plan before field scoring starts.
           </p>
-          <button
-            type="button"
-            disabled
-            className="mt-3 min-h-10 rounded-md border border-outline bg-white px-3 text-[12px] font-semibold text-on-surface-variant"
-          >
-            Upload Store Plan Map / POG Cluster
-          </button>
+          <FileUpload
+            label=""
+            value={app.storePlanMap}
+            onChange={app.uploadStorePlanMap}
+            onRemove={app.removeStorePlanMap}
+            className="mt-3"
+          />
         </div>
       </div>
     </div>

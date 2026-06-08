@@ -572,11 +572,36 @@ export function SummaryScreen() {
           )}
 
           {submitted && (
-            <InfoBlock title="After Submit" subtitle="Share this completed visit to managers and the field team.">
-              <div className="grid grid-cols-1 gap-2">
-                <ActionButton label="Email Snapshot" icon={<Mail size={14} />} tone="secondary" onClick={openEmailSnapshot} />
-                <ActionButton label="Send to Chatter" icon={<Share2 size={14} />} tone="secondary" onClick={() => { void shareToChatter() }} />
-                <ActionButton label="Leaderboard Snapshot" icon={<ClipboardCheck size={14} />} tone="secondary" onClick={() => { void shareLeaderboardSnapshot() }} />
+            <InfoBlock title="Scorecard Submitted Successfully" subtitle={`${store.name} | ${scorecardVersion.quarter} FY${scorecardVersion.fiscalYear}`}>
+              <div className="rounded-lg border border-[#cde8d3] bg-[#edf7ee] px-4 py-4 mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#1f5f33] shadow-sm">
+                    <ClipboardCheck size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-bold text-[#1f5f33]">Final Score: {totalScore.toFixed(1)}</p>
+                    <p className="text-[12px] text-[#25523b]">Submitted at {formatDateTime(scorecardVersion.submittedAt || new Date().toISOString())}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => app.postScorecardToChatter()}
+                  disabled={app.chatterPostStatus === 'Posting' || app.chatterPostStatus === 'Posted'}
+                  className={clsx(
+                    'flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg px-6 text-[14px] font-bold transition-all shadow-sm',
+                    app.chatterPostStatus === 'Posted'
+                      ? 'bg-[#edf7ee] text-[#1f5f33] border border-[#cde8d3]'
+                      : 'bg-[#0176d3] text-white hover:bg-[#014486] active:scale-[0.98]'
+                  )}
+                >
+                  <Share2 size={18} />
+                  {app.chatterPostStatus === 'Posting' ? 'Posting...' : 
+                   app.chatterPostStatus === 'Posted' ? 'Posted to Chatter' : 
+                   'Post to Chatter'}
+                </button>
               </div>
             </InfoBlock>
           )}

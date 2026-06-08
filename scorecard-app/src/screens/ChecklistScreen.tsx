@@ -292,9 +292,11 @@ export function ChecklistScreen() {
                         const relatedEvidence = evidenceRequirements.filter(item => item.linkedQuestionIds.includes(question.id))
                         const primaryEvidence = relatedEvidence.find(item => item.required) ?? relatedEvidence[0]
                         if (!primaryEvidence) return
-                        setEvidencePhoto(primaryEvidence.id, file)
                         if (file) {
+                          app.uploadEvidencePhoto(primaryEvidence.id, [file])
                           setOpenEvidence(prev => ({ ...prev, [question.id]: false }))
+                        } else {
+                          app.removeEvidencePhoto(primaryEvidence.id)
                         }
                       }}
                       onFollowSuggestion={(route) => navigate(route)}

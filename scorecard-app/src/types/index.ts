@@ -10,6 +10,25 @@ export type OffShelfStatus = 'saved' | 'pending-review' | 'retained' | 'updated'
 export type OffShelfOrigin = 'current-visit' | 'previous-visit'
 export type RevisitChangeType = 'Improved' | 'Declined' | 'No Change' | 'New' | 'Removed'
 
+export type PriorityTag = 'High' | 'Medium' | 'Low'
+export type MultiplierTag = '2x' | '3x' | null
+export type PlanType = 'Base Plan' | 'Incremental'
+export type RiskLevel = 'High' | 'Medium' | 'Low' | 'None'
+export type UploadSource = 'Map' | 'ChecklistPhoto' | 'OffShelfPhoto'
+export type ChatterPostStatus = 'Not Posted' | 'Posting' | 'Posted' | 'Failed'
+
+export interface UploadedFile {
+  id: string
+  fileName: string
+  fileType: string
+  fileSize: number
+  localPreviewUrl: string
+  uploadedAt: string
+  source: UploadSource
+  fileObject?: File
+  remoteUrl?: string
+}
+
 export type AgentforceConfidence = 'high' | 'medium' | 'low'
 export type AgentforceQuantityEstimate = 'small' | 'medium' | 'large' | 'unknown'
 export type AgentforceSuggestionStatus = 'suggested' | 'needs_review'
@@ -78,6 +97,14 @@ export interface OffShelfEntry {
   multiplierLabel: string
   origin: OffShelfOrigin
   status: OffShelfStatus
+  priorityTag?: PriorityTag
+  multiplierTag?: MultiplierTag
+  planType?: PlanType
+  riskLevel?: RiskLevel
+  opportunityTag?: boolean
+  peakWeekTag?: boolean
+  clusterMatch?: boolean
+  tags?: string[]
 }
 
 export interface UserContext {
@@ -164,6 +191,10 @@ export interface ScorecardVersionRecord {
   revisitReason: string
   changedFieldsSummary: string[]
   items: ScorecardVersionItem[]
+  chatterPostStatus: ChatterPostStatus
+  chatterPostId?: string
+  mapUpload?: UploadedFile | null
+  photos?: UploadedFile[]
 }
 
 export interface RevisitComparisonCard {
@@ -379,4 +410,5 @@ export interface AppState {
   versionHistory: ScorecardVersionRecord[]
   revisitComparison: RevisitComparisonSummary | null
   activeScorecardResult: ActivePerfectStoreScorecardResult
+  storePlanMap: UploadedFile | null
 }
