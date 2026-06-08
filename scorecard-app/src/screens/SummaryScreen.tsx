@@ -6,6 +6,7 @@ import {
   Flag,
   Send,
   Share2,
+  Bug,
 } from 'lucide-react'
 import { BottomActionBar } from '../components/BottomActionBar'
 import { PhoneShell } from '../components/PhoneShell'
@@ -13,6 +14,7 @@ import { RevisitBanner } from '../components/RevisitBanner'
 import { StandardGuidanceCard } from '../components/StandardGuidanceCard'
 import { TopBar } from '../components/TopBar'
 import { TrellisAskButton, TrellisSummaryCard } from '../components/TrellisBot'
+import { CalculationTraceView } from '../components/CalculationTrace'
 import { useApp } from '../context/useApp'
 import { checklistQuestions, previousSnapshot, regionBenchmark, store } from '../data/mock'
 import {
@@ -24,6 +26,7 @@ import {
   getIncrementalRawLgorPct,
   getRemainingOffShelfRecommendations,
   getVisitTypeLabel,
+  getScoreExplanations,
 } from '../lib/scorecard'
 import {
   answerTrellisChat,
@@ -43,6 +46,7 @@ export function SummaryScreen() {
   const navigate = useNavigate()
   const app = useApp()
   const [trellisOpen, setTrellisOpen] = useState(false)
+  const [showCalculationDetails, setShowCalculationDetails] = useState(false)
   const {
     visitType,
     checklist,
@@ -69,6 +73,7 @@ export function SummaryScreen() {
     revisitComparison,
   } = app
 
+  const scoreExplanations = getScoreExplanations(app)
   const basePlanLgorPoints = getBasePlanLgorPoints(checklist)
   const incrementalScore = getOffShelfIncrementalScore(offShelf)
   const incrementalRawLgorPct = getIncrementalRawLgorPct(offShelf)
@@ -179,6 +184,15 @@ export function SummaryScreen() {
               </p>
             </div>
           </div>
+
+          <InfoBlock title="Calculation Traceability" subtitle="Detailed breakdown of how every score component was derived.">
+            <div className="space-y-3">
+              <CalculationTraceView title="Execution Score Trace" traces={scoreExplanations.execution} />
+              <CalculationTraceView title="Base Plan Score Trace" traces={scoreExplanations.basePlan} />
+              <CalculationTraceView title="Incremental Score Trace" traces={scoreExplanations.incremental} />
+              <CalculationTraceView title="Final Score Trace" traces={scoreExplanations.total} defaultExpanded />
+            </div>
+          </InfoBlock>
 
           {agentforceEnabled && (
             <>
@@ -506,6 +520,26 @@ export function SummaryScreen() {
               </div>
             </InfoBlock>
           )}
+
+          <div className="pt-2">
+            <button
+              onClick={() => setShowCalculationDetails(!showCalculationDetails)}
+              className="flex items-center gap-2 text-[11px] font-bold text-[#4b5563] hover:text-primary transition-colors"
+            >
+              <Bug size={14} />
+              {showCalculationDetails ? 'Hide' : 'Show'} Calculation Details (QA/Dev)
+            </button>
+            
+            {showCalculationDetails && (
+              <div className="mt-3 space-y-3">
+                <CalculationTraceView title="Execution Score Logic" traces={scoreExplanations.execution} />
+                <CalculationTraceView title="Base Plan Score Logic" traces={scoreExplanations.basePlan} />
+                <CalculationTraceView title="Incremental Score Logic" traces={scoreExplanations.incremental} />
+                <CalculationTraceView title="Final Score Logic" traces={scoreExplanations.total} defaultExpanded />
+              </div>
+            )}
+          </div>
+
           {agentforceEnabled && (
             <TrellisAskButton
               active={trellisOpen}
@@ -673,7 +707,7 @@ function GapRow({
         <p className="text-[12px] font-semibold text-on-surface">{title}</p>
         <p className="mt-1 text-[12px] text-on-surface-variant">{detail}</p>
       </div>
-      <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+      <span className={`shrink-0 rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
         tone === 'success'
           ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
           : 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'
@@ -710,7 +744,7 @@ function SignalRow({
         <p className="text-[12px] font-semibold text-on-surface">{title}</p>
         <p className="mt-1 text-[12px] text-on-surface-variant">{detail}</p>
       </div>
-      <span className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+      <span className={`shrink-0 rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
         tone === 'success'
           ? 'border-[#cde8d3] bg-[#edf7ee] text-[#1f5f33]'
           : 'border-[#f9d6d0] bg-[#fef1ee] text-[#8e030f]'

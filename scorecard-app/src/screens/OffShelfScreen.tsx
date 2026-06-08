@@ -29,6 +29,7 @@ import { analyzeSecondaryDisplay } from '../lib/agentforce/secondaryDisplayClien
 import {
   calculateOffShelfUnits,
   estimateOffShelfImpact,
+  generateSkuTags,
   getBasePlanLgorPoints,
   getChecklistBasePlanScore,
   getCurrentSectionNumber,
@@ -1262,7 +1263,7 @@ function InsightCell({
   )
 }
 
-import { generateSkuTags } from '../lib/scorecard'
+import { WhyTooltip } from '../components/CalculationTrace'
 
 function SkuCalculationCard({
   entry,
@@ -1282,7 +1283,7 @@ function SkuCalculationCard({
   onRemove: () => void
 }) {
   const product = getOffShelfProductById(entry.skuId)
-  const tags = generateSkuTags(entry, product)
+  const { tags, explanations } = generateSkuTags(entry, product)
   const calculatedUnits = getOffShelfEntryUnits(entry)
   const peakWeekUnits = product?.peakWeekUnits ?? 0
   const peakWeekRatio = peakWeekUnits > 0 ? +(calculatedUnits / peakWeekUnits).toFixed(2) : 0
@@ -1301,20 +1302,12 @@ function SkuCalculationCard({
     <div className="rounded-lg border border-outline bg-surface-lowest px-3 py-3">
       {tags.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-1">
-          {tags.map(tag => (
-            <span
+          {tags.map((tag: string) => (
+            <WhyTooltip
               key={tag}
-              className={clsx(
-                'rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider',
-                tag === 'High' ? 'border-[#fed7d7] bg-[#fff5f5] text-[#c53030]' :
-                tag === 'Risk' ? 'border-[#fed7d7] bg-[#fff5f5] text-[#c53030]' :
-                tag === 'Opportunity' ? 'border-[#c6f6d5] bg-[#f0fff4] text-[#2f855a]' :
-                tag.includes('x') ? 'border-[#bee3f8] bg-[#ebf8ff] text-[#2b6cb0]' :
-                'border-[#e2e8f0] bg-[#f7fafc] text-[#4a5568]'
-              )}
-            >
-              {tag}
-            </span>
+              label={tag}
+              explanation={explanations[tag] || 'Calculation derived from SKU and cluster data.'}
+            />
           ))}
         </div>
       )}

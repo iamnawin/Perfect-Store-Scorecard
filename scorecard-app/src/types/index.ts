@@ -75,6 +75,13 @@ export interface ScorecardSection {
   kind: 'checklist' | 'capture' | 'evidence' | 'review'
 }
 
+export interface CalculationTrace {
+  label: string
+  value: string | number
+  reason: string
+  inputData?: Record<string, any>
+}
+
 export interface OffShelfEntry {
   id: string
   location: string
@@ -105,6 +112,12 @@ export interface OffShelfEntry {
   peakWeekTag?: boolean
   clusterMatch?: boolean
   tags?: string[]
+  tagExplanations?: Record<string, string>
+  multiplierExplanation?: string
+  riskExplanation?: string
+  opportunityExplanation?: string
+  scoreImpactExplanation?: string
+  calculationTraces?: CalculationTrace[]
 }
 
 export interface UserContext {
@@ -196,6 +209,12 @@ export interface ScorecardVersionRecord {
   chatterPostId?: string
   mapUpload?: UploadedFile | null
   photos?: UploadedFile[]
+  scoreExplanations?: {
+    execution: CalculationTrace[]
+    basePlan: CalculationTrace[]
+    incremental: CalculationTrace[]
+    total: CalculationTrace[]
+  }
 }
 
 export interface RevisitComparisonCard {

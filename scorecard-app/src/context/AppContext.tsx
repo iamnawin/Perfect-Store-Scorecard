@@ -27,16 +27,18 @@ import {
   getOffShelfIncrementalScore,
   generateSkuTags,
   generateRecommendations,
+  getScoreExplanations,
 } from '../lib/scorecard'
 import type { UploadedFile, ChatterPostStatus } from '../types'
 
 function createOffShelfEntryWithTags(entry: OffShelfEntry): OffShelfEntry {
   const product = getOffShelfProductById(entry.skuId)
-  const tags = generateSkuTags(entry, product)
+  const { tags, explanations } = generateSkuTags(entry, product)
   
   return {
     ...entry,
     tags,
+    tagExplanations: explanations,
     priorityTag: tags.includes('High') ? 'High' : tags.includes('Medium') ? 'Medium' : tags.includes('Low') ? 'Low' : undefined,
     multiplierTag: tags.includes('3x') ? '3x' : tags.includes('2x') ? '2x' : null,
     planType: entry.classification === 'incremental' ? 'Incremental' : 'Base Plan',
@@ -627,30 +629,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         mapUpload: storePlanMap,
         photos: uploadedFiles,
         chatterPostStatus: 'Not Posted',
+        scoreExplanations: getScoreExplanations(appState),
         currentScore: getTotalScore({
-          visitType,
-          checklist,
-          questionNotes,
-          offShelf,
-          offShelfConfirmed,
-          evidence,
-          secondaryDisplayImage,
-          audioNoteFile,
-          notes,
-          revisitReason,
-          revisitRequired,
-          shelfResetNeeded,
-          lastSavedAt,
-          submitted,
-          agentforceEnabled,
-          toast,
-          celebration,
-          scorecardVersion,
-          sourceScorecard,
-          versionHistory,
-          revisitComparison,
-          activeScorecardResult,
-          storePlanMap,
+          ...appState,
         }),
       }))
     }

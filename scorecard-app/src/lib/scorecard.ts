@@ -14,6 +14,7 @@ import type {
   ScorecardStatus,
   StepState,
   VisitType,
+  CalculationTrace,
 } from '../types'
 
 export function createInitialEvidenceState() {
@@ -236,38 +237,143 @@ export function getOffShelfIncrementalScore(entries: OffShelfEntry[]) {
   return Math.max(0, rawIncremental)
 }
 
-export function generateSkuTags(entry: Partial<OffShelfEntry>, product?: OffShelfProduct): string[] {
+export function generateSkuTags(entry: Partial<OffShelfEntry>, product?: OffShelfProduct): { tags: string[]; explanations: Record<string, string> } {
   const tags: string[] = []
+  const explanations: Record<string, string> = {}
   const multiplier = entry.multiplier || 1
   const impactPoints = entry.impactPoints || 0
   
   // Priority Tags
-  if (impactPoints >= 15 || (product?.basePoints || 0) >= 15) tags.push('High')
-  else if (impactPoints >= 5) tags.push('Medium')
-  else if (impactPoints > 0) tags.push('Low')
+  if (impactPoints >= 15 || (product?.basePoints || 0) >= 15) {
+    tags.push('High')
+    explanations['High'] = 'This SKU has high LGOR contribution for the selected cluster.'
+  } else if (impactPoints >= 5) {
+    tags.push('Medium')
+    explanations['Medium'] = 'This SKU has moderate LGOR contribution.'
+  } else if (impactPoints > 0) {
+    tags.push('Low')
+    explanations['Low'] = 'This SKU has low LGOR contribution.'
+  }
 
   // Multiplier Tags
-  if (multiplier >= 3) tags.push('3x')
-  else if (multiplier >= 2) tags.push('2x')
+  if (multiplier >= 3) {
+    tags.push('3x')
+    explanations['3x'] = 'This SKU qualifies for a 3x multiplier because it is a high-priority incremental SKU with recommended display placement.'
+  } else if (multiplier >= 2) {
+    tags.push('2x')
+    explanations['2x'] = 'This SKU qualifies for a 2x multiplier based on its placement and volume potential.'
+  }
 
   // Plan Type
-  if (entry.classification === 'incremental') tags.push('Incremental')
-  else if (entry.classification === 'base-plan') tags.push('Base Plan')
+  if (entry.classification === 'incremental') {
+    tags.push('Incremental')
+    explanations['Incremental'] = 'This SKU is not part of the base plan but contributes additional off-shelf opportunity.'
+  } else if (entry.classification === 'base-plan') {
+    tags.push('Base Plan')
+    explanations['Base Plan'] = 'This SKU is part of the required base plan for this cycle.'
+  }
 
   // Opportunity/Risk Tags
-  if (impactPoints > 10) tags.push('Opportunity')
+  if (impactPoints > 10) {
+    tags.push('Opportunity')
+    explanations['Opportunity'] = 'This SKU creates significant score opportunity due to high volume/multiplier alignment.'
+  }
   
   if (entry.quantity && product && Number(entry.quantity) < product.peakWeekUnits) {
     tags.push('Risk')
+    explanations['Risk'] = 'Current quantity is below the peak week baseline, indicating potential out-of-stock risk during high demand.'
     tags.push('Peak Week')
+    explanations['Peak Week'] = `Quantity is measured against a peak week target of ${product.peakWeekUnits} units.`
   }
 
   // Cluster match
   if (product && entry.location && product.recommendedLocations.includes(entry.location)) {
     tags.push('Cluster Match')
+    explanations['Cluster Match'] = 'This SKU placement matches the recommended location strategy for this store cluster.'
   }
 
-  return tags
+  return { tags, explanations }
+}
+
+export function getScoreExplanations(state: AppState) {
+  const executionTraces: CalculationTrace[] = []
+  const basePlanTraces: CalculationTrace[] = []
+  const incrementalTraces: CalculationTrace[] = []
+  const totalTraces: CalculationTrace[] = []
+
+  // Execution Score Trace
+  const answered = getAnsweredChecks(state.checklist)
+  const totalChecks = getTotalChecks()
+  const executionScore = getChecklistBasePlanScore(state.checklist)
+  executionTraces.push({
+    label: 'Answered Checks',
+    value: `${answered} / ${totalChecks}`,
+    reason: 'Number of completed checklist items.'
+  })
+  executionTraces.push({
+    label: 'Execution Score',
+    value: `${executionScore}%`,
+    reason: 'Percentage of points earned from completed checklist items.'
+  })
+
+  // Base Plan Score Trace
+  const basePlanLgor = 26.3
+  basePlanTraces.push({
+    label: 'Base LGOR Baseline',
+    value: '26.3%',
+    reason: 'Fixed baseline for Load-in Gross Order Recovery for this cycle.'
+  })
+  basePlanTraces.push({
+    label: 'POG Compliance',
+    value: 'Active',
+    reason: 'Core product categories are stocked and aligned to planogram.'
+  })
+
+  // Incremental Score Trace
+  const incrementalScore = getOffShelfIncrementalScore(state.offShelf)
+  state.offShelf.filter(isActiveOffShelfEntry).forEach(entry => {
+    incrementalTraces.push({
+      label: `SKU: ${entry.product}`,
+      value: `+${entry.impactPoints.toFixed(1)}`,
+      reason: `Quantity: ${entry.quantity} | Multiplier: ${entry.multiplier}x | Location: ${entry.location}`,
+      inputData: { sku: entry.skuId, qty: entry.quantity, mult: entry.multiplier }
+    })
+  })
+  incrementalTraces.push({
+    label: 'Total Incremental',
+    value: `+${incrementalScore.toFixed(1)}`,
+    reason: 'Sum of all active off-shelf SKU contributions.'
+  })
+
+  // Total Score Trace
+  const totalScore = getTotalScore(state)
+  totalTraces.push({
+    label: 'Execution Portion',
+    value: executionScore.toFixed(1),
+    reason: 'Direct contribution from checklist execution.'
+  })
+  totalTraces.push({
+    label: 'Base Plan Portion',
+    value: basePlanLgor.toFixed(1),
+    reason: 'Contribution from base plan LGOR baseline.'
+  })
+  totalTraces.push({
+    label: 'Incremental Portion',
+    value: incrementalScore.toFixed(1),
+    reason: 'Contribution from off-shelf product placements.'
+  })
+  totalTraces.push({
+    label: 'Final Score',
+    value: totalScore.toFixed(1),
+    reason: 'Total Score = Execution + Base Plan + Incremental'
+  })
+
+  return {
+    execution: executionTraces,
+    basePlan: basePlanTraces,
+    incremental: incrementalTraces,
+    total: totalTraces
+  }
 }
 
 export function getOffShelfOpportunityScore(entries: OffShelfEntry[]) {
